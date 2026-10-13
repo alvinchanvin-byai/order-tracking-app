@@ -35,24 +35,31 @@
         }
     </script>
 
+    <!-- Preconnect & DNS-Prefetch for Fast CDN and Cloud Handshake -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+    <link rel="dns-prefetch" href="https://unpkg.com">
+    <link rel="dns-prefetch" href="https://script.google.com">
+
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=live-v2.1">
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <!-- SweetAlert2 for modern dialogues -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- SweetAlert2 for modern dialogues (deferred) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
 
-    <!-- Toastify for notifications -->
+    <!-- Toastify for notifications (deferred) -->
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js" defer></script>
 
-    <!-- Canvas Confetti for celebrate -->
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- Canvas Confetti for celebrate (deferred) -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js" defer></script>
 
-    <!-- SheetJS (xlsx) for Report Excel Export -->
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- SheetJS (xlsx) for Report Excel Export (deferred) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
 
     <!-- HTML5 QR Code & Barcode Scanner for Mobile & Desktop -->
     <script src="js/html5-qrcode.min.js"></script>
@@ -350,10 +357,10 @@
                 </button>
                 <div class="flex items-center gap-2.5">
                     <h2 id="headerCurrentPageTitle" class="font-extrabold text-base sm:text-lg text-slate-900 tracking-tight">Dashboard</h2>
-                    <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/70 uppercase tracking-wider hidden sm:inline-flex">
-                        <span class="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
-                        Live
-                    </span>
+                    <div id="liveSyncStatusBadge" onclick="forceCheckLiveUpdates()" class="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-2xs hover:bg-emerald-100/80 transition cursor-pointer select-none" title="Live Real-time Auto-Sync ដំណើរការ (ចុចដើម្បី Sync ភ្លាមៗ)">
+                        <span id="liveSyncPulseDot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span id="liveSyncStatusText">LIVE SYNC</span>
+                    </div>
                 </div>
             </div>
 
@@ -2737,8 +2744,8 @@
     </div>
 
     <!-- App Core Scripts -->
-    <script src="js/data.js"></script>
-    <script src="js/sheets-sync.js"></script>
-    <script src="js/app.js?v=20261013-3"></script>
+    <script src="js/data.js?v=live-v2.1"></script>
+    <script src="js/sheets-sync.js?v=live-v2.1"></script>
+    <script src="js/app.js?v=live-v2.1"></script>
 </body>
 </html>
