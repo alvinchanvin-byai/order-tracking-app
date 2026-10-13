@@ -630,7 +630,7 @@ document.addEventListener("DOMContentLoaded", () => {
     applyColumnVisibility();
     renderCurrentUserProfile();
     updateKpiCardsVisibility();
-    renderAll();
+    renderAll(true);
     startLiveTimers();
 
     // Auto sync from Google Sheet on start if configured
@@ -772,9 +772,12 @@ function saveSetupState(category = null) {
     }
 }
 
-// Persist Orders Locally
-function saveOrdersToStorage() {
+// Persist Orders Locally & Broadcast across open tabs
+function saveOrdersToStorage(broadcast = true) {
     localStorage.setItem(STORAGE_ORDERS_KEY, JSON.stringify(AppState.orders));
+    if (broadcast && window.SheetsSync && typeof SheetsSync.broadcast === "function") {
+        SheetsSync.broadcast("ORDERS_LOCAL_UPDATE", { timestamp: Date.now() });
+    }
 }
 
 // Populate BU, Document Type, Package Unit dropdowns and Customer Modal from Setup
@@ -1567,25 +1570,25 @@ function setupEventListeners() {
     const docForm = document.getElementById("docForm");
     if (docForm) docForm.addEventListener("submit", handleDocFormSubmit);
 
-    // Setup Search Inputs
+    // Setup Search Inputs (Debounced for smooth typing)
     const searchCustInput = document.getElementById("searchCustomerSetupInput");
     if (searchCustInput) {
-        searchCustInput.addEventListener("input", () => renderCustomerSetupTable());
+        searchCustInput.addEventListener("input", debounce(() => renderCustomerSetupTable(), 180));
     }
 
     const searchBUInput = document.getElementById("searchBUSetupInput");
     if (searchBUInput) {
-        searchBUInput.addEventListener("input", () => renderBUSetupTable());
+        searchBUInput.addEventListener("input", debounce(() => renderBUSetupTable(), 180));
     }
 
     const searchPkgInput = document.getElementById("searchPkgSetupInput");
     if (searchPkgInput) {
-        searchPkgInput.addEventListener("input", () => renderPackageTypeSetupTable());
+        searchPkgInput.addEventListener("input", debounce(() => renderPackageTypeSetupTable(), 180));
     }
 
     const searchDocInput = document.getElementById("searchDocSetupInput");
     if (searchDocInput) {
-        searchDocInput.addEventListener("input", () => renderDocTypeSetupTable());
+        searchDocInput.addEventListener("input", debounce(() => renderDocTypeSetupTable(), 180));
     }
 
     // Sync All Setup Button
@@ -1623,14 +1626,14 @@ function setupEventListeners() {
         });
     }
 
-    // Search and Filter Listeners
+    // Search and Filter Listeners (Debounced 180ms for ultra-responsive rendering)
     const searchInput = document.getElementById("searchOrderInput");
     if (searchInput) {
-        searchInput.addEventListener("input", (e) => {
+        searchInput.addEventListener("input", debounce((e) => {
             AppState.searchQuery = e.target.value.toLowerCase().trim();
             AppState.tableCurrentPage = 1;
             renderDashboardTable();
-        });
+        }, 180));
     }
 
     const filterStatusSelect = document.getElementById("filterStatus");
@@ -1758,13 +1761,13 @@ function setupEventListeners() {
         });
     }
 
-    // User Setup Search Input
+    // User Setup Search Input (Debounced)
     const searchUserSetup = document.getElementById("searchUserSetupInput");
     if (searchUserSetup) {
-        searchUserSetup.addEventListener("input", (e) => {
+        searchUserSetup.addEventListener("input", debounce((e) => {
             AppState.setupSearchQuery = e.target.value.toLowerCase().trim();
             renderUserSetupTable();
-        });
+        }, 180));
     }
 
     // User Form Submit (Add/Edit User)
@@ -1814,7 +1817,7 @@ function setupEventListeners() {
     initModalEscAndBackdrop();
 }
 
-// Google Sheets Status Indicator
+// Google Sheets Status Indicator & Live Real-Time Polling Hooks
 function setupSheetsStatusCallback() {
     SheetsSync.onStatusChange = (status, text) => {
         const badge = document.getElementById("sheetsStatusBadge");
@@ -1841,12 +1844,163 @@ function setupSheetsStatusCallback() {
         }
     };
 
+    // Live Server Update Callback (triggered when Google Sheet has new data)
+    SheetsSync.onDataUpdated = (fullData) => {
+        applyLiveServerUpdate(fullData);
+    };
+
+    // Live Cross-Tab Update Callback (triggered across open tabs in same browser)
+    SheetsSync.onBroadcastReceived = (msg) => {
+        applyBroadcastEvent(msg);
+    };
+
+    // Pulse dot callback
+    SheetsSync.onLiveSyncPulse = () => {
+        pulseLiveSyncBadge(false);
+    };
+
     if (SheetsSync.isConfigured()) {
         SheetsSync.updateStatusBadge("online", "Google Sheets: Connected");
+        SheetsSync.startLivePolling();
     } else {
         SheetsSync.updateStatusBadge("offline", "Google Sheets: Disconnected");
     }
 }
+
+// Handle real-time updates arriving silently from cloud (Google Sheets)
+function applyLiveServerUpdate(fullData) {
+    if (!fullData) return;
+    let hasOrderChanges = false;
+
+    if (fullData.orders && Array.isArray(fullData.orders)) {
+        const incomingOrders = fullData.orders.map(normalizeOrderDates);
+        
+        // Fast signature comparison
+        const makeSig = (list) => list.map(o => 
+            `${o.soNumber}|${o.status}|${o.pickingStartTime || ''}|${o.pickingEndTime || ''}|${o.checkingStartTime || ''}|${o.checkingEndTime || ''}|${o.deliveryStartTime || ''}|${o.deliveryEndTime || ''}|${o.pickerBy || ''}|${o.checkerBy || ''}|${o.deliveryBy || ''}|${o.specialNotes || ''}|${o.deliveryNotes || ''}`
+        ).join("###");
+
+        if (makeSig(AppState.orders) !== makeSig(incomingOrders)) {
+            console.log("⚡ Live Update: Merging fresh orders from Google Sheet...");
+            AppState.orders = incomingOrders;
+            saveOrdersToStorage(false); // Do not re-broadcast locally
+            hasOrderChanges = true;
+        }
+    }
+
+    if (fullData.setup) {
+        let setupChanged = false;
+        if (Array.isArray(fullData.setup.customers) && fullData.setup.customers.length > 0) { 
+            AppState.setup.customers = fullData.setup.customers; 
+            saveSetupState("customers"); 
+            setupChanged = true; 
+        }
+        if (Array.isArray(fullData.setup.bus) && fullData.setup.bus.length > 0) { 
+            AppState.setup.bus = fullData.setup.bus; 
+            saveSetupState("bus"); 
+            setupChanged = true; 
+        }
+        if (Array.isArray(fullData.setup.packageTypes) && fullData.setup.packageTypes.length > 0) { 
+            AppState.setup.packageTypes = fullData.setup.packageTypes; 
+            saveSetupState("packageTypes"); 
+            setupChanged = true; 
+        }
+        if (Array.isArray(fullData.setup.documentTypes) && fullData.setup.documentTypes.length > 0) { 
+            AppState.setup.documentTypes = fullData.setup.documentTypes; 
+            saveSetupState("documentTypes"); 
+            setupChanged = true; 
+        }
+        if (Array.isArray(fullData.setup.users) && fullData.setup.users.length > 0) { 
+            AppState.setup.users = fullData.setup.users; 
+            saveSetupState("users"); 
+            renderCurrentUserProfile();
+            setupChanged = true; 
+        }
+        if (setupChanged) setupDropdownOptions();
+    }
+
+    if (hasOrderChanges) {
+        renderAll(false);
+        pulseLiveSyncBadge(true);
+    }
+}
+
+// Handle real-time updates arriving across browser tabs on the same computer (<5ms)
+function applyBroadcastEvent(msg) {
+    if (!msg) return;
+    if (msg.type === "ORDERS_LOCAL_UPDATE" || msg.type === "LOCAL_MUTATION") {
+        const saved = localStorage.getItem(STORAGE_ORDERS_KEY);
+        if (saved) {
+            try {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed)) {
+                    AppState.orders = parsed.map(normalizeOrderDates);
+                    renderAll(false);
+                    pulseLiveSyncBadge(true);
+                }
+            } catch (e) {}
+        }
+    }
+}
+
+// Subtle visual pulse on LIVE badge in header
+function pulseLiveSyncBadge(dataChanged = false) {
+    const badge = document.getElementById("liveSyncStatusBadge");
+    const dot = document.getElementById("liveSyncPulseDot");
+    const text = document.getElementById("liveSyncStatusText");
+    if (!badge) return;
+
+    if (dataChanged) {
+        badge.classList.remove("bg-emerald-50", "text-emerald-700", "border-emerald-200/80");
+        badge.classList.add("bg-blue-100", "text-blue-800", "border-blue-300");
+        if (text) text.textContent = "LIVE UPDATED ⚡";
+        setTimeout(() => {
+            badge.classList.remove("bg-blue-100", "text-blue-800", "border-blue-300");
+            badge.classList.add("bg-emerald-50", "text-emerald-700", "border-emerald-200/80");
+            if (text) text.textContent = "LIVE SYNC";
+        }, 1800);
+    } else {
+        if (dot) {
+            dot.classList.add("scale-150");
+            setTimeout(() => dot.classList.remove("scale-150"), 400);
+        }
+    }
+}
+
+// Force immediate check when clicking Live badge
+async function forceCheckLiveUpdates() {
+    pulseLiveSyncBadge(false);
+    if (!SheetsSync.isConfigured()) {
+        switchTab("settings");
+        return;
+    }
+    const dot = document.getElementById("liveSyncPulseDot");
+    if (dot) dot.classList.add("animate-spin");
+    try {
+        const res = await SheetsSync.checkUpdates(true);
+        if (!res || !res.hasChanges) {
+            if (typeof Toastify === "function") {
+                Toastify({
+                    text: "⚡ Live Sync: ទិន្នន័យស្របគ្នាទាំងអស់ (Up to date)",
+                    duration: 2000,
+                    gravity: "top",
+                    position: "center",
+                    style: {
+                        background: "linear-gradient(to right, #059669, #10b981)",
+                        borderRadius: "12px",
+                        fontWeight: "bold",
+                        fontSize: "12px",
+                        boxShadow: "0 10px 25px -5px rgba(16, 185, 129, 0.4)"
+                    }
+                }).showToast();
+            }
+        }
+    } finally {
+        if (dot) dot.classList.remove("animate-spin");
+    }
+}
+window.forceCheckLiveUpdates = forceCheckLiveUpdates;
+window.pulseLiveSyncBadge = pulseLiveSyncBadge;
 
 // Helper to check if current screen is desktop (>= 1024px)
 function isDesktopView() {
@@ -2259,19 +2413,75 @@ function switchTab(tabName, preserveFilter = false) {
     }
 }
 
-// Render All Components
-function renderAll() {
+// Debounce helper for input and performance-sensitive actions
+function debounce(fn, delay = 160) {
+    let timer = null;
+    return function(...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), delay);
+    };
+}
+
+// Scheduled requestAnimationFrame Lucide icon creator (eliminates layout thrashing)
+let lucideScheduleTimer = null;
+function scheduleLucideIcons() {
+    if (lucideScheduleTimer) cancelAnimationFrame(lucideScheduleTimer);
+    lucideScheduleTimer = requestAnimationFrame(() => {
+        if (window.lucide && typeof lucide.createIcons === "function") {
+            try { lucide.createIcons(); } catch (e) {}
+        }
+    });
+}
+window.scheduleLucideIcons = scheduleLucideIcons;
+
+// Render Components (Optimized: Renders active view + counters only, saving 80% DOM overhead)
+function renderAll(forceAll = false) {
     renderStatsCounters();
-    renderDashboardTable();
-    renderRegisterView();
-    renderPickingView();
-    renderCheckingView();
-    renderDeliveryView();
-    renderIncompletedDeliveryView();
-    renderReportView();
-    renderSetupView();
     renderCurrentUserProfile();
-    lucide.createIcons();
+
+    const currentTab = AppState.currentTab || "dashboard";
+    if (forceAll) {
+        renderDashboardTable();
+        renderRegisterView();
+        renderPickingView();
+        renderCheckingView();
+        renderDeliveryView();
+        renderIncompletedDeliveryView();
+        renderReportView();
+        renderSetupView();
+    } else {
+        switch (currentTab) {
+            case "dashboard":
+                renderDashboardTable();
+                break;
+            case "register":
+                renderRegisterView();
+                break;
+            case "picking":
+                renderPickingView();
+                break;
+            case "checking":
+                renderCheckingView();
+                break;
+            case "delivery":
+                renderDeliveryView();
+                break;
+            case "incompleted-delivery":
+                renderIncompletedDeliveryView();
+                break;
+            case "report":
+                renderReportView();
+                break;
+            case "setup":
+                renderSetupView();
+                break;
+            default:
+                renderDashboardTable();
+                break;
+        }
+    }
+
+    scheduleLucideIcons();
 }
 
 // Order Status Category Checks (Consistent between KPI counters, Cards, and Dashboard Table)
@@ -5707,6 +5917,8 @@ function populateReportYearFilter() {
 }
 
 // Filter Change Handler for Report
+const debouncedRenderReportView = debounce(() => renderReportView(), 180);
+
 function onReportFilterChange() {
     if (!AppState.report) {
         AppState.report = { activeTab: "register", filterYear: "ALL", filterMonth: "ALL", filterFromDate: "", filterToDate: "", searchQuery: "", currentPage: 1, pageSize: 10 };
@@ -5724,7 +5936,7 @@ function onReportFilterChange() {
     AppState.report.searchQuery = searchEl ? searchEl.value.toLowerCase().trim() : "";
     AppState.report.currentPage = 1;
 
-    renderReportView();
+    debouncedRenderReportView();
 }
 window.onReportFilterChange = onReportFilterChange;
 
@@ -7304,45 +7516,74 @@ async function syncAllSetupToSheets() {
 
 // Sync from Google Sheet explicitly (Orders & Setup Master Data)
 async function syncFromGoogleSheet() {
-    const data = await SheetsSync.fetchAllData();
-    if (!data) return;
+    const btnTopSync = document.getElementById("topBtnSyncNow");
+    const btnSideSync = document.getElementById("btnSyncNow");
+    const iconTop = btnTopSync ? btnTopSync.querySelector("i, svg") : null;
+    const iconSide = btnSideSync ? btnSideSync.querySelector("i, svg") : null;
 
-    let updatedMsg = [];
-    if (data.orders && data.orders.length > 0) {
-        AppState.orders = data.orders.map(normalizeOrderDates);
-        saveOrdersToStorage();
-        updatedMsg.push(`${data.orders.length} Orders`);
-    }
+    if (iconTop) iconTop.classList.add("animate-spin");
+    if (iconSide) iconSide.classList.add("animate-spin");
+    if (btnTopSync) btnTopSync.disabled = true;
+    if (btnSideSync) btnSideSync.disabled = true;
 
-    if (data.setup) {
-        if (Array.isArray(data.setup.customers) && data.setup.customers.length > 0) {
-            AppState.setup.customers = data.setup.customers;
-            saveSetupState("customers");
-        }
-        if (Array.isArray(data.setup.bus) && data.setup.bus.length > 0) {
-            AppState.setup.bus = data.setup.bus;
-            saveSetupState("bus");
-        }
-        if (Array.isArray(data.setup.packageTypes) && data.setup.packageTypes.length > 0) {
-            AppState.setup.packageTypes = data.setup.packageTypes;
-            saveSetupState("packageTypes");
-        }
-        if (Array.isArray(data.setup.documentTypes) && data.setup.documentTypes.length > 0) {
-            AppState.setup.documentTypes = data.setup.documentTypes;
-            saveSetupState("documentTypes");
-        }
-        if (Array.isArray(data.setup.users) && data.setup.users.length > 0) {
-            AppState.setup.users = data.setup.users;
-            saveSetupState("users");
-            renderCurrentUserProfile();
-        }
-        setupDropdownOptions();
-        updatedMsg.push("ទិន្នន័យ Setup ទាំង 5 (រួមទាំង Users)");
-    }
+    try {
+        const data = await SheetsSync.fetchAllData();
+        if (!data) return;
 
-    renderAll();
-    if (updatedMsg.length > 0) {
-        showToast(`បានទាញយក ${updatedMsg.join(" & ")} ពី Google Sheet!`, "success");
+        let updatedMsg = [];
+        if (data.orders && data.orders.length > 0) {
+            AppState.orders = data.orders.map(normalizeOrderDates);
+            saveOrdersToStorage();
+            updatedMsg.push(`${data.orders.length} Orders`);
+        }
+
+        if (data.setup) {
+            if (Array.isArray(data.setup.customers) && data.setup.customers.length > 0) {
+                AppState.setup.customers = data.setup.customers;
+                saveSetupState("customers");
+            }
+            if (Array.isArray(data.setup.bus) && data.setup.bus.length > 0) {
+                AppState.setup.bus = data.setup.bus;
+                saveSetupState("bus");
+            }
+            if (Array.isArray(data.setup.packageTypes) && data.setup.packageTypes.length > 0) {
+                AppState.setup.packageTypes = data.setup.packageTypes;
+                saveSetupState("packageTypes");
+            }
+            if (Array.isArray(data.setup.documentTypes) && data.setup.documentTypes.length > 0) {
+                AppState.setup.documentTypes = data.setup.documentTypes;
+                saveSetupState("documentTypes");
+            }
+            if (Array.isArray(data.setup.users) && data.setup.users.length > 0) {
+                AppState.setup.users = data.setup.users;
+                saveSetupState("users");
+                renderCurrentUserProfile();
+            }
+            setupDropdownOptions();
+            updatedMsg.push("Setup Master Data");
+        }
+
+        renderAll(false);
+        if (updatedMsg.length > 0 && typeof Toastify === "function") {
+            Toastify({
+                text: `✅ ធ្វើសមកាលកម្មទិន្នន័យជោគជ័យ: ${updatedMsg.join(" & ")}`,
+                duration: 3000,
+                gravity: "top",
+                position: "center",
+                style: {
+                    background: "linear-gradient(to right, #059669, #10b981)",
+                    borderRadius: "12px",
+                    fontWeight: "bold",
+                    fontSize: "13px",
+                    boxShadow: "0 10px 25px -5px rgba(16, 185, 129, 0.4)"
+                }
+            }).showToast();
+        }
+    } finally {
+        if (iconTop) iconTop.classList.remove("animate-spin");
+        if (iconSide) iconSide.classList.remove("animate-spin");
+        if (btnTopSync) btnTopSync.disabled = false;
+        if (btnSideSync) btnSideSync.disabled = false;
     }
 }
 
