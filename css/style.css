@@ -515,4 +515,27 @@ body {
     }
 }
 
+/* ========================================================================== */
+/* PERFORMANCE OPTIMIZATIONS (CSS Containment & GPU Layer Acceleration)       */
+/* ========================================================================== */
+.metric-card-modern,
+.order-card {
+    contain: layout style paint;
+    will-change: transform;
+}
+
+#dashboardOrdersTableSection,
+#reportTableContainer,
+#view-dashboard,
+#view-register,
+#view-picking,
+#view-checking,
+#view-delivery,
+#view-incompleted-delivery,
+#view-report,
+#view-setup {
+    contain: layout;
+}
+
+
 
