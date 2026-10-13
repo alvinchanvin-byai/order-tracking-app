@@ -1,0 +1,518 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Kantumruy+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+
+:root {
+    --primary-blue: #2563eb;
+    --primary-blue-dark: #1d4ed8;
+    --primary-gradient: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+    --accent-cyan: #06b6d4;
+    --stage-register: #64748b;
+    --stage-picking: #f59e0b;
+    --stage-checking: #8b5cf6;
+    --stage-delivery: #0284c7;
+    --stage-incomplete: #ea580c;
+    --stage-completed: #10b981;
+}
+
+body {
+    font-family: 'Kantumruy Pro', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    background: radial-gradient(circle at 5% 5%, rgba(239, 246, 255, 0.75) 0%, transparent 35%),
+                radial-gradient(circle at 95% 5%, rgba(240, 249, 255, 0.7) 0%, transparent 35%),
+                radial-gradient(circle at 50% 90%, rgba(241, 245, 249, 0.8) 0%, transparent 50%),
+                #f8fafc;
+    background-attachment: fixed;
+    color: #1e293b;
+}
+
+/* Glassmorphism system */
+.glass-panel {
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04), 0 2px 6px -1px rgba(15, 23, 42, 0.02);
+}
+
+.glass-panel-elevated {
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(226, 232, 240, 0.85);
+    box-shadow: 0 10px 30px -4px rgba(15, 23, 42, 0.07), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
+}
+
+.glass-header {
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.75);
+    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.03);
+}
+
+/* Modern Metric Cards */
+.metric-card-modern {
+    position: relative;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(226, 232, 240, 0.85);
+    border-radius: 1.25rem;
+    padding: 1.15rem;
+    transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.02);
+}
+
+.metric-card-modern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3.5px;
+    opacity: 0.85;
+    transition: opacity 0.25s ease, height 0.25s ease;
+}
+
+.metric-card-modern:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 30px -4px rgba(15, 23, 42, 0.09), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+}
+
+.metric-card-modern:hover::before {
+    opacity: 1;
+    height: 4.5px;
+}
+
+/* Module top color accents */
+.metric-card-modern.accent-blue::before {
+    background: linear-gradient(90deg, #3b82f6, #6366f1);
+}
+.metric-card-modern.accent-amber::before {
+    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+.metric-card-modern.accent-purple::before {
+    background: linear-gradient(90deg, #8b5cf6, #a855f7);
+}
+.metric-card-modern.accent-sky::before {
+    background: linear-gradient(90deg, #0284c7, #38bdf8);
+}
+.metric-card-modern.accent-orange::before {
+    background: linear-gradient(90deg, #ea580c, #f97316);
+}
+.metric-card-modern.accent-emerald::before {
+    background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+/* Sparkline wave effect */
+.sparkline-svg {
+    opacity: 0.45;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.metric-card-modern:hover .sparkline-svg {
+    opacity: 0.85;
+    transform: scale(1.05);
+}
+
+/* Custom Primary Button with Gradient */
+.btn-gradient-primary {
+    background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 14px -1px rgba(37, 99, 235, 0.35);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn-gradient-primary:hover {
+    box-shadow: 0 6px 20px -1px rgba(37, 99, 235, 0.45);
+    transform: translateY(-1px);
+}
+.btn-gradient-primary:active {
+    transform: translateY(0);
+}
+
+/* Navigation Segmented Bar */
+.segmented-nav-container {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.75);
+    box-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.02);
+}
+
+.nav-tab-btn {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+.nav-tab-btn:hover:not(.bg-blue-600) {
+    background-color: rgba(241, 245, 249, 0.9);
+    color: #1e293b;
+}
+
+/* Live dot pulse animation for Sheets Sync */
+.pulse-dot-green {
+    position: relative;
+}
+.pulse-dot-green::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 9999px;
+    background-color: #22c55e;
+    opacity: 0.45;
+    animation: live-ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes live-ping {
+    75%, 100% {
+        transform: scale(2.2);
+        opacity: 0;
+    }
+}
+
+/* Modern Data Table */
+.modern-table thead th {
+    background: #f8fafc;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    font-size: 0.75rem;
+    color: #475569;
+    border-bottom: 1px solid #e2e8f0;
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+}
+.modern-table tbody tr {
+    transition: background-color 0.15s ease, transform 0.15s ease;
+}
+.modern-table tbody tr:hover {
+    background-color: rgba(239, 246, 255, 0.5) !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Step Pipeline Active Pulse Animation */
+@keyframes pulse-ring {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.6);
+    }
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 8px rgba(37, 99, 235, 0);
+    }
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+    }
+}
+
+.pulse-active {
+    animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Smooth badge transitions */
+.status-badge {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Modal transition */
+.modal-backdrop {
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(6px);
+}
+
+/* Card hover glow */
+.order-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.order-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 28px -5px rgba(0, 0, 0, 0.08), 0 8px 12px -6px rgba(0, 0, 0, 0.04);
+}
+
+/* Print optimizations */
+@media print {
+    body {
+        background: white !important;
+    }
+    .no-print {
+        display: none !important;
+    }
+    .print-only {
+        display: block !important;
+    }
+}
+
+/* Fullscreen Modal View */
+#orderDetailsDialog.is-fullscreen {
+    max-width: 100vw !important;
+    max-height: 100vh !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    padding: 1.5rem 2rem !important;
+}
+#orderDetailsModal.p-0-fullscreen {
+    padding: 0 !important;
+}
+
+/* Autocomplete Suggestion Active Highlight */
+.customer-item.is-active,
+.province-item.is-active,
+.khan-item.is-active {
+    background-color: #dbeafe !important;
+    border-left: 4px solid #2563eb !important;
+    padding-left: calc(0.875rem - 4px) !important;
+}
+
+.customer-item.is-active .text-slate-900,
+.province-item.is-active .text-slate-900,
+.khan-item.is-active .text-slate-800 {
+    color: #1e40af !important;
+}
+
+/* Custom compact scrollbar for sidebar */
+.custom-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+}
+.custom-scroll::-webkit-scrollbar {
+    width: 4px;
+}
+.custom-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+.custom-scroll::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+}
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Sidebar Mini / Slim Collapsed Mode (Matches Image 2 Example) */
+#appSidebar {
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+                transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.3s ease;
+}
+
+@media (min-width: 1024px) {
+    /* Collapse to mini slim sidebar (Image 2) */
+    body.sidebar-collapsed #appSidebar {
+        width: 4.75rem !important; /* ~76px */
+        min-width: 4.75rem !important;
+        max-width: 4.75rem !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    /* Hide Expanded-only elements, text spans, labels: ONLY ICONS DISPLAY */
+    body.sidebar-collapsed .sidebar-expanded-only,
+    body.sidebar-collapsed .nav-tab-badge,
+    body.sidebar-collapsed .nav-tab-text,
+    body.sidebar-collapsed #currentUserName,
+    body.sidebar-collapsed #currentUserRoleBadge,
+    body.sidebar-collapsed #sheetsStatusText {
+        display: none !important;
+    }
+
+    /* Show Collapsed-only elements */
+    body.sidebar-collapsed .sidebar-collapsed-only {
+        display: flex !important;
+    }
+
+    /* Header Container centered in mini mode */
+    body.sidebar-collapsed .sidebar-header-container {
+        padding: 0.875rem 0.5rem !important;
+        justify-content: center !important;
+    }
+
+    /* Mini Navigation Button Styling */
+    body.sidebar-collapsed .nav-tab-btn {
+        width: 2.875rem !important; /* 46px square squircle */
+        height: 2.875rem !important;
+        padding: 0 !important;
+        margin: 0.25rem auto !important;
+        justify-content: center !important;
+        align-items: center !important;
+        border-radius: 0.875rem !important;
+        position: relative;
+    }
+
+    body.sidebar-collapsed .nav-tab-btn i {
+        width: 1.25rem !important;
+        height: 1.25rem !important;
+        margin: 0 !important;
+    }
+
+    body.sidebar-collapsed .nav-tab-btn .perm-lock-icon {
+        position: absolute;
+        top: 3px;
+        right: 3px;
+        font-size: 9px;
+        margin: 0 !important;
+        line-height: 1;
+    }
+
+    /* Footer adjustments in mini mode */
+    body.sidebar-collapsed .sidebar-footer-container {
+        padding: 0.75rem 0.5rem !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+    }
+
+    body.sidebar-collapsed .sidebar-action-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 0.5rem !important;
+        width: 100% !important;
+        align-items: center !important;
+    }
+
+    body.sidebar-collapsed #sheetsStatusBadge,
+    body.sidebar-collapsed #btnSyncNow,
+    body.sidebar-collapsed #btnOpenSettings,
+    body.sidebar-collapsed #btnUserProfile {
+        width: 2.75rem !important;
+        height: 2.75rem !important;
+        padding: 0 !important;
+        margin: 0 auto !important;
+        justify-content: center !important;
+        align-items: center !important;
+        border-radius: 0.875rem !important;
+    }
+
+    body.sidebar-collapsed #currentUserAvatar {
+        width: 2.25rem !important;
+        height: 2.25rem !important;
+        margin: 0 !important;
+        font-size: 0.75rem !important;
+        border-radius: 9999px !important;
+    }
+
+    /* User Menu Dropdown flyout to the right in Mini Mode */
+    body.sidebar-collapsed #userMenuDropdown {
+        bottom: 0.5rem !important;
+        left: calc(100% + 0.75rem) !important;
+        right: auto !important;
+        width: 22rem !important;
+        margin-bottom: 0 !important;
+    }
+}
+
+/* Ensure #dashboardMetricCardsContainer respects .hidden cleanly across all displays */
+#dashboardMetricCardsContainer.hidden {
+    display: none !important;
+}
+
+/* Ensure hidden sidebar action grid and sync buttons are completely hidden */
+#sidebarActionGrid.hidden,
+#btnSyncNow.hidden,
+#topBtnSyncNow.hidden {
+    display: none !important;
+}
+
+/* Profile Photo Avatar Rules (Strict Fixed Dimensions & Round Aspect Ratio) */
+#currentUserAvatar {
+    width: 2rem !important;
+    height: 2rem !important;
+    min-width: 2rem !important;
+    min-height: 2rem !important;
+    max-width: 2rem !important;
+    max-height: 2rem !important;
+    border-radius: 9999px !important;
+    overflow: hidden !important;
+    flex-shrink: 0 !important;
+}
+
+#currentUserAvatar img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    border-radius: 9999px !important;
+    display: block !important;
+}
+
+#dropdownUserAvatar {
+    width: 3.5rem !important;
+    height: 3.5rem !important;
+    min-width: 3.5rem !important;
+    min-height: 3.5rem !important;
+    max-width: 3.5rem !important;
+    max-height: 3.5rem !important;
+    border-radius: 9999px !important;
+    overflow: hidden !important;
+    flex-shrink: 0 !important;
+}
+
+#dropdownUserAvatar img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    border-radius: 9999px !important;
+    display: block !important;
+}
+
+/* ======================================================== */
+/* QR & BARCODE CAMERA SCANNER STYLES                       */
+/* ======================================================== */
+#qrScannerViewport {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+#qrScannerViewport video {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    border-radius: 1rem;
+}
+
+#qrScannerViewport #qr-shaded-region {
+    border-color: rgba(15, 23, 42, 0.75) !important;
+}
+
+.qr-laser-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2.5px;
+    background: linear-gradient(90deg, transparent, #38bdf8, #60a5fa, #818cf8, transparent);
+    box-shadow: 0 0 16px 3px rgba(56, 189, 248, 0.9);
+    animation: qrScanLaser 2.2s ease-in-out infinite alternate;
+}
+
+@keyframes qrScanLaser {
+    0% {
+        top: 5%;
+        opacity: 0.35;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        top: 95%;
+        opacity: 0.35;
+    }
+}
+
+
