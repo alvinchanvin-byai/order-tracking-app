@@ -30,18 +30,12 @@ const SheetsSync = {
     onBroadcastReceived: null,  // Callback for cross-tab local updates
     onLiveSyncPulse: null,      // Callback to flash the LIVE UI badge
 
-    // Get parameters for user presence heartbeat (Admin & Manager only)
+    // Get parameters for user presence heartbeat (All Users regardless of role)
     getUserHeartbeatParams() {
         try {
             const rawUser = localStorage.getItem("order_tracker_active_user_v1");
             const user = rawUser ? JSON.parse(rawUser) : null;
             if (!user || !user.username) return "";
-            
-            // User Online តាមដានតែ Role ជា Admin និង Manager ប៉ុណ្ណោះ
-            const role = user.role || 'User';
-            if (role !== "Admin" && role !== "Manager") {
-                return "";
-            }
             
             const isMobile = (typeof window !== "undefined") && (
                 window.innerWidth < 768 || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
@@ -50,7 +44,7 @@ const SheetsSync = {
             
             return `&user=${encodeURIComponent(user.username)}` +
                    `&name=${encodeURIComponent(user.displayName || user.username)}` +
-                   `&role=${encodeURIComponent(role)}` +
+                   `&role=${encodeURIComponent(user.role || 'User')}` +
                    `&device=${encodeURIComponent(isMobile ? 'Mobile' : 'PC')}` +
                    `&tab=${encodeURIComponent(activeTab)}`;
         } catch(e) {
@@ -58,12 +52,10 @@ const SheetsSync = {
         }
     },
 
-    // Process and dispatch online users presence list (Admin & Manager only)
+    // Process and dispatch online users presence list (All Users)
     handleOnlineUsers(userList, broadcast = true) {
         if (!Array.isArray(userList)) return;
-        // Filter strictly for Admin and Manager only
-        const filtered = userList.filter(u => u && (u.role === "Admin" || u.role === "Manager"));
-        this.onlineUsers = filtered;
+        this.onlineUsers = userList;
         if (typeof this.onPresenceChange === "function") {
             this.onPresenceChange(this.onlineUsers);
         }
