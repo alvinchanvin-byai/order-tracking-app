@@ -363,33 +363,25 @@ function handleUserPresence(e) {
       var device = (e.parameter && e.parameter.device) ? String(e.parameter.device).trim() : "PC";
       var tab = (e.parameter && e.parameter.tab) ? String(e.parameter.tab).trim() : "dashboard";
       
-      // ច្បាប់: User Online តាមដានតែគណនី Role ជា Admin និង Manager ប៉ុណ្ណោះ
-      if (role === "Admin" || role === "Manager") {
-        registry[username] = {
-          username: username,
-          displayName: displayName,
-          role: role,
-          device: device,
-          tab: tab,
-          lastSeen: now
-        };
-        props.setProperty("PRESENCE_REGISTRY", JSON.stringify(registry));
-      } else if (registry[username]) {
-        delete registry[username];
-        props.setProperty("PRESENCE_REGISTRY", JSON.stringify(registry));
-      }
+      // តាមដាន User ទាំងអស់ដែលកំពុង Online ក្នុងប្រព័ន្ធ ដោយមិនកំណត់ Role
+      registry[username] = {
+        username: username,
+        displayName: displayName,
+        role: role,
+        device: device,
+        tab: tab,
+        lastSeen: now
+      };
+      props.setProperty("PRESENCE_REGISTRY", JSON.stringify(registry));
     }
 
-    // Prune entries older than 2 minutes (120,000 ms) and filter only Admin & Manager
+    // Prune entries older than 2 minutes (120,000 ms) for all active users
     var activeList = [];
     var changed = false;
     for (var u in registry) {
       if (registry.hasOwnProperty(u)) {
         var entry = registry[u];
-        if (entry.role !== "Admin" && entry.role !== "Manager") {
-          delete registry[u];
-          changed = true;
-        } else if (now - entry.lastSeen <= 120000) { // Active within last 2 minutes
+        if (now - entry.lastSeen <= 120000) { // Active within last 2 minutes
           activeList.push(entry);
         } else if (now - entry.lastSeen > 600000) { // Clean up stale records older than 10 mins
           delete registry[u];
