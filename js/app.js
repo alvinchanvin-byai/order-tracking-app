@@ -3108,21 +3108,26 @@ function toggleDashboardDateTimeMenu(event) {
             }
         }
 
-        // Dynamically position dropdown menu right below down-arrow button
+        // Dynamically position dropdown menu right below Date & Time column header
         if (btn) {
-            const rect = btn.getBoundingClientRect();
+            const btnRect = btn.getBoundingClientRect();
+            const th = document.getElementById("dashboardThDateTime");
+            const thRect = th ? th.getBoundingClientRect() : btnRect;
+
             menu.style.position = "fixed";
-            if (rect.bottom + 120 > window.innerHeight && rect.top > 120) {
-                menu.style.top = `${Math.max(10, rect.top - 105)}px`;
-            } else {
-                menu.style.top = `${rect.bottom + 6}px`;
+            const menuHeight = 125;
+            let topPos = Math.round(btnRect.bottom + 4);
+            if (btnRect.bottom + menuHeight > window.innerHeight && btnRect.top > menuHeight) {
+                topPos = Math.max(10, Math.round(btnRect.top - menuHeight - 4));
             }
+
             const menuWidth = 224;
-            let leftPos = rect.left + (rect.width / 2) - (menuWidth / 2);
-            if (leftPos < 10) leftPos = 10;
-            if (leftPos + menuWidth > window.innerWidth - 10) {
-                leftPos = window.innerWidth - menuWidth - 10;
-            }
+            let leftPos = Math.round(thRect.left);
+            const maxLeft = window.innerWidth - menuWidth - 12;
+            if (leftPos > maxLeft) leftPos = maxLeft;
+            if (leftPos < 12) leftPos = 12;
+
+            menu.style.top = `${topPos}px`;
             menu.style.left = `${leftPos}px`;
             menu.style.zIndex = "99999";
         }
@@ -4826,6 +4831,18 @@ function closeTopActiveModal() {
         return true;
     }
 
+    // 0.05 Date & Time / SO Date Sort Dropdown Menus (Esc to close)
+    const dashSortMenu = document.getElementById("dashboardDateTimeDropdownMenu");
+    if (dashSortMenu && !dashSortMenu.classList.contains("hidden")) {
+        dashSortMenu.classList.add("hidden");
+        return true;
+    }
+    const reportSortMenu = document.getElementById("reportSoDateDropdownMenu");
+    if (reportSortMenu && !reportSortMenu.classList.contains("hidden")) {
+        reportSortMenu.classList.add("hidden");
+        return true;
+    }
+
     // 0.1 Autocomplete suggestions dropdowns (Customer, Province, Khan)
     const customerList = document.getElementById("customerSuggestionsList");
     if (customerList && !customerList.classList.contains("hidden")) {
@@ -5803,21 +5820,26 @@ function toggleReportSoDateMenu(event) {
             }
         }
 
-        // Dynamically position dropdown menu right below down-arrow button
+        // Dynamically position dropdown menu right below SO Date column header
         if (btn) {
-            const rect = btn.getBoundingClientRect();
+            const btnRect = btn.getBoundingClientRect();
+            const th = btn.closest("th");
+            const thRect = th ? th.getBoundingClientRect() : btnRect;
+
             menu.style.position = "fixed";
-            if (rect.bottom + 120 > window.innerHeight && rect.top > 120) {
-                menu.style.top = `${Math.max(10, rect.top - 105)}px`;
-            } else {
-                menu.style.top = `${rect.bottom + 6}px`;
+            const menuHeight = 125;
+            let topPos = Math.round(btnRect.bottom + 4);
+            if (btnRect.bottom + menuHeight > window.innerHeight && btnRect.top > menuHeight) {
+                topPos = Math.max(10, Math.round(btnRect.top - menuHeight - 4));
             }
+
             const menuWidth = 224;
-            let leftPos = rect.left + (rect.width / 2) - (menuWidth / 2);
-            if (leftPos < 10) leftPos = 10;
-            if (leftPos + menuWidth > window.innerWidth - 10) {
-                leftPos = window.innerWidth - menuWidth - 10;
-            }
+            let leftPos = Math.round(thRect.left);
+            const maxLeft = window.innerWidth - menuWidth - 12;
+            if (leftPos > maxLeft) leftPos = maxLeft;
+            if (leftPos < 12) leftPos = 12;
+
+            menu.style.top = `${topPos}px`;
             menu.style.left = `${leftPos}px`;
             menu.style.zIndex = "99999";
         }
