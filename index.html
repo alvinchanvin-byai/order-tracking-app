@@ -271,11 +271,11 @@
 
                     <!-- 2. Information Chips Bar (Active, Permissions, Role) -->
                     <div class="grid grid-cols-3 gap-1.5 p-2.5 bg-slate-50/90 border-b border-slate-100 text-center">
-                        <div class="p-1.5 rounded-xl bg-white border border-slate-200/70 shadow-2xs">
-                            <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Active</div>
+                        <div onclick="openOnlineUsersModal()" class="p-1.5 rounded-xl bg-white border border-slate-200/70 shadow-2xs cursor-pointer hover:bg-emerald-50 hover:border-emerald-200 transition group" title="ចុចដើម្បីមើលអ្នកកំពុង Online ទាំងអស់ (Active Online Users)">
+                            <div class="text-[9px] text-slate-400 font-bold uppercase tracking-wider group-hover:text-emerald-700">Active</div>
                             <div class="text-[11px] font-extrabold text-emerald-600 flex items-center justify-center gap-1 mt-0.5">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                <span>Online</span>
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <span id="profileDropdownActiveText"><span id="profileDropdownOnlineCount">1</span> Online</span>
                             </div>
                         </div>
                         <div class="p-1.5 rounded-xl bg-white border border-slate-200/70 shadow-2xs">
@@ -290,6 +290,23 @@
 
                     <!-- 3. Actions Menu List -->
                     <div class="p-2 space-y-1">
+                        <!-- Online Users List Trigger -->
+                        <button id="dropdownItemOnlineUsers" type="button" onclick="openOnlineUsersModal()" class="w-full p-2.5 rounded-2xl hover:bg-slate-100/90 flex items-center justify-between group transition cursor-pointer text-left">
+                            <div class="flex items-center gap-2.5">
+                                <span class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition shadow-2xs">
+                                    <i data-lucide="radio" class="w-4 h-4"></i>
+                                </span>
+                                <div>
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="text-xs font-bold text-slate-800 block group-hover:text-emerald-700 transition">អ្នកកំពុង Online (Online Users)</span>
+                                        <span id="profileDropdownOnlineBadge" class="text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">1 Online</span>
+                                    </div>
+                                    <span class="text-[10px] text-slate-400 block">មើលអ្នកកំពុងប្រើប្រាស់ Web App ផ្ទាល់</span>
+                                </div>
+                            </div>
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition shrink-0"></i>
+                        </button>
+
                         <!-- Switch Account (Admin Only) -->
                         <button id="dropdownItemSwitchUser" type="button" onclick="openLoginModal()" class="w-full p-2.5 rounded-2xl hover:bg-slate-100/90 flex items-center justify-between group transition cursor-pointer text-left">
                             <div class="flex items-center gap-2.5">
@@ -355,12 +372,18 @@
                 <button id="sidebarToggleBtn" class="p-2 sm:p-2.5 rounded-2xl text-slate-700 hover:text-blue-600 hover:bg-slate-100 active:scale-95 transition border border-slate-200/90 bg-white shadow-2xs hover:shadow-xs flex items-center justify-center shrink-0 cursor-pointer" title="Toggle Sidebar (Ctrl+B)">
                     <i id="sidebarToggleIcon" data-lucide="menu" class="w-5 h-5"></i>
                 </button>
-                <div class="flex items-center gap-2.5">
+                <div class="flex items-center gap-2 sm:gap-2.5 flex-wrap">
                     <h2 id="headerCurrentPageTitle" class="font-extrabold text-base sm:text-lg text-slate-900 tracking-tight">Dashboard</h2>
                     <div id="liveSyncStatusBadge" onclick="forceCheckLiveUpdates()" class="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-2xs hover:bg-emerald-100/80 transition cursor-pointer select-none" title="Live Real-time Auto-Sync ដំណើរការ (ចុចដើម្បី Sync ភ្លាមៗ)">
                         <span id="liveSyncPulseDot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                         <span id="liveSyncStatusText">LIVE SYNC</span>
                     </div>
+                    <!-- Live Online Users Pill Badge in Header -->
+                    <button id="topBtnOnlineUsers" onclick="openOnlineUsersModal()" class="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 hover:bg-blue-100/90 border border-blue-200/80 shadow-2xs transition cursor-pointer select-none active:scale-95" title="មើលអ្នកណាខ្លះកំពុង Online លើ Web App (Active Online Users)">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <i data-lucide="users" class="w-3 h-3 text-blue-600"></i>
+                        <span id="topOnlineCountText">1 Online</span>
+                    </button>
                 </div>
             </div>
 
@@ -1374,6 +1397,7 @@
                                     <th class="py-3 px-4"># ID</th>
                                     <th class="py-3 px-4">Display Name</th>
                                     <th class="py-3 px-4">Login Username</th>
+                                    <th class="py-3 px-4">Live Status</th>
                                     <th class="py-3 px-4">Password</th>
                                     <th class="py-3 px-4">Role</th>
                                     <th class="py-3 px-4">Permission Access Right (សិទ្ធិចូល Module)</th>
@@ -2739,6 +2763,79 @@
                 <button type="button" onclick="closeMobileGuideModal()" class="px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition shadow-xs cursor-pointer">
                     យល់ព្រម (Close)
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================================================== -->
+    <!-- MODAL: ACTIVE ONLINE USERS (អ្នកកំពុង Online លើ Web App)   -->
+    <!-- ======================================================== -->
+    <div id="onlineUsersModal" class="fixed inset-0 z-[75] modal-backdrop flex items-center justify-center p-3 sm:p-4 hidden">
+        <div class="glass-modal rounded-3xl max-w-2xl w-full p-4 sm:p-6 shadow-2xl border border-slate-200/90 bg-white/95 backdrop-blur-xl animate-scale-up max-h-[90vh] flex flex-col">
+            <!-- Header -->
+            <div class="flex items-start justify-between pb-4 border-b border-slate-100 shrink-0">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/25 shrink-0">
+                        <i data-lucide="radio" class="w-5 h-5 animate-pulse"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-base sm:text-lg font-extrabold text-slate-900 tracking-tight">អ្នកកំពុង Online ក្នុងប្រព័ន្ធ</h3>
+                            <span id="modalOnlineCountBadge" class="text-xs font-black px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200">1 Online</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5">បញ្ជីអ្នកកំពុងបើកដំណើរការ Web App ផ្ទាល់ (Live Real-Time Presence)</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeOnlineUsersModal()" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer" title="បិទ (Close)">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Stats Summary Bar -->
+            <div class="grid grid-cols-3 gap-2 py-3 border-b border-slate-100 shrink-0 text-center">
+                <div class="p-2 rounded-2xl bg-emerald-50/70 border border-emerald-100/90">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">អ្នក Online សរុប</span>
+                    <span id="modalStatTotalOnline" class="text-base sm:text-xl font-black text-emerald-700 font-mono">1</span>
+                </div>
+                <div class="p-2 rounded-2xl bg-blue-50/70 border border-blue-100/90">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">កុំព្យូទ័រ (PC) 💻</span>
+                    <span id="modalStatPcOnline" class="text-base sm:text-xl font-black text-blue-700 font-mono">1</span>
+                </div>
+                <div class="p-2 rounded-2xl bg-indigo-50/70 border border-indigo-100/90">
+                    <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">ទូរស័ព្ទដៃ (Mobile) 📱</span>
+                    <span id="modalStatMobileOnline" class="text-base sm:text-xl font-black text-indigo-700 font-mono">0</span>
+                </div>
+            </div>
+
+            <!-- Online Users List Container (Scrollable) -->
+            <div class="flex-1 overflow-y-auto py-3 space-y-2.5 custom-scroll min-h-[200px]">
+                <div class="flex items-center justify-between px-1">
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">បុគ្គលិកសកម្មផ្ទាល់ (Active Now):</span>
+                    <span class="text-[11px] text-slate-400 flex items-center gap-1 font-medium">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Live Real-Time
+                    </span>
+                </div>
+                <div id="onlineUsersListContainer" class="space-y-2">
+                    <!-- Populated dynamically by JS -->
+                </div>
+            </div>
+
+            <!-- Live Status Hint & Footer Actions -->
+            <div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+                <div class="flex items-center gap-2 text-xs text-slate-500">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>Auto-sync រៀងរាល់ 3.5s (ទូរស័ព្ទ & កុំព្យូទ័រ)</span>
+                </div>
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <button type="button" onclick="refreshOnlineUsersNow()" class="flex-1 sm:flex-none px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs">
+                        <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-blue-600"></i>
+                        <span>Refresh ឥឡូវនេះ</span>
+                    </button>
+                    <button type="button" onclick="closeOnlineUsersModal()" class="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition cursor-pointer shadow-2xs">
+                        បិទ (Close)
+                    </button>
+                </div>
             </div>
         </div>
     </div>
