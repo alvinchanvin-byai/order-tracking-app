@@ -529,26 +529,76 @@ function parseAppDateTime(dateStr) {
     return isNaN(fallback.getTime()) ? null : fallback;
 }
 
-// Calculate elapsed human readable time (e.g., "15នាទី" or "1ម៉ោង 12នាទី")
+// Calculate elapsed duration strictly in hh:mm format (e.g., "00:10", "00:01", "02:14")
 function calculateDuration(startStr, endStr) {
-    if (!startStr || !endStr) return "-";
+    if (!startStr || !endStr || startStr === "-" || endStr === "-") return "-";
     const startDate = parseAppDateTime(startStr);
     const endDate = parseAppDateTime(endStr);
     if (!startDate || !endDate) return "-";
     
-    const diffSec = Math.floor((endDate.getTime() - startDate.getTime()) / 1000);
-    if (diffSec < 0) return "-";
+    const diffMs = endDate.getTime() - startDate.getTime();
+    if (diffMs < 0) return "-";
     
-    const hours = Math.floor(diffSec / 3600);
-    const mins = Math.floor((diffSec % 3600) / 60);
-    const secs = diffSec % 60;
+    let totalMinutes = Math.floor(diffMs / (1000 * 60));
+    // If completed in less than 1 min but >= 3 seconds, record as at least 00:01
+    if (totalMinutes === 0 && diffMs >= 3000) {
+        totalMinutes = 1;
+    }
     
-    if (hours > 0) {
-        return `${hours}ម៉ោង ${mins}នាទី`;
-    }
-    if (mins > 0) {
-        return `${mins}នាទី`;
-    }
-    return `${secs} វិនាទី`;
+    const hours = Math.floor(totalMinutes / 60);
+    const mins = totalMinutes % 60;
+    
+    return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
 }
+
+// Convert any duration representation (Khmer, numeric minutes, hh:mm:ss, etc.) into strict hh:mm format
+function formatDurationHhMm(val, startStr, endStr) {
+    if (startStr && endStr && String(startStr).trim() !== "" && String(endStr).trim() !== "" && startStr !== "-" && endStr !== "-") {
+        const calculated = calculateDuration(startStr, endStr);
+        if (calculated && calculated !== "-") return calculated;
+    }
+    if (!val || val === "-" || String(val).trim() === "") return "-";
+    const str = String(val).trim();
+    
+    // Check if already in hh:mm format (e.g. 00:10, 02:14)
+    const m = str.match(/^(\d{1,3}):(\d{2})(?::\d{2})?$/);
+    if (m) {
+        const h = String(parseInt(m[1], 10)).padStart(2, '0');
+        const min = String(parseInt(m[2], 10)).padStart(2, '0');
+        return `${h}:${min}`;
+    }
+    
+    // Parse Khmer or verbal duration strings like "27នាទី", "1ម៉ោង 12នាទី", "45 វិនាទី"
+    let hours = 0;
+    let mins = 0;
+    const hourMatch = str.match(/(\d+)\s*(?:ម៉ោង|h|hr|hours?)/i);
+    const minMatch = str.match(/(\d+)\s*(?:នាទី|m|min|mins?)/i);
+    const secMatch = str.match(/(\d+)\s*(?:វិនាទី|s|sec|secs?)/i);
+
+    if (hourMatch) hours = parseInt(hourMatch[1], 10);
+    if (minMatch) mins = parseInt(minMatch[1], 10);
+    if (!hourMatch && !minMatch && secMatch) {
+        const secs = parseInt(secMatch[1], 10);
+        mins = secs > 0 ? 1 : 0;
+    }
+
+    if (hourMatch || minMatch || secMatch) {
+        return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+    }
+
+    // Pure number of minutes
+    if (/^\d+$/.test(str)) {
+        const total = parseInt(str, 10);
+        const h = Math.floor(total / 60);
+        const min = total % 60;
+        return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+    }
+
+    return str;
+}
+
+window.calculateDuration = calculateDuration;
+window.calculateDurationHhMm = calculateDuration;
+window.formatDurationHhMm = formatDurationHhMm;
+
 
