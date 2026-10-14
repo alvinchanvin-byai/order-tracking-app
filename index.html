@@ -43,7 +43,7 @@
     <link rel="dns-prefetch" href="https://script.google.com">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css?v=live-v2.1">
+    <link rel="stylesheet" href="css/style.css?v=live-v2.2">
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -765,63 +765,6 @@
                 </div>
             </div>
             </div> <!-- End of dashboardOrdersTableSection -->
-
-            <!-- Floating Excel-style Dropdown Menu for Dashboard Column Date & Time Sort (ដូច SO Date) -->
-            <div id="dashboardDateTimeDropdownMenu" class="hidden fixed bg-white rounded-xl shadow-2xl border border-slate-200/90 py-1.5 w-56 z-[99999] transition-all duration-150 animate-in fade-in zoom-in-95 text-left">
-                <div class="px-3 py-1.5 border-b border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                    <span>តម្រៀប (SORT DATE & TIME)</span>
-                    <i data-lucide="arrow-up-down" class="w-3.5 h-3.5 text-slate-400"></i>
-                </div>
-                
-                <!-- Option 1: Sort A to Z -->
-                <button type="button" 
-                    id="dashboardMenuOptAsc"
-                    onclick="selectDashboardSortDirection('asc', event)"
-                    class="w-full px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 flex items-center justify-between transition cursor-pointer group">
-                    <div class="flex items-center gap-2.5">
-                        <!-- Custom Icon A/Z with Down Arrow as in Image 2 -->
-                        <div class="inline-flex items-center gap-1 w-6 h-6 justify-center flex-shrink-0 bg-slate-100/90 rounded border border-slate-200/70 group-hover:border-indigo-200 group-hover:bg-indigo-50/60 transition">
-                            <div class="flex flex-col text-[10px] font-black leading-[1.0] text-center tracking-tighter">
-                                <span class="text-sky-600 font-black">A</span>
-                                <span class="text-slate-800 font-black">Z</span>
-                            </div>
-                            <i data-lucide="arrow-down" class="w-3 h-3 text-slate-700 stroke-[2.5]"></i>
-                        </div>
-                        <div class="flex flex-col text-left">
-                            <span class="text-xs font-bold text-slate-800 group-hover:text-indigo-600"><span class="underline underline-offset-2">S</span>ort A to Z</span>
-                            <span class="text-[10px] text-slate-400">ចាស់ ➔ ថ្មី (Oldest first)</span>
-                        </div>
-                    </div>
-                    <span id="dashboardMenuCheckAsc" class="hidden text-indigo-600">
-                        <i data-lucide="check" class="w-4 h-4 stroke-[2.5]"></i>
-                    </span>
-                </button>
-
-                <!-- Option 2: Sort Z to A -->
-                <button type="button" 
-                    id="dashboardMenuOptDesc"
-                    onclick="selectDashboardSortDirection('desc', event)"
-                    class="w-full px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 flex items-center justify-between transition cursor-pointer group">
-                    <div class="flex items-center gap-2.5">
-                        <!-- Custom Icon Z/A with Down Arrow as in Image 2 -->
-                        <div class="inline-flex items-center gap-1 w-6 h-6 justify-center flex-shrink-0 bg-slate-100/90 rounded border border-slate-200/70 group-hover:border-indigo-200 group-hover:bg-indigo-50/60 transition">
-                            <div class="flex flex-col text-[10px] font-black leading-[1.0] text-center tracking-tighter">
-                                <span class="text-slate-800 font-black">Z</span>
-                                <span class="text-sky-600 font-black">A</span>
-                            </div>
-                            <i data-lucide="arrow-down" class="w-3 h-3 text-slate-700 stroke-[2.5]"></i>
-                        </div>
-                        <div class="flex flex-col text-left">
-                            <span class="text-xs font-bold text-slate-800 group-hover:text-indigo-600">S<span class="underline underline-offset-2">o</span>rt Z to A</span>
-                            <span class="text-[10px] text-slate-400">ថ្មី ➔ ចាស់ (Newest first)</span>
-                        </div>
-                    </div>
-                    <span id="dashboardMenuCheckDesc" class="hidden text-indigo-600">
-                        <i data-lucide="check" class="w-4 h-4 stroke-[2.5]"></i>
-                    </span>
-                </button>
-            </div>
-
         </section>
 
         <!-- ======================================================== -->
@@ -1128,62 +1071,6 @@
                 <div id="reportPaginationContainer" class="px-4 sm:px-6 py-3.5 border-t border-slate-200/90 bg-slate-50/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600 transition-all">
                     <!-- Populated dynamically by renderReportPagination() -->
                 </div>
-            </div>
-
-            <!-- Floating Excel-style Dropdown Menu for Column SO Date Sort (ដូចរូបទី២) -->
-            <div id="reportSoDateDropdownMenu" class="hidden fixed bg-white rounded-xl shadow-2xl border border-slate-200/90 py-1.5 w-56 z-[99999] transition-all duration-150 animate-in fade-in zoom-in-95 text-left">
-                <div class="px-3 py-1.5 border-b border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                    <span>តម្រៀប (Sort SO Date)</span>
-                    <i data-lucide="arrow-up-down" class="w-3.5 h-3.5 text-slate-400"></i>
-                </div>
-                
-                <!-- Option 1: Sort A to Z -->
-                <button type="button" 
-                    id="reportMenuOptAsc"
-                    onclick="selectReportSortDirection('asc')"
-                    class="w-full px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 flex items-center justify-between transition cursor-pointer group">
-                    <div class="flex items-center gap-2.5">
-                        <!-- Custom Icon A/Z with Down Arrow as in Image 2 -->
-                        <div class="inline-flex items-center gap-1 w-6 h-6 justify-center flex-shrink-0 bg-slate-100/90 rounded border border-slate-200/70 group-hover:border-indigo-200 group-hover:bg-indigo-50/60 transition">
-                            <div class="flex flex-col text-[10px] font-black leading-[1.0] text-center tracking-tighter">
-                                <span class="text-sky-600 font-black">A</span>
-                                <span class="text-slate-800 font-black">Z</span>
-                            </div>
-                            <i data-lucide="arrow-down" class="w-3 h-3 text-slate-700 stroke-[2.5]"></i>
-                        </div>
-                        <div class="flex flex-col text-left">
-                            <span class="text-xs font-bold text-slate-800 group-hover:text-indigo-600"><span class="underline underline-offset-2">S</span>ort A to Z</span>
-                            <span class="text-[10px] text-slate-400">ចាស់ ➔ ថ្មី (Oldest first)</span>
-                        </div>
-                    </div>
-                    <span id="reportMenuCheckAsc" class="hidden text-indigo-600">
-                        <i data-lucide="check" class="w-4 h-4 stroke-[2.5]"></i>
-                    </span>
-                </button>
-
-                <!-- Option 2: Sort Z to A -->
-                <button type="button" 
-                    id="reportMenuOptDesc"
-                    onclick="selectReportSortDirection('desc')"
-                    class="w-full px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 flex items-center justify-between transition cursor-pointer group">
-                    <div class="flex items-center gap-2.5">
-                        <!-- Custom Icon Z/A with Down Arrow as in Image 2 -->
-                        <div class="inline-flex items-center gap-1 w-6 h-6 justify-center flex-shrink-0 bg-slate-100/90 rounded border border-slate-200/70 group-hover:border-indigo-200 group-hover:bg-indigo-50/60 transition">
-                            <div class="flex flex-col text-[10px] font-black leading-[1.0] text-center tracking-tighter">
-                                <span class="text-slate-800 font-black">Z</span>
-                                <span class="text-sky-600 font-black">A</span>
-                            </div>
-                            <i data-lucide="arrow-down" class="w-3 h-3 text-slate-700 stroke-[2.5]"></i>
-                        </div>
-                        <div class="flex flex-col text-left">
-                            <span class="text-xs font-bold text-slate-800 group-hover:text-indigo-600">S<span class="underline underline-offset-2">o</span>rt Z to A</span>
-                            <span class="text-[10px] text-slate-400">ថ្មី ➔ ចាស់ (Newest first)</span>
-                        </div>
-                    </div>
-                    <span id="reportMenuCheckDesc" class="hidden text-indigo-600">
-                        <i data-lucide="check" class="w-4 h-4 stroke-[2.5]"></i>
-                    </span>
-                </button>
             </div>
         </section>
 
@@ -2844,9 +2731,117 @@
         </div>
     </div>
 
+    <!-- Floating Excel-style Dropdown Menu for Dashboard Column Date & Time Sort -->
+    <div id="dashboardDateTimeDropdownMenu" class="hidden fixed bg-white rounded-xl shadow-2xl border border-slate-200/90 py-1.5 w-56 z-[99999] transition-all duration-150 animate-in fade-in zoom-in-95 text-left">
+        <div class="px-3 py-1.5 border-b border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            <span>តម្រៀប (SORT DATE & TIME)</span>
+            <i data-lucide="arrow-up-down" class="w-3.5 h-3.5 text-slate-400"></i>
+        </div>
+        
+        <!-- Option 1: Sort A to Z -->
+        <button type="button" 
+            id="dashboardMenuOptAsc"
+            onclick="selectDashboardSortDirection('asc', event)"
+            class="w-full px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 flex items-center justify-between transition cursor-pointer group">
+            <div class="flex items-center gap-2.5">
+                <div class="inline-flex items-center gap-1 w-6 h-6 justify-center flex-shrink-0 bg-slate-100/90 rounded border border-slate-200/70 group-hover:border-indigo-200 group-hover:bg-indigo-50/60 transition">
+                    <div class="flex flex-col text-[10px] font-black leading-[1.0] text-center tracking-tighter">
+                        <span class="text-sky-600 font-black">A</span>
+                        <span class="text-slate-800 font-black">Z</span>
+                    </div>
+                    <i data-lucide="arrow-down" class="w-3 h-3 text-slate-700 stroke-[2.5]"></i>
+                </div>
+                <div class="flex flex-col text-left">
+                    <span class="text-xs font-bold text-slate-800 group-hover:text-indigo-600"><span class="underline underline-offset-2">S</span>ort A to Z</span>
+                    <span class="text-[10px] text-slate-400">ចាស់ ➔ ថ្មី (Oldest first)</span>
+                </div>
+            </div>
+            <span id="dashboardMenuCheckAsc" class="hidden text-indigo-600">
+                <i data-lucide="check" class="w-4 h-4 stroke-[2.5]"></i>
+            </span>
+        </button>
+
+        <!-- Option 2: Sort Z to A -->
+        <button type="button" 
+            id="dashboardMenuOptDesc"
+            onclick="selectDashboardSortDirection('desc', event)"
+            class="w-full px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 flex items-center justify-between transition cursor-pointer group">
+            <div class="flex items-center gap-2.5">
+                <div class="inline-flex items-center gap-1 w-6 h-6 justify-center flex-shrink-0 bg-slate-100/90 rounded border border-slate-200/70 group-hover:border-indigo-200 group-hover:bg-indigo-50/60 transition">
+                    <div class="flex flex-col text-[10px] font-black leading-[1.0] text-center tracking-tighter">
+                        <span class="text-slate-800 font-black">Z</span>
+                        <span class="text-sky-600 font-black">A</span>
+                    </div>
+                    <i data-lucide="arrow-down" class="w-3 h-3 text-slate-700 stroke-[2.5]"></i>
+                </div>
+                <div class="flex flex-col text-left">
+                    <span class="text-xs font-bold text-slate-800 group-hover:text-indigo-600">S<span class="underline underline-offset-2">o</span>rt Z to A</span>
+                    <span class="text-[10px] text-slate-400">ថ្មី ➔ ចាស់ (Newest first)</span>
+                </div>
+            </div>
+            <span id="dashboardMenuCheckDesc" class="hidden text-indigo-600">
+                <i data-lucide="check" class="w-4 h-4 stroke-[2.5]"></i>
+            </span>
+        </button>
+    </div>
+
+    <!-- Floating Excel-style Dropdown Menu for Column SO Date Sort -->
+    <div id="reportSoDateDropdownMenu" class="hidden fixed bg-white rounded-xl shadow-2xl border border-slate-200/90 py-1.5 w-56 z-[99999] transition-all duration-150 animate-in fade-in zoom-in-95 text-left">
+        <div class="px-3 py-1.5 border-b border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            <span>តម្រៀប (Sort SO Date)</span>
+            <i data-lucide="arrow-up-down" class="w-3.5 h-3.5 text-slate-400"></i>
+        </div>
+        
+        <!-- Option 1: Sort A to Z -->
+        <button type="button" 
+            id="reportMenuOptAsc"
+            onclick="selectReportSortDirection('asc')"
+            class="w-full px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 flex items-center justify-between transition cursor-pointer group">
+            <div class="flex items-center gap-2.5">
+                <div class="inline-flex items-center gap-1 w-6 h-6 justify-center flex-shrink-0 bg-slate-100/90 rounded border border-slate-200/70 group-hover:border-indigo-200 group-hover:bg-indigo-50/60 transition">
+                    <div class="flex flex-col text-[10px] font-black leading-[1.0] text-center tracking-tighter">
+                        <span class="text-sky-600 font-black">A</span>
+                        <span class="text-slate-800 font-black">Z</span>
+                    </div>
+                    <i data-lucide="arrow-down" class="w-3 h-3 text-slate-700 stroke-[2.5]"></i>
+                </div>
+                <div class="flex flex-col text-left">
+                    <span class="text-xs font-bold text-slate-800 group-hover:text-indigo-600"><span class="underline underline-offset-2">S</span>ort A to Z</span>
+                    <span class="text-[10px] text-slate-400">ចាស់ ➔ ថ្មី (Oldest first)</span>
+                </div>
+            </div>
+            <span id="reportMenuCheckAsc" class="hidden text-indigo-600">
+                <i data-lucide="check" class="w-4 h-4 stroke-[2.5]"></i>
+            </span>
+        </button>
+
+        <!-- Option 2: Sort Z to A -->
+        <button type="button" 
+            id="reportMenuOptDesc"
+            onclick="selectReportSortDirection('desc')"
+            class="w-full px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-indigo-600 flex items-center justify-between transition cursor-pointer group">
+            <div class="flex items-center gap-2.5">
+                <div class="inline-flex items-center gap-1 w-6 h-6 justify-center flex-shrink-0 bg-slate-100/90 rounded border border-slate-200/70 group-hover:border-indigo-200 group-hover:bg-indigo-50/60 transition">
+                    <div class="flex flex-col text-[10px] font-black leading-[1.0] text-center tracking-tighter">
+                        <span class="text-slate-800 font-black">Z</span>
+                        <span class="text-sky-600 font-black">A</span>
+                    </div>
+                    <i data-lucide="arrow-down" class="w-3 h-3 text-slate-700 stroke-[2.5]"></i>
+                </div>
+                <div class="flex flex-col text-left">
+                    <span class="text-xs font-bold text-slate-800 group-hover:text-indigo-600">S<span class="underline underline-offset-2">o</span>rt Z to A</span>
+                    <span class="text-[10px] text-slate-400">ថ្មី ➔ ចាស់ (Newest first)</span>
+                </div>
+            </div>
+            <span id="reportMenuCheckDesc" class="hidden text-indigo-600">
+                <i data-lucide="check" class="w-4 h-4 stroke-[2.5]"></i>
+            </span>
+        </button>
+    </div>
+
     <!-- App Core Scripts -->
-    <script src="js/data.js?v=live-v2.1"></script>
-    <script src="js/sheets-sync.js?v=live-v2.1"></script>
-    <script src="js/app.js?v=live-v2.1"></script>
+    <script src="js/data.js?v=live-v2.2"></script>
+    <script src="js/sheets-sync.js?v=live-v2.2"></script>
+    <script src="js/app.js?v=live-v2.2"></script>
 </body>
 </html>
