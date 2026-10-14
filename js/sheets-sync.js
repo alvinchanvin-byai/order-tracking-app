@@ -33,6 +33,9 @@ const SheetsSync = {
     // Get parameters for user presence heartbeat (All Users regardless of role)
     getUserHeartbeatParams() {
         try {
+            if (typeof AppState !== "undefined" && AppState.isLoggedOut) {
+                return "";
+            }
             const rawUser = localStorage.getItem("order_tracker_active_user_v1");
             const user = rawUser ? JSON.parse(rawUser) : null;
             if (!user || !user.username) return "";
@@ -66,11 +69,40 @@ const SheetsSync = {
 
     // Explicitly notify server when user logs out
     async logoutPresence(username) {
-        if (!this.isConfigured() || !username) return;
+        if (!username) return;
+        const normUser = String(username).trim().toLowerCase();
+
+        // 1. Immediately remove from local memory
+        this.onlineUsers = (this.onlineUsers || []).filter(u => 
+            !u.username || u.username.toLowerCase() !== normUser
+        );
+
+        // 2. Immediately notify local UI callback
+        if (typeof this.onPresenceChange === "function") {
+            this.onPresenceChange(this.onlineUsers);
+        }
+
+        // 3. Broadcast to all open tabs on this browser
+        this.broadcast("USER_LOGOUT", { username: normUser });
+        this.broadcast("PRESENCE_SYNC", { onlineUsers: this.onlineUsers });
+
+        // 4. Send network request to Google Apps Script
+        if (!this.isConfigured()) return;
+        const url = `${this.getApiUrl()}?action=logout_presence&user=${encodeURIComponent(normUser)}&_t=${Date.now()}`;
         try {
-            const url = `${this.getApiUrl()}?action=logout_presence&user=${encodeURIComponent(username)}&_t=${Date.now()}`;
-            fetch(url, { method: "GET", mode: "cors", cache: "no-store" });
-        } catch(e) {}
+            await fetch(url, { 
+                method: "GET", 
+                mode: "cors", 
+                cache: "no-store",
+                keepalive: true 
+            });
+        } catch(e) {
+            if (typeof navigator !== "undefined" && navigator.sendBeacon) {
+                try {
+                    navigator.sendBeacon(url);
+                } catch(err) {}
+            }
+        }
     },
 
     // Get configured Web App URL
@@ -159,6 +191,15 @@ const SheetsSync = {
 
     handleBroadcastMessage(msg) {
         if (!msg || msg.senderId === this.clientId) return;
+        if (msg.type === "USER_LOGOUT" && msg.payload && msg.payload.username) {
+            const outUser = String(msg.payload.username).toLowerCase();
+            this.onlineUsers = (this.onlineUsers || []).filter(u => 
+                !u.username || u.username.toLowerCase() !== outUser
+            );
+            if (typeof this.onPresenceChange === "function") {
+                this.onPresenceChange(this.onlineUsers);
+            }
+        }
         if (msg.type === "PRESENCE_SYNC" && msg.payload && msg.payload.onlineUsers) {
             this.handleOnlineUsers(msg.payload.onlineUsers, false);
         }
