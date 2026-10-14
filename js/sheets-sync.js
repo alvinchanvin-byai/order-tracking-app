@@ -517,6 +517,19 @@ const SheetsSync = {
         }
     },
 
+    // Clean Sheet Headers (ដកអក្សរខ្មែរ) and Format Duration columns to hh:mm
+    async cleanSheetHeadersAndDurations() {
+        if (!this.isConfigured()) return { success: false, message: "Google Sheet មិនទាន់ភ្ជាប់ទេ" };
+        try {
+            const url = `${this.getApiUrl()}?action=clean_sheet&_t=${Date.now()}`;
+            const res = await fetch(url, { method: "GET", mode: "cors" });
+            const data = await res.json();
+            return { success: data.status === "success", result: data };
+        } catch(e) {
+            return { success: false, error: e.message };
+        }
+    },
+
     // Queue failed requests to localStorage
     queuePayload(payload) {
         try {
