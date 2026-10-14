@@ -30,12 +30,18 @@ const SheetsSync = {
     onBroadcastReceived: null,  // Callback for cross-tab local updates
     onLiveSyncPulse: null,      // Callback to flash the LIVE UI badge
 
-    // Get parameters for user presence heartbeat
+    // Get parameters for user presence heartbeat (Admin & Manager only)
     getUserHeartbeatParams() {
         try {
             const rawUser = localStorage.getItem("order_tracker_active_user_v1");
             const user = rawUser ? JSON.parse(rawUser) : null;
             if (!user || !user.username) return "";
+            
+            // User Online តាមដានតែ Role ជា Admin និង Manager ប៉ុណ្ណោះ
+            const role = user.role || 'User';
+            if (role !== "Admin" && role !== "Manager") {
+                return "";
+            }
             
             const isMobile = (typeof window !== "undefined") && (
                 window.innerWidth < 768 || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
@@ -44,7 +50,7 @@ const SheetsSync = {
             
             return `&user=${encodeURIComponent(user.username)}` +
                    `&name=${encodeURIComponent(user.displayName || user.username)}` +
-                   `&role=${encodeURIComponent(user.role || 'User')}` +
+                   `&role=${encodeURIComponent(role)}` +
                    `&device=${encodeURIComponent(isMobile ? 'Mobile' : 'PC')}` +
                    `&tab=${encodeURIComponent(activeTab)}`;
         } catch(e) {
@@ -52,10 +58,12 @@ const SheetsSync = {
         }
     },
 
-    // Process and dispatch online users presence list
+    // Process and dispatch online users presence list (Admin & Manager only)
     handleOnlineUsers(userList, broadcast = true) {
         if (!Array.isArray(userList)) return;
-        this.onlineUsers = userList;
+        // Filter strictly for Admin and Manager only
+        const filtered = userList.filter(u => u && (u.role === "Admin" || u.role === "Manager"));
+        this.onlineUsers = filtered;
         if (typeof this.onPresenceChange === "function") {
             this.onPresenceChange(this.onlineUsers);
         }
