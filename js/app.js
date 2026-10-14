@@ -7822,6 +7822,26 @@ function renderCurrentUserProfile() {
         dashTableSection.classList.toggle("hidden", !canViewDashboardTable);
     }
 
+    // 8. Online Button & Modal Permission: Only Admin and Manager can open the modal to view online list
+    const canViewOnlineModal = user && (user.role === "Admin" || user.role === "Manager");
+    const topOnlineBtn = document.getElementById("topBtnOnlineUsers");
+    if (topOnlineBtn) {
+        if (canViewOnlineModal) {
+            topOnlineBtn.classList.remove("cursor-default", "opacity-80");
+            topOnlineBtn.classList.add("cursor-pointer");
+            topOnlineBtn.title = "មើលអ្នកណាខ្លះកំពុង Online លើ Web App (ចុចដើម្បីមើល)";
+        } else {
+            topOnlineBtn.classList.remove("cursor-pointer");
+            topOnlineBtn.classList.add("cursor-default", "opacity-80");
+            topOnlineBtn.title = "ចំនួនអ្នកកំពុង Online សរុប (សិទ្ធិចុចមើលលម្អិតសម្រាប់តែ Admin & Manager)";
+        }
+    }
+
+    const dropdownOnlineItem = document.getElementById("dropdownItemOnlineUsers");
+    if (dropdownOnlineItem) {
+        dropdownOnlineItem.classList.toggle("hidden", !canViewOnlineModal);
+    }
+
     renderNavbarPermissions();
     if (window.lucide) lucide.createIcons();
 }
@@ -8328,22 +8348,22 @@ function getTabFriendlyName(tab) {
 
 function updateOnlineUsersPresence(userList = null) {
     if (Array.isArray(userList)) {
-        AppState.onlineUsers = userList.filter(u => u && (u.role === "Admin" || u.role === "Manager"));
+        AppState.onlineUsers = userList;
     }
 
     const currentU = getCurrentUser();
     const isMobile = (window.innerWidth < 768 || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent));
     
-    // Ensure current active user session is merged into the list ONLY IF they are Admin or Manager
-    let displayList = (AppState.onlineUsers || []).filter(u => u && (u.role === "Admin" || u.role === "Manager"));
-    if (currentU && currentU.username && (currentU.role === "Admin" || currentU.role === "Manager")) {
+    // Ensure current active user session is merged into the list regardless of role
+    let displayList = [...(AppState.onlineUsers || [])];
+    if (currentU && currentU.username) {
         const existingIdx = displayList.findIndex(u => 
             u.username && u.username.toLowerCase() === currentU.username.toLowerCase()
         );
         const myEntry = {
             username: currentU.username,
             displayName: currentU.displayName || currentU.username,
-            role: currentU.role,
+            role: currentU.role || "User",
             device: isMobile ? "Mobile" : "PC",
             tab: AppState.currentTab || "dashboard",
             lastSeen: Date.now(),
@@ -8399,14 +8419,12 @@ function renderOnlineUsersList() {
     const container = document.getElementById("onlineUsersListContainer");
     if (!container) return;
 
-    // Filter strictly for Admin and Manager only
-    const list = (AppState.onlineUsers || []).filter(u => u && (u.role === "Admin" || u.role === "Manager"));
+    const list = AppState.onlineUsers || [];
     if (list.length === 0) {
         container.innerHTML = `
             <div class="p-6 text-center text-slate-400 bg-slate-50/70 rounded-2xl border border-dashed border-slate-200">
-                <i data-lucide="shield-check" class="w-8 h-8 mx-auto text-slate-300 mb-2"></i>
-                <p class="text-xs font-semibold">មិនទាន់មាន Admin ឬ Manager ណា Online នៅឡើយទេ</p>
-                <p class="text-[11px] text-slate-400 mt-1">ប្រព័ន្ធតាមដានតែគណនី Role: Admin & Manager</p>
+                <i data-lucide="users" class="w-8 h-8 mx-auto text-slate-300 mb-2"></i>
+                <p class="text-xs font-semibold">មិនទាន់មានអ្នកប្រើប្រាស់ Online នៅឡើយទេ</p>
             </div>
         `;
         lucide.createIcons();
@@ -8498,6 +8516,22 @@ function renderOnlineUsersList() {
 }
 
 function openOnlineUsersModal() {
+    // សិទ្ធិចូលមើលផ្ទាំង Online Users: អនុញ្ញាតតែ Role: Admin និង Manager ប៉ុណ្ណោះ
+    const currentU = getCurrentUser();
+    const canViewOnlineList = currentU && (currentU.role === "Admin" || currentU.role === "Manager");
+    if (!canViewOnlineList) {
+        if (typeof Swal !== "undefined") {
+            Swal.fire({
+                icon: "info",
+                title: "សិទ្ធិមើលបញ្ជីអ្នក Online 🔒",
+                text: "មានតែគណនី Role: Admin និង Manager ប៉ុណ្ណោះដែលអាចបើកមើលផ្ទាំងអ្នក Online លម្អិតបាន។",
+                confirmButtonColor: "#2563eb",
+                confirmButtonText: "យល់ព្រម"
+            });
+        }
+        return;
+    }
+
     const modal = document.getElementById("onlineUsersModal");
     if (!modal) return;
     
@@ -8607,33 +8641,25 @@ function renderUserSetupTable() {
             ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800 border border-blue-200 inline-flex items-center gap-1">💼 Manager</span>`
             : `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200 inline-flex items-center gap-1">👤 User</span>`;
 
-        // Live Presence Status (Admin & Manager only)
-        let liveStatusBadge = "";
-        if (u.role !== "Admin" && u.role !== "Manager") {
-            liveStatusBadge = `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] text-slate-400 bg-slate-50 border border-slate-200/80" title="មិនតាមដាន Online សម្រាប់ Role User">
-                <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
-                <span>User Role</span>
-            </span>`;
-        } else {
-            const onlineEntry = (AppState.onlineUsers || []).find(o => 
-                (o.username && u.username && o.username.toLowerCase() === u.username.toLowerCase())
-            );
-            const isOnline = !!onlineEntry || (isCurrent && (currentU && (currentU.role === "Admin" || currentU.role === "Manager")));
-            const deviceType = onlineEntry ? onlineEntry.device : (isCurrent ? ((window.innerWidth < 768 || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)) ? 'Mobile' : 'PC') : 'PC');
-            const activeTab = onlineEntry ? (onlineEntry.tab || 'dashboard') : (isCurrent ? AppState.currentTab : '');
-            const tabTitle = getTabFriendlyName(activeTab);
+        // Live Presence Status (All Roles)
+        const onlineEntry = (AppState.onlineUsers || []).find(o => 
+            (o.username && u.username && o.username.toLowerCase() === u.username.toLowerCase())
+        );
+        const isOnline = !!onlineEntry || isCurrent;
+        const deviceType = onlineEntry ? onlineEntry.device : (isCurrent ? ((window.innerWidth < 768 || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)) ? 'Mobile' : 'PC') : 'PC');
+        const activeTab = onlineEntry ? (onlineEntry.tab || 'dashboard') : (isCurrent ? AppState.currentTab : '');
+        const tabTitle = getTabFriendlyName(activeTab);
 
-            liveStatusBadge = isOnline
-                ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/90 shadow-2xs">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span>Online</span>
-                    <span class="text-[10px] text-slate-400 font-medium">(${deviceType === 'Mobile' ? '📱 Mobile' : '💻 PC'}${tabTitle ? ' • ' + tabTitle : ''})</span>
-                   </span>`
-                : `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-50 text-slate-400 border border-slate-200/70">
-                    <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
-                    <span>Offline</span>
-                   </span>`;
-        }
+        const liveStatusBadge = isOnline
+            ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/90 shadow-2xs">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Online</span>
+                <span class="text-[10px] text-slate-400 font-medium">(${deviceType === 'Mobile' ? '📱 Mobile' : '💻 PC'}${tabTitle ? ' • ' + tabTitle : ''})</span>
+               </span>`
+            : `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-50 text-slate-400 border border-slate-200/70">
+                <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                <span>Offline</span>
+               </span>`;
 
         // Permission Badges
         const perms = u.role === "Admin" 
