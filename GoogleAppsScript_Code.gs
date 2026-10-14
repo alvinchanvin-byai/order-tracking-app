@@ -34,60 +34,60 @@ const SHEET_PACKAGE = "Package Type";
 const SHEET_DOCUMENT = "Document Type";
 const SHEET_USER = "User Management";
 
-// 1. Column Definitions for "Tracking" (29 Columns)
+// 1. Column Definitions for "Tracking" (30 Columns)
 const HEADERS_TRACKING = [
-  "Timestamp (កាលបរិច្ឆេទបង្កើត)",       // Col A (1)
-  "SO# (លេខបញ្ជាទិញ)",                    // Col B (2) [Unique Key]
-  "Customer Name (ឈ្មោះអតិថិជន)",          // Col C (3)
-  "City/Province (រាជធានី/ខេត្ត)",         // Col D (4)
-  "Khan (ខណ្ឌ/ស្រុក)",                     // Col E (5)
-  "Packing List# (លេខ Packing List)",     // Col F (6)
-  "Invoice# (លេខ Invoice)",               // Col G (7)
-  "Invoice Amount (ចំនួនទឹកប្រាក់)",        // Col H (8)
-  "Currency (រូបិយប័ណ្ណ)",                 // Col I (9)
-  "Total Package# (ចំនួនកញ្ចប់)",          // Col J (10)
-  "Package Unit (ខ្នាត)",                  // Col K (11)
-  "BU (Business Unit)",                   // Col L (12)
-  "Document Type (ប្រភេទឯកសារ)",           // Col M (13)
-  "Special Notes (ចំណាំពិសេស)",            // Col N (14)
-  "Overall Status (ស្ថានភាពរួម)",          // Col O (15)
-  "Picking Start Time (ចាប់ផ្ដើម Picking)",// Col P (16)
-  "Picking End Time (បញ្ចប់ Picking)",     // Col Q (17)
-  "Picking Duration (រយៈពេល Picking)",     // Col R (18)
-  "Checking Start Time (ចាប់ផ្ដើម Checking)", // Col S (19)
-  "Checking End Time (បញ្ចប់ Checking)",   // Col T (20)
-  "Checking Duration (រយៈពេល Checking)",   // Col U (21)
-  "Delivery Start Time (ចាប់ផ្ដើម Delivery)", // Col V (22)
-  "Delivery End Time (បញ្ចប់ Delivery)",   // Col W (23)
-  "Delivery Duration (រយៈពេល Delivery)",   // Col X (24)
-  "Last Updated (កាលបរិច្ឆេទកែប្រែចុងក្រោយ)", // Col Y (25)
-  "Created by (អ្នកបង្កើត)",               // Col Z (26)
-  "Picker by (អ្នករៀបចំ)",                 // Col AA (27)
-  "Checker by (អ្នកត្រួតពិនិត្យ)",          // Col AB (28)
-  "Delivery by (អ្នកដឹកជញ្ជូន)",           // Col AC (29)
-  "Delivery Notes (កំណត់សម្គាល់ Delivery)" // Col AD (30)
+  "Timestamp",            // Col A (1)
+  "SO#",                  // Col B (2) [Unique Key]
+  "Customer Name",        // Col C (3)
+  "City/Province",        // Col D (4)
+  "Khan",                 // Col E (5)
+  "Packing List#",        // Col F (6)
+  "Invoice#",             // Col G (7)
+  "Amount",               // Col H (8)
+  "Currency",             // Col I (9)
+  "Total Package#",       // Col J (10)
+  "Package Unit",         // Col K (11)
+  "BU",                   // Col L (12)
+  "Document Type",        // Col M (13)
+  "Special Notes",        // Col N (14)
+  "Overall Status",       // Col O (15)
+  "Picking Start Time",   // Col P (16)
+  "Picking End Time",     // Col Q (17)
+  "Picking Duration",     // Col R (18)
+  "Checking Start Time",  // Col S (19)
+  "Checking End Time",    // Col T (20)
+  "Checking Duration",    // Col U (21)
+  "Delivery Start Time",  // Col V (22)
+  "Delivery End Time",    // Col W (23)
+  "Delivery Duration",    // Col X (24)
+  "Last Updated",         // Col Y (25)
+  "Created by",           // Col Z (26)
+  "Picker by",            // Col AA (27)
+  "Checker by",           // Col AB (28)
+  "Delivery by",          // Col AC (29)
+  "Delivery Notes"        // Col AD (30)
 ];
 
 // 2. Column Definitions for "Customer Information"
 const HEADERS_CUSTOMER = [
   "Customer ID",
-  "Customer Name (ឈ្មោះអតិថិជន)",
-  "City/Province (រាជធានី/ខេត្ត)",
-  "Khan (ខណ្ឌ/ស្រុក)",
+  "Customer Name",
+  "City/Province",
+  "Khan",
   "Last Updated"
 ];
 
 // 3. Column Definitions for "BU"
 const HEADERS_BU = [
   "BU ID",
-  "BU Name (ឈ្មោះ Business Unit)",
+  "BU Name",
   "Last Updated"
 ];
 
 // 4. Column Definitions for "Package Type"
 const HEADERS_PACKAGE = [
   "Package ID",
-  "Package Type Name (ឈ្មោះប្រភេទកញ្ចប់)",
+  "Package Type Name",
   "Short Code",
   "Last Updated"
 ];
@@ -95,18 +95,18 @@ const HEADERS_PACKAGE = [
 // 5. Column Definitions for "Document Type"
 const HEADERS_DOCUMENT = [
   "Document ID",
-  "Document Type Name (ប្រភេទឯកសារ)",
+  "Document Type Name",
   "Last Updated"
 ];
 
 // 6. Column Definitions for "User Management" (Setup Users & Permissions)
 const HEADERS_USER = [
   "User ID",
-  "Display Name (ឈ្មោះបង្ហាញ)",
-  "Login Username (ឈ្មោះគណនី)",
-  "Password (ពាក្យសម្ងាត់)",
-  "Role (តួនាទី)",
-  "Permission Access Right (សិទ្ធិចូល Module)",
+  "Display Name",
+  "Login Username",
+  "Password",
+  "Role",
+  "Permission Access Right",
   "Last Updated"
 ];
 
@@ -116,6 +116,7 @@ const HEADERS_USER = [
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu("🚀 Order Tracking")
+    .addItem("✨ Clean Headers & Durations (ដកអក្សរខ្មែរ & Format hh:mm)", "cleanAndFormatAllHeadersAndDurations")
     .addItem("⚡ Setup All 6 Sheets (បង្កើត & រៀបចំ Sheet ទាំង ៦)", "setupAllSheets")
     .addItem("🔄 Format Tracking Sheet Headers", "setupTrackingHeaders")
     .addToUi();
@@ -175,38 +176,44 @@ function formatSheetHeader(sheet, colCount) {
 }
 
 /**
- * បង្កើត និង រៀបចំ Sheet ទាំង ៥ ដោយស្វ័យប្រវត្តិ
+ * បង្កើត និង រៀបចំ Sheet ទាំង ៦ ដោយស្វ័យប្រវត្តិ
  */
 function setupAllSheets() {
   var ss = getSpreadsheet();
   
   // 1. Tracking Sheet
   var trackSheet = getOrCreateSheet(SHEET_TRACKING, HEADERS_TRACKING);
+  trackSheet.getRange(1, 1, 1, HEADERS_TRACKING.length).setValues([HEADERS_TRACKING]);
+  formatSheetHeader(trackSheet, HEADERS_TRACKING.length);
   
   // 2. Customer Information Sheet
   var custSheet = getOrCreateSheet(SHEET_CUSTOMER, HEADERS_CUSTOMER);
+  custSheet.getRange(1, 1, 1, HEADERS_CUSTOMER.length).setValues([HEADERS_CUSTOMER]);
+  formatSheetHeader(custSheet, HEADERS_CUSTOMER.length);
   if (custSheet.getLastRow() <= 1) {
     var seedCustomers = [
-      ["CUST-001", "Calmette Hospital (មន្ទីរពេទ្យកាល់ម៉ែត)", "Phnom Penh", "ខណ្ឌដូនពេញ (Daun Penh)", getNowString()],
-      ["CUST-002", "DKSH Cambodia Ltd", "Phnom Penh", "ខណ្ឌពោធិ៍សែនជ័យ (Pou Senchey)", getNowString()],
-      ["CUST-003", "Chip Mong Retail / Supermarket", "Phnom Penh", "ខណ្ឌសែនសុខ (Sen Sok)", getNowString()],
-      ["CUST-004", "Phsar Leu Distribution Center", "Siem Reap", "ក្រុងសៀមរាប (Siem Reap City)", getNowString()],
-      ["CUST-005", "Aeon Mall Logistics Center", "Phnom Penh", "ខណ្ឌចំការមន (Chamkarmon)", getNowString()],
-      ["CUST-006", "Royal Phnom Penh Hospital", "Phnom Penh", "ខណ្ឌទួលគោក (Tuol Kouk)", getNowString()],
-      ["CUST-007", "Sunrise Japan Hospital", "Phnom Penh", "ខណ្ឌជ្រោយចង្វារ (Chroy Changvar)", getNowString()]
+      ["CUST-001", "Calmette Hospital", "Phnom Penh", "Daun Penh", getNowString()],
+      ["CUST-002", "DKSH Cambodia Ltd", "Phnom Penh", "Pou Senchey", getNowString()],
+      ["CUST-003", "Chip Mong Retail / Supermarket", "Phnom Penh", "Sen Sok", getNowString()],
+      ["CUST-004", "Phsar Leu Distribution Center", "Siem Reap", "Siem Reap City", getNowString()],
+      ["CUST-005", "Aeon Mall Logistics Center", "Phnom Penh", "Chamkarmon", getNowString()],
+      ["CUST-006", "Royal Phnom Penh Hospital", "Phnom Penh", "Tuol Kouk", getNowString()],
+      ["CUST-007", "Sunrise Japan Hospital", "Phnom Penh", "Chroy Changvar", getNowString()]
     ];
     custSheet.getRange(2, 1, seedCustomers.length, HEADERS_CUSTOMER.length).setValues(seedCustomers);
   }
   
   // 3. BU Sheet
   var buSheet = getOrCreateSheet(SHEET_BU, HEADERS_BU);
+  buSheet.getRange(1, 1, 1, HEADERS_BU.length).setValues([HEADERS_BU]);
+  formatSheetHeader(buSheet, HEADERS_BU.length);
   if (buSheet.getLastRow() <= 1) {
     var seedBUs = [
-      ["BU-001", "Healthcare & Pharma (សុខាភិបាល)", getNowString()],
-      ["BU-002", "Consumer Goods / FMCG (ទំនិញប្រើប្រាស់)", getNowString()],
-      ["BU-003", "Industrial & Chemicals (ឧស្សាហកម្ម)", getNowString()],
-      ["BU-004", "Agri-Business & Food (កសិកម្ម & អាហារ)", getNowString()],
-      ["BU-005", "Technology & Equipment (បច្ចេកវិទ្យា)", getNowString()],
+      ["BU-001", "Healthcare & Pharma", getNowString()],
+      ["BU-002", "Consumer Goods / FMCG", getNowString()],
+      ["BU-003", "Industrial & Chemicals", getNowString()],
+      ["BU-004", "Agri-Business & Food", getNowString()],
+      ["BU-005", "Technology & Equipment", getNowString()],
       ["BU-006", "General Logistics & Supply Chain", getNowString()]
     ];
     buSheet.getRange(2, 1, seedBUs.length, HEADERS_BU.length).setValues(seedBUs);
@@ -214,36 +221,42 @@ function setupAllSheets() {
   
   // 4. Package Type Sheet
   var pkgSheet = getOrCreateSheet(SHEET_PACKAGE, HEADERS_PACKAGE);
+  pkgSheet.getRange(1, 1, 1, HEADERS_PACKAGE.length).setValues([HEADERS_PACKAGE]);
+  formatSheetHeader(pkgSheet, HEADERS_PACKAGE.length);
   if (pkgSheet.getLastRow() <= 1) {
     var seedPkgs = [
-      ["PKG-001", "Carton (កេស)", "Ctns", getNowString()],
-      ["PKG-002", "Pallet (ប៉ាឡែត)", "Plts", getNowString()],
-      ["PKG-003", "Bag (បាវ/ថង់)", "Bags", getNowString()],
-      ["PKG-004", "Box (ប្រអប់)", "Boxes", getNowString()],
-      ["PKG-005", "Bundle (បាច់/ដុំ)", "Bdls", getNowString()],
-      ["PKG-006", "Drum (ធុង/Barrel)", "Drums", getNowString()],
-      ["PKG-007", "Crate (កន្ត្រក/ទ្រុង)", "Crts", getNowString()]
+      ["PKG-001", "Carton", "Ctns", getNowString()],
+      ["PKG-002", "Pallet", "Plts", getNowString()],
+      ["PKG-003", "Bag", "Bags", getNowString()],
+      ["PKG-004", "Box", "Boxes", getNowString()],
+      ["PKG-005", "Bundle", "Bdls", getNowString()],
+      ["PKG-006", "Drum", "Drums", getNowString()],
+      ["PKG-007", "Crate", "Crts", getNowString()]
     ];
     pkgSheet.getRange(2, 1, seedPkgs.length, HEADERS_PACKAGE.length).setValues(seedPkgs);
   }
   
   // 5. Document Type Sheet
   var docSheet = getOrCreateSheet(SHEET_DOCUMENT, HEADERS_DOCUMENT);
+  docSheet.getRange(1, 1, 1, HEADERS_DOCUMENT.length).setValues([HEADERS_DOCUMENT]);
+  formatSheetHeader(docSheet, HEADERS_DOCUMENT.length);
   if (docSheet.getLastRow() <= 1) {
     var seedDocs = [
-      ["DOC-001", "Tax Invoice (វិក្កយបត្រពន្ធ)", getNowString()],
-      ["DOC-002", "Commercial Invoice (វិក្កយបត្រពាណិជ្ជកម្ម)", getNowString()],
-      ["DOC-003", "Delivery Order / DO (ប័ណ្ណប្រគល់ទំនិញ)", getNowString()],
-      ["DOC-004", "Packing List (បញ្ជីរាយទំនិញ)", getNowString()],
-      ["DOC-005", "Inter-Warehouse Transfer (ប័ណ្ណផ្ទេរឃ្លាំង)", getNowString()],
-      ["DOC-006", "Cash Sale Slip (វិក្កយបត្រលក់សាច់ប្រាក់)", getNowString()],
-      ["DOC-007", "Consignment Note (ប័ណ្ណទំនិញផ្ញើលក់)", getNowString()]
+      ["DOC-001", "Tax Invoice", getNowString()],
+      ["DOC-002", "Commercial Invoice", getNowString()],
+      ["DOC-003", "Delivery Order / DO", getNowString()],
+      ["DOC-004", "Packing List", getNowString()],
+      ["DOC-005", "Inter-Warehouse Transfer", getNowString()],
+      ["DOC-006", "Cash Sale Slip", getNowString()],
+      ["DOC-007", "Consignment Note", getNowString()]
     ];
     docSheet.getRange(2, 1, seedDocs.length, HEADERS_DOCUMENT.length).setValues(seedDocs);
   }
   
   // 6. User Management Sheet
   var userSheet = getOrCreateSheet(SHEET_USER, HEADERS_USER);
+  userSheet.getRange(1, 1, 1, HEADERS_USER.length).setValues([HEADERS_USER]);
+  formatSheetHeader(userSheet, HEADERS_USER.length);
   if (userSheet.getLastRow() <= 1) {
     var seedUsers = [
       ["USR-001", "System Administrator", "admin", "123", "Admin", "dashboard, register, picking, checking, delivery, setup", getNowString()],
@@ -263,6 +276,171 @@ function setupTrackingHeaders() {
   var sheet = getOrCreateSheet(SHEET_TRACKING, HEADERS_TRACKING);
   sheet.getRange(1, 1, 1, HEADERS_TRACKING.length).setValues([HEADERS_TRACKING]);
   formatSheetHeader(sheet, HEADERS_TRACKING.length);
+}
+
+/**
+ * បង្កើត និង កែសម្រួល Header គ្រប់ Sheet ទាំងអស់ទៅជាភាសាអង់គ្លេសសុទ្ធ (ដកអក្សរខ្មែរ)
+ * និង កែសម្រួលទិន្នន័យ Duration ក្នុង Tracking Sheet ទៅជាទម្រង់ hh:mm (00:10, 00:01, 02:14...)
+ */
+function cleanAndFormatAllHeadersAndDurations() {
+  var ss = getSpreadsheet();
+  
+  // 1. Update Headers for all 6 sheets
+  var sheetsDef = [
+    { name: SHEET_TRACKING, headers: HEADERS_TRACKING },
+    { name: SHEET_CUSTOMER, headers: HEADERS_CUSTOMER },
+    { name: SHEET_BU, headers: HEADERS_BU },
+    { name: SHEET_PACKAGE, headers: HEADERS_PACKAGE },
+    { name: SHEET_DOCUMENT, headers: HEADERS_DOCUMENT },
+    { name: SHEET_USER, headers: HEADERS_USER }
+  ];
+
+  sheetsDef.forEach(function(item) {
+    var sheet = ss.getSheetByName(item.name);
+    if (sheet) {
+      sheet.getRange(1, 1, 1, item.headers.length).setValues([item.headers]);
+      formatSheetHeader(sheet, item.headers.length);
+    }
+  });
+
+  // 2. Format Duration Columns in "Tracking" Sheet
+  var trackSheet = ss.getSheetByName(SHEET_TRACKING);
+  var updatedCount = 0;
+  if (trackSheet) {
+    var lastRow = trackSheet.getLastRow();
+    if (lastRow > 1) {
+      var numRows = lastRow - 1;
+      var range = trackSheet.getRange(2, 16, numRows, 9);
+      var vals = range.getValues();
+      var changed = false;
+
+      var colPairs = [
+        { sIdx: 0, eIdx: 1, dIdx: 2 }, // Picking: Start=col 16 (idx 0), End=col 17 (idx 1), Dur=col 18 (idx 2)
+        { sIdx: 3, eIdx: 4, dIdx: 5 }, // Checking: Start=col 19 (idx 3), End=col 20 (idx 4), Dur=col 21 (idx 5)
+        { sIdx: 6, eIdx: 7, dIdx: 8 }  // Delivery: Start=col 22 (idx 6), End=col 23 (idx 7), Dur=col 24 (idx 8)
+      ];
+
+      for (var r = 0; r < numRows; r++) {
+        colPairs.forEach(function(c) {
+          var curVal = vals[r][c.dIdx];
+          var startVal = vals[r][c.sIdx];
+          var endVal = vals[r][c.eIdx];
+
+          if (curVal !== "" && curVal !== null && curVal !== undefined && String(curVal).trim() !== "-") {
+            var formatted = formatDurationGAS(curVal, startVal, endVal);
+            if (formatted && formatted !== "-" && formatted !== String(curVal).trim()) {
+              vals[r][c.dIdx] = asTextDate(formatted);
+              updatedCount++;
+              changed = true;
+            }
+          } else if (startVal && endVal && String(startVal).trim() !== "" && String(endVal).trim() !== "" && String(startVal) !== "-" && String(endVal) !== "-") {
+            var formatted = formatDurationGAS("", startVal, endVal);
+            if (formatted && formatted !== "-") {
+              vals[r][c.dIdx] = asTextDate(formatted);
+              updatedCount++;
+              changed = true;
+            }
+          }
+        });
+      }
+
+      if (changed) {
+        range.setValues(vals);
+      }
+
+      // Ensure Plain Text format for duration columns
+      try {
+        trackSheet.getRange(2, 18, numRows, 1).setNumberFormat("@");
+        trackSheet.getRange(2, 21, numRows, 1).setNumberFormat("@");
+        trackSheet.getRange(2, 24, numRows, 1).setNumberFormat("@");
+      } catch(e) {}
+    }
+  }
+
+  markDataUpdated();
+  return {
+    status: "success",
+    message: "Headers cleaned to pure English & Durations formatted to hh:mm",
+    updatedDurations: updatedCount
+  };
+}
+
+/**
+ * Helper ជំនួយការ Parse Date string ទៅជា Date object
+ */
+function parseDateTimeGAS(dateStr) {
+  if (!dateStr || dateStr === "-") return null;
+  if (dateStr instanceof Date) return dateStr;
+  var s = String(dateStr).trim();
+  if (s.charAt(0) === "'") s = s.substring(1);
+  
+  var m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+  if (m) {
+    var day = parseInt(m[1], 10);
+    var month = parseInt(m[2], 10) - 1;
+    var year = parseInt(m[3], 10);
+    if (year < 100) year += 2000;
+    var hours = m[4] ? parseInt(m[4], 10) : 0;
+    var mins = m[5] ? parseInt(m[5], 10) : 0;
+    var secs = m[6] ? parseInt(m[6], 10) : 0;
+    return new Date(year, month, day, hours, mins, secs);
+  }
+  var clean = s.indexOf("-") > -1 ? s.replace(" ", "T") : s;
+  var parsed = new Date(clean);
+  return isNaN(parsed.getTime()) ? null : parsed;
+}
+
+/**
+ * Helper ជំនួយការ Convert Duration ទៅជាទម្រង់ hh:mm (00:10, 00:01, 02:14...)
+ */
+function formatDurationGAS(val, startStr, endStr) {
+  if (startStr && endStr && String(startStr).trim() !== "" && String(endStr).trim() !== "" && startStr !== "-" && endStr !== "-") {
+    var d1 = parseDateTimeGAS(startStr);
+    var d2 = parseDateTimeGAS(endStr);
+    if (d1 && d2) {
+      var diffMs = d2.getTime() - d1.getTime();
+      if (diffMs >= 0) {
+        var totalMin = Math.floor(diffMs / (1000 * 60));
+        if (totalMin === 0 && diffMs >= 3000) totalMin = 1;
+        var h = Math.floor(totalMin / 60);
+        var m = totalMin % 60;
+        return (h < 10 ? "0" + h : "" + h) + ":" + (m < 10 ? "0" + m : "" + m);
+      }
+    }
+  }
+  if (!val || val === "-" || String(val).trim() === "") return "-";
+  var s = String(val).trim();
+  if (s.charAt(0) === "'") s = s.substring(1);
+  
+  var m1 = s.match(/^(\d{1,3}):(\d{2})(?::\d{2})?$/);
+  if (m1) {
+    var h = parseInt(m1[1], 10);
+    var m = parseInt(m1[2], 10);
+    return (h < 10 ? "0" + h : "" + h) + ":" + (m < 10 ? "0" + m : "" + m);
+  }
+  
+  var hours = 0;
+  var mins = 0;
+  var hMatch = s.match(/(\d+)\s*(?:ម៉ោង|h|hr|hours?)/i);
+  var mMatch = s.match(/(\d+)\s*(?:នាទី|m|min|mins?)/i);
+  var sMatch = s.match(/(\d+)\s*(?:វិនាទី|s|sec|secs?)/i);
+  if (hMatch) hours = parseInt(hMatch[1], 10);
+  if (mMatch) mins = parseInt(mMatch[1], 10);
+  if (!hMatch && !mMatch && sMatch) {
+    mins = parseInt(sMatch[1], 10) > 0 ? 1 : 0;
+  }
+  if (hMatch || mMatch || sMatch) {
+    return (hours < 10 ? "0" + hours : "" + hours) + ":" + (mins < 10 ? "0" + mins : "" + mins);
+  }
+  
+  if (/^\d+$/.test(s)) {
+    var tot = parseInt(s, 10);
+    var hh = Math.floor(tot / 60);
+    var mm = tot % 60;
+    return (hh < 10 ? "0" + hh : "" + hh) + ":" + (mm < 10 ? "0" + mm : "" + mm);
+  }
+  
+  return s;
 }
 
 /**
@@ -442,6 +620,12 @@ function doGet(e) {
       });
     }
 
+    // Explicit Clean Sheet Action (សម្អាត Header ដកអក្សរខ្មែរ & Format Duration ទៅជា hh:mm)
+    if (action === "clean_sheet") {
+      var cleanRes = cleanAndFormatAllHeadersAndDurations();
+      return createJsonResponse(cleanRes);
+    }
+
     var ss = getSpreadsheet();
     // Only execute heavy setup if explicitly requested or if Tracking sheet is missing
     if (action === "setup" || !ss.getSheetByName(SHEET_TRACKING)) {
@@ -450,6 +634,13 @@ function doGet(e) {
     
     // 1. Fetch Orders from "Tracking"
     var trackSheet = getOrCreateSheet(SHEET_TRACKING, HEADERS_TRACKING);
+    // Auto-check if old Khmer headers still exist in row 1, if so auto-clean and migrate
+    try {
+      var firstHdr = trackSheet.getRange(1, 1).getValue();
+      if (String(firstHdr).indexOf("(") > -1) {
+        cleanAndFormatAllHeadersAndDurations();
+      }
+    } catch(eClean) {}
     var lastRow = trackSheet.getLastRow();
     var orders = [];
     if (lastRow > 1) {
@@ -520,13 +711,13 @@ function doGet(e) {
           })(),
           pickingStartTime: formatDateTimeGAS(row[15]),
           pickingEndTime: formatDateTimeGAS(row[16]),
-          pickingDuration: String(row[17] || "-"),
+          pickingDuration: formatDurationGAS(row[17], row[15], row[16]),
           checkingStartTime: formatDateTimeGAS(row[18]),
           checkingEndTime: formatDateTimeGAS(row[19]),
-          checkingDuration: String(row[20] || "-"),
+          checkingDuration: formatDurationGAS(row[20], row[18], row[19]),
           deliveryStartTime: formatDateTimeGAS(row[21]),
           deliveryEndTime: formatDateTimeGAS(row[22]),
-          deliveryDuration: String(row[23] || "-"),
+          deliveryDuration: formatDurationGAS(row[23], row[21], row[22]),
           lastUpdated: formatDateTimeGAS(row[24]),
           createdBy: String(row[25] || ""),
           pickerBy: String(row[26] || ""),
@@ -700,13 +891,13 @@ function doPost(e) {
         order.status || "Registered",
         asTextDate(order.pickingStartTime || ""),
         asTextDate(order.pickingEndTime || ""),
-        order.pickingDuration || "-",
+        order.pickingDuration && order.pickingDuration !== "-" ? asTextDate(formatDurationGAS(order.pickingDuration, order.pickingStartTime, order.pickingEndTime)) : "-",
         asTextDate(order.checkingStartTime || ""),
         asTextDate(order.checkingEndTime || ""),
-        order.checkingDuration || "-",
+        order.checkingDuration && order.checkingDuration !== "-" ? asTextDate(formatDurationGAS(order.checkingDuration, order.checkingStartTime, order.checkingEndTime)) : "-",
         asTextDate(order.deliveryStartTime || ""),
         asTextDate(order.deliveryEndTime || ""),
-        order.deliveryDuration || "-",
+        order.deliveryDuration && order.deliveryDuration !== "-" ? asTextDate(formatDurationGAS(order.deliveryDuration, order.deliveryStartTime, order.deliveryEndTime)) : "-",
         asTextDate(nowFormatted),
         order.createdBy || "",
         order.pickerBy || "",
@@ -751,7 +942,9 @@ function doPost(e) {
         if (payload.pickerBy) sheet.getRange(rowIndex, 27).setValue(payload.pickerBy);
       } else if (stage === "PICKING_END") {
         sheet.getRange(rowIndex, 17).setValue(asTextDate(time));
-        if (duration) sheet.getRange(rowIndex, 18).setValue(duration);
+        var pStart = sheet.getRange(rowIndex, 16).getValue();
+        var pDur = duration ? formatDurationGAS(duration, pStart, time) : "";
+        if (pDur && pDur !== "-") sheet.getRange(rowIndex, 18).setValue(asTextDate(pDur));
         sheet.getRange(rowIndex, 15).setValue(newStatus || "Waiting Checking");
         if (payload.pickerBy) sheet.getRange(rowIndex, 27).setValue(payload.pickerBy);
       } else if (stage === "CHECKING_START") {
@@ -760,7 +953,9 @@ function doPost(e) {
         if (payload.checkerBy) sheet.getRange(rowIndex, 28).setValue(payload.checkerBy);
       } else if (stage === "CHECKING_END") {
         sheet.getRange(rowIndex, 20).setValue(asTextDate(time));
-        if (duration) sheet.getRange(rowIndex, 21).setValue(duration);
+        var cStart = sheet.getRange(rowIndex, 19).getValue();
+        var cDur = duration ? formatDurationGAS(duration, cStart, time) : "";
+        if (cDur && cDur !== "-") sheet.getRange(rowIndex, 21).setValue(asTextDate(cDur));
         sheet.getRange(rowIndex, 15).setValue(newStatus || "Waiting Delivery");
         if (payload.checkerBy) sheet.getRange(rowIndex, 28).setValue(payload.checkerBy);
       } else if (stage === "DELIVERY_START") {
@@ -771,7 +966,9 @@ function doPost(e) {
         if (payload.deliveryBy) sheet.getRange(rowIndex, 29).setValue(payload.deliveryBy);
       } else if (stage === "DELIVERY_END") {
         sheet.getRange(rowIndex, 23).setValue(asTextDate(time));
-        if (duration) sheet.getRange(rowIndex, 24).setValue(duration);
+        var dStart = sheet.getRange(rowIndex, 22).getValue();
+        var dDur = duration ? formatDurationGAS(duration, dStart, time) : "";
+        if (dDur && dDur !== "-") sheet.getRange(rowIndex, 24).setValue(asTextDate(dDur));
         sheet.getRange(rowIndex, 15).setValue(newStatus || "Success");
         if (payload.deliveryBy) sheet.getRange(rowIndex, 29).setValue(payload.deliveryBy);
       }
