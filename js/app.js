@@ -21,6 +21,7 @@ const AppState = {
         users: []
     },
     currentUser: null,
+    onlineUsers: [], // Real-time active users presence list
     currentSetupSubTab: "customer",
     highlightedOrders: new Set(),
     highlightColor: null,
@@ -629,6 +630,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setupSheetsStatusCallback();
     applyColumnVisibility();
     renderCurrentUserProfile();
+    updateOnlineUsersPresence();
     updateKpiCardsVisibility();
     renderAll(true);
     startLiveTimers();
@@ -1859,6 +1861,11 @@ function setupSheetsStatusCallback() {
         pulseLiveSyncBadge(false);
     };
 
+    // Live User Presence Callback (triggered when online users list updates)
+    SheetsSync.onPresenceChange = (users) => {
+        updateOnlineUsersPresence(users);
+    };
+
     if (SheetsSync.isConfigured()) {
         SheetsSync.updateStatusBadge("online", "Google Sheets: Connected");
         SheetsSync.startLivePolling();
@@ -1917,6 +1924,10 @@ function applyLiveServerUpdate(fullData) {
             setupChanged = true; 
         }
         if (setupChanged) setupDropdownOptions();
+    }
+
+    if (fullData.onlineUsers && Array.isArray(fullData.onlineUsers)) {
+        updateOnlineUsersPresence(fullData.onlineUsers);
     }
 
     if (hasOrderChanges) {
@@ -2180,6 +2191,10 @@ function showOnlyView(viewName) {
             }
         }
     });
+
+    if (typeof updateOnlineUsersPresence === "function") {
+        updateOnlineUsersPresence();
+    }
 }
 
 // Helper to control 6 KPI Cards visibility:
@@ -8246,6 +8261,13 @@ function loginUser(user) {
         const firstAllowed = allModules.find(m => hasUserPermission(m)) || "dashboard";
         switchNavbarModule(firstAllowed);
     }
+
+    if (typeof updateOnlineUsersPresence === "function") {
+        updateOnlineUsersPresence();
+    }
+    if (window.SheetsSync && SheetsSync.isConfigured()) {
+        SheetsSync.checkUpdates(true);
+    }
 }
 
 function logoutCurrentUser() {
@@ -8262,12 +8284,254 @@ function logoutCurrentUser() {
         confirmButtonColor: "#ef4444"
     }).then(res => {
         if (res.isConfirmed) {
+            const user = getCurrentUser();
+            if (user && user.username && window.SheetsSync) {
+                SheetsSync.logoutPresence(user.username);
+            }
             AppState.currentUser = null;
             localStorage.removeItem(STORAGE_ACTIVE_USER);
+            if (user && user.username) {
+                AppState.onlineUsers = (AppState.onlineUsers || []).filter(u => 
+                    !u.username || u.username.toLowerCase() !== user.username.toLowerCase()
+                );
+            }
+            updateOnlineUsersPresence();
             openLoginModal();
         }
     });
 }
+
+// ========================================================
+// ONLINE USERS PRESENCE ENGINE (អ្នកកំពុង Online ផ្ទាល់)
+// ========================================================
+function getTabFriendlyName(tab) {
+    const map = {
+        "dashboard": "Dashboard (ទំព័រដើម)",
+        "register": "1. Register Order",
+        "picking": "2. Physical Picking",
+        "checking": "3. Physical Checking",
+        "delivery": "4. Delivery",
+        "incompleted-delivery": "5. Incomplete Delivery",
+        "report": "6. Report",
+        "setup": "7. Setup (ការកំណត់)"
+    };
+    return map[tab] || tab || "Dashboard";
+}
+
+function updateOnlineUsersPresence(userList = null) {
+    if (Array.isArray(userList)) {
+        AppState.onlineUsers = userList;
+    }
+
+    const currentU = getCurrentUser();
+    const isMobile = (window.innerWidth < 768 || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent));
+    
+    // Ensure current active user session is always merged into the list
+    let displayList = [...(AppState.onlineUsers || [])];
+    if (currentU && currentU.username) {
+        const existingIdx = displayList.findIndex(u => 
+            u.username && u.username.toLowerCase() === currentU.username.toLowerCase()
+        );
+        const myEntry = {
+            username: currentU.username,
+            displayName: currentU.displayName || currentU.username,
+            role: currentU.role || "User",
+            device: isMobile ? "Mobile" : "PC",
+            tab: AppState.currentTab || "dashboard",
+            lastSeen: Date.now(),
+            isSelf: true
+        };
+        if (existingIdx >= 0) {
+            displayList[existingIdx] = { ...displayList[existingIdx], ...myEntry };
+        } else {
+            displayList.unshift(myEntry);
+        }
+    }
+
+    AppState.onlineUsers = displayList;
+    const totalCount = displayList.length;
+    const pcCount = displayList.filter(u => (u.device || '').toLowerCase() === 'pc').length;
+    const mobileCount = displayList.filter(u => (u.device || '').toLowerCase() === 'mobile').length;
+
+    // 1. Update Header Pill
+    const topOnlineText = document.getElementById("topOnlineCountText");
+    if (topOnlineText) {
+        topOnlineText.textContent = `${totalCount} Online`;
+    }
+
+    // 2. Update Profile Dropdown Badges & Active Chip
+    const dropdownActiveText = document.getElementById("profileDropdownActiveText");
+    const dropdownOnlineCount = document.getElementById("profileDropdownOnlineCount");
+    const dropdownOnlineBadge = document.getElementById("profileDropdownOnlineBadge");
+    if (dropdownOnlineCount) dropdownOnlineCount.textContent = totalCount;
+    if (dropdownActiveText) dropdownActiveText.innerHTML = `<span id="profileDropdownOnlineCount">${totalCount}</span> Online`;
+    if (dropdownOnlineBadge) dropdownOnlineBadge.textContent = `${totalCount} Online`;
+
+    // 3. Update Modal Stats
+    const modalOnlineBadge = document.getElementById("modalOnlineCountBadge");
+    const modalTotal = document.getElementById("modalStatTotalOnline");
+    const modalPc = document.getElementById("modalStatPcOnline");
+    const modalMobile = document.getElementById("modalStatMobileOnline");
+    if (modalOnlineBadge) modalOnlineBadge.textContent = `${totalCount} Online`;
+    if (modalTotal) modalTotal.textContent = totalCount;
+    if (modalPc) modalPc.textContent = pcCount;
+    if (modalMobile) modalMobile.textContent = mobileCount;
+
+    // 4. Render Modal List if container exists
+    renderOnlineUsersList();
+
+    // 5. Update User Management Table if visible
+    const userTableBody = document.getElementById("userTableBody");
+    if (userTableBody && AppState.currentTab === "setup" && AppState.currentSetupSubTab === "user") {
+        renderUserSetupTable();
+    }
+}
+
+function renderOnlineUsersList() {
+    const container = document.getElementById("onlineUsersListContainer");
+    if (!container) return;
+
+    const list = AppState.onlineUsers || [];
+    if (list.length === 0) {
+        container.innerHTML = `
+            <div class="p-6 text-center text-slate-400 bg-slate-50/70 rounded-2xl border border-dashed border-slate-200">
+                <i data-lucide="users" class="w-8 h-8 mx-auto text-slate-300 mb-2"></i>
+                <p class="text-xs font-semibold">មិនទាន់មានអ្នកប្រើប្រាស់ Online នៅឡើយទេ</p>
+            </div>
+        `;
+        lucide.createIcons();
+        return;
+    }
+
+    const currentU = getCurrentUser();
+
+    container.innerHTML = list.map(u => {
+        const isSelf = (currentU && u.username && u.username.toLowerCase() === currentU.username.toLowerCase()) || u.isSelf;
+        const initial = (u.displayName || u.username || 'U').charAt(0).toUpperCase();
+        
+        // Find matching setup user for photo or extra info if available
+        const setupUser = (AppState.setup.users || []).find(su => 
+            su.username && u.username && su.username.toLowerCase() === u.username.toLowerCase()
+        );
+        const photoUrl = (setupUser && setupUser.photoUrl) || (isSelf && currentU && currentU.photoUrl) || null;
+
+        const roleBadge = u.role === "Admin"
+            ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-purple-100 text-purple-800 border border-purple-200 shrink-0">👑 Admin</span>`
+            : u.role === "Manager"
+            ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-100 text-blue-800 border border-blue-200 shrink-0">💼 Manager</span>`
+            : `<span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-slate-100 text-slate-700 border border-slate-200 shrink-0">👤 User</span>`;
+
+        const isMobile = (u.device || '').toLowerCase() === 'mobile';
+        const deviceBadge = isMobile
+            ? `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200/80 shrink-0">
+                <i data-lucide="smartphone" class="w-3 h-3 text-indigo-600"></i>
+                <span>Mobile (ទូរស័ព្ទ)</span>
+               </span>`
+            : `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200/80 shrink-0">
+                <i data-lucide="monitor" class="w-3 h-3 text-blue-600"></i>
+                <span>PC (កុំព្យូទ័រ)</span>
+               </span>`;
+
+        const tabTitle = getTabFriendlyName(u.tab || 'dashboard');
+
+        // Time ago
+        let timeText = "សកម្មពេលនេះ (Active now)";
+        if (u.lastSeen && !isSelf) {
+            const diffSec = Math.max(0, Math.floor((Date.now() - u.lastSeen) / 1000));
+            if (diffSec < 10) timeText = "សកម្មពេលនេះ";
+            else if (diffSec < 60) timeText = `${diffSec} វិនាទីមុន`;
+            else timeText = `${Math.floor(diffSec / 60)} នាទីមុន`;
+        }
+
+        const avatarHtml = photoUrl
+            ? `<img src="${photoUrl}" alt="${escapeHtml(u.displayName || u.username)}" class="w-10 h-10 rounded-full object-cover ring-2 ring-emerald-500/80 shadow-xs shrink-0">`
+            : `<div class="w-10 h-10 rounded-full bg-gradient-to-tr from-slate-700 to-slate-900 text-white flex items-center justify-center text-xs font-black ring-2 ring-emerald-500/80 shadow-xs uppercase shrink-0">${initial}</div>`;
+
+        return `
+            <div class="p-3 rounded-2xl border ${isSelf ? 'border-emerald-200 bg-emerald-50/40 ring-1 ring-emerald-300/40' : 'border-slate-200/80 bg-white hover:bg-slate-50/80'} shadow-2xs transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="relative shrink-0">
+                        ${avatarHtml}
+                        <span class="w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white absolute -bottom-0.5 -right-0.5 flex items-center justify-center">
+                            <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                        </span>
+                    </div>
+                    <div class="min-w-0">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="text-xs sm:text-sm font-extrabold text-slate-900 truncate">${escapeHtml(u.displayName || u.username)}</span>
+                            ${isSelf ? '<span class="px-1.5 py-0.2 rounded-full text-[9px] font-black bg-emerald-600 text-white">You (ឧបករណ៍នេះ)</span>' : ''}
+                            ${roleBadge}
+                        </div>
+                        <div class="flex items-center gap-2 mt-0.5 text-xs text-slate-500">
+                            <span class="font-mono text-slate-400">@${escapeHtml(u.username)}</span>
+                            <span class="text-slate-300">•</span>
+                            <span class="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                ${timeText}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2 flex-wrap self-end sm:self-center shrink-0">
+                    ${deviceBadge}
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                        <i data-lucide="layers" class="w-3 h-3 text-slate-500"></i>
+                        <span>${tabTitle}</span>
+                    </span>
+                </div>
+            </div>
+        `;
+    }).join("");
+
+    lucide.createIcons();
+}
+
+function openOnlineUsersModal() {
+    const modal = document.getElementById("onlineUsersModal");
+    if (!modal) return;
+    
+    // Close sidebar profile dropdown if open
+    const dd = document.getElementById("userMenuDropdown");
+    if (dd) dd.classList.add("hidden");
+
+    updateOnlineUsersPresence();
+    modal.classList.remove("hidden");
+    lucide.createIcons();
+
+    // Trigger an immediate heartbeat check with cloud to get latest list
+    if (window.SheetsSync && SheetsSync.isConfigured()) {
+        SheetsSync.checkUpdates(true);
+    }
+}
+
+function closeOnlineUsersModal() {
+    const modal = document.getElementById("onlineUsersModal");
+    if (modal) modal.classList.add("hidden");
+}
+
+async function refreshOnlineUsersNow() {
+    if (!window.SheetsSync || !SheetsSync.isConfigured()) {
+        updateOnlineUsersPresence();
+        if (typeof showToast === "function") showToast("ដំណើរការ Offline (អ្នកប្រើប្រាស់នៅលើ Browser នេះ)", "info");
+        return;
+    }
+
+    try {
+        if (typeof showToast === "function") showToast("កំពុង Update បញ្ជីអ្នក Online...", "info");
+        await SheetsSync.checkUpdates(true);
+        updateOnlineUsersPresence();
+        if (typeof showToast === "function") showToast("បាន Update បញ្ជីអ្នក Online រួចរាល់!", "success");
+    } catch(e) {
+        updateOnlineUsersPresence();
+    }
+}
+
+window.openOnlineUsersModal = openOnlineUsersModal;
+window.closeOnlineUsersModal = closeOnlineUsersModal;
+window.refreshOnlineUsersNow = refreshOnlineUsersNow;
+window.updateOnlineUsersPresence = updateOnlineUsersPresence;
+window.getTabFriendlyName = getTabFriendlyName;
 
 function navigateToUserManagement() {
     const dd = document.getElementById("userMenuDropdown");
@@ -8311,7 +8575,7 @@ function renderUserSetupTable() {
     if (filtered.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="8" class="text-center py-8 text-slate-400">
+                <td colspan="9" class="text-center py-8 text-slate-400">
                     <div class="flex flex-col items-center gap-2">
                         <i data-lucide="shield-alert" class="w-8 h-8 text-slate-300"></i>
                         <span class="text-xs">មិនមានអ្នកប្រើប្រាស់ដែលត្រូវនឹងការស្វែងរកឡើយ</span>
@@ -8326,12 +8590,32 @@ function renderUserSetupTable() {
     const currentU = getCurrentUser();
 
     tbody.innerHTML = filtered.map(u => {
-        const isCurrent = currentU && (currentU.id === u.id || currentU.username === u.username);
+        const isCurrent = currentU && (currentU.id === u.id || (currentU.username && u.username && currentU.username.toLowerCase() === u.username.toLowerCase()));
         const roleBadge = u.role === "Admin" 
             ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-100 text-purple-800 border border-purple-200 inline-flex items-center gap-1">👑 Admin</span>`
             : u.role === "Manager"
             ? `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800 border border-blue-200 inline-flex items-center gap-1">💼 Manager</span>`
             : `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-700 border border-slate-200 inline-flex items-center gap-1">👤 User</span>`;
+
+        // Live Presence Status
+        const onlineEntry = (AppState.onlineUsers || []).find(o => 
+            (o.username && u.username && o.username.toLowerCase() === u.username.toLowerCase())
+        );
+        const isOnline = !!onlineEntry || isCurrent;
+        const deviceType = onlineEntry ? onlineEntry.device : (isCurrent ? ((window.innerWidth < 768 || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)) ? 'Mobile' : 'PC') : 'PC');
+        const activeTab = onlineEntry ? (onlineEntry.tab || 'dashboard') : (isCurrent ? AppState.currentTab : '');
+        const tabTitle = getTabFriendlyName(activeTab);
+
+        const liveStatusBadge = isOnline
+            ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/90 shadow-2xs">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Online</span>
+                <span class="text-[10px] text-slate-400 font-medium">(${deviceType === 'Mobile' ? '📱 Mobile' : '💻 PC'}${tabTitle ? ' • ' + tabTitle : ''})</span>
+               </span>`
+            : `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-50 text-slate-400 border border-slate-200/70">
+                <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+                <span>Offline</span>
+               </span>`;
 
         // Permission Badges
         const perms = u.role === "Admin" 
@@ -8383,6 +8667,7 @@ function renderUserSetupTable() {
                 <td class="py-3 px-4 font-mono font-semibold text-slate-700 text-xs">
                     <span class="text-slate-400">@</span>${escapeHtml(u.username)}
                 </td>
+                <td class="py-3 px-4 whitespace-nowrap">${liveStatusBadge}</td>
                 <td class="py-3 px-4 text-xs font-mono">
                     <div class="flex items-center gap-1.5">
                         <span id="pw-mask-${u.id}" class="text-slate-600 font-bold">••••••</span>
