@@ -533,8 +533,13 @@ function handleUserPresence(e) {
     var action = (e && e.parameter && e.parameter.action) ? String(e.parameter.action).toLowerCase() : "";
 
     if (action === "logout_presence" && username) {
-      delete registry[username];
+      for (var k in registry) {
+        if (k.toLowerCase() === username || (registry[k] && registry[k].username && registry[k].username.toLowerCase() === username)) {
+          delete registry[k];
+        }
+      }
       props.setProperty("PRESENCE_REGISTRY", JSON.stringify(registry));
+      setLastDataUpdate();
     } else if (username) {
       var displayName = (e.parameter && e.parameter.name) ? String(e.parameter.name).trim() : username;
       var role = (e.parameter && e.parameter.role) ? String(e.parameter.role).trim() : "User";
@@ -553,15 +558,15 @@ function handleUserPresence(e) {
       props.setProperty("PRESENCE_REGISTRY", JSON.stringify(registry));
     }
 
-    // Prune entries older than 2 minutes (120,000 ms) for all active users
+    // Prune entries older than 25 seconds (since heartbeat is every 3.5s)
     var activeList = [];
     var changed = false;
     for (var u in registry) {
       if (registry.hasOwnProperty(u)) {
         var entry = registry[u];
-        if (now - entry.lastSeen <= 120000) { // Active within last 2 minutes
+        if (now - entry.lastSeen <= 25000) { // Active within last 25 seconds
           activeList.push(entry);
-        } else if (now - entry.lastSeen > 600000) { // Clean up stale records older than 10 mins
+        } else if (now - entry.lastSeen > 60000) { // Clean up stale records older than 1 min
           delete registry[u];
           changed = true;
         }
@@ -857,7 +862,31 @@ function doPost(e) {
     
     var action = payload.action || "REGISTER_ORDER";
     var nowFormatted = getNowString();
-    
+
+    // ==========================================
+    // ACTION: LOGOUT PRESENCE
+    // ==========================================
+    if (action === "logout_presence") {
+      var logoutUser = payload.user ? String(payload.user).trim().toLowerCase() : "";
+      if (logoutUser) {
+        var props = PropertiesService.getScriptProperties();
+        var raw = props.getProperty("PRESENCE_REGISTRY") || "{}";
+        var registry = {};
+        try { registry = JSON.parse(raw); } catch(err) { registry = {}; }
+        for (var k in registry) {
+          if (k.toLowerCase() === logoutUser || (registry[k] && registry[k].username && registry[k].username.toLowerCase() === logoutUser)) {
+            delete registry[k];
+          }
+        }
+        props.setProperty("PRESENCE_REGISTRY", JSON.stringify(registry));
+        setLastDataUpdate();
+      }
+      return createJsonResponse({
+        status: "success",
+        action: "LOGGED_OUT_PRESENCE"
+      });
+    }
+
     // ==========================================
     // ACTION: REGISTER OR UPDATE ORDER
     // ==========================================
