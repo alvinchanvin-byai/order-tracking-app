@@ -23,10 +23,55 @@ const SheetsSync = {
     bgPollIntervalMs: 12000,  // 12 seconds when page is in background to save battery
     
     broadcastChannel: null,
+    onlineUsers: [],            // List of active online users { username, displayName, role, device, tab, lastSeen }
     onStatusChange: null,       // Callback for UI indicator (Online / Syncing / Warning)
     onDataUpdated: null,        // Callback when live polling detects server changes
+    onPresenceChange: null,     // Callback when online users presence list updates
     onBroadcastReceived: null,  // Callback for cross-tab local updates
     onLiveSyncPulse: null,      // Callback to flash the LIVE UI badge
+
+    // Get parameters for user presence heartbeat
+    getUserHeartbeatParams() {
+        try {
+            const rawUser = localStorage.getItem("order_tracker_active_user_v1");
+            const user = rawUser ? JSON.parse(rawUser) : null;
+            if (!user || !user.username) return "";
+            
+            const isMobile = (typeof window !== "undefined") && (
+                window.innerWidth < 768 || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+            );
+            const activeTab = (typeof AppState !== "undefined" && AppState.currentTab) ? AppState.currentTab : "dashboard";
+            
+            return `&user=${encodeURIComponent(user.username)}` +
+                   `&name=${encodeURIComponent(user.displayName || user.username)}` +
+                   `&role=${encodeURIComponent(user.role || 'User')}` +
+                   `&device=${encodeURIComponent(isMobile ? 'Mobile' : 'PC')}` +
+                   `&tab=${encodeURIComponent(activeTab)}`;
+        } catch(e) {
+            return "";
+        }
+    },
+
+    // Process and dispatch online users presence list
+    handleOnlineUsers(userList, broadcast = true) {
+        if (!Array.isArray(userList)) return;
+        this.onlineUsers = userList;
+        if (typeof this.onPresenceChange === "function") {
+            this.onPresenceChange(this.onlineUsers);
+        }
+        if (broadcast) {
+            this.broadcast("PRESENCE_SYNC", { onlineUsers: this.onlineUsers });
+        }
+    },
+
+    // Explicitly notify server when user logs out
+    async logoutPresence(username) {
+        if (!this.isConfigured() || !username) return;
+        try {
+            const url = `${this.getApiUrl()}?action=logout_presence&user=${encodeURIComponent(username)}&_t=${Date.now()}`;
+            fetch(url, { method: "GET", mode: "cors", cache: "no-store" });
+        } catch(e) {}
+    },
 
     // Get configured Web App URL
     getApiUrl() {
@@ -114,6 +159,9 @@ const SheetsSync = {
 
     handleBroadcastMessage(msg) {
         if (!msg || msg.senderId === this.clientId) return;
+        if (msg.type === "PRESENCE_SYNC" && msg.payload && msg.payload.onlineUsers) {
+            this.handleOnlineUsers(msg.payload.onlineUsers, false);
+        }
         if (typeof this.onBroadcastReceived === "function") {
             this.onBroadcastReceived(msg);
         }
@@ -160,15 +208,19 @@ const SheetsSync = {
             if (!isSilent) {
                 this.updateStatusBadge("syncing", "កំពុងទាញទិន្នន័យពី Sheet...");
             }
-            const url = `${this.getApiUrl()}?action=fetch&_t=${Date.now()}`;
+            const url = `${this.getApiUrl()}?action=fetch&_t=${Date.now()}${this.getUserHeartbeatParams()}`;
             const response = await fetch(url, { 
                 method: "GET", 
                 mode: "cors",
+                cache: "no-store",
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
             const result = await response.json();
             if (result.status === "success") {
+                if (result.onlineUsers) {
+                    this.handleOnlineUsers(result.onlineUsers);
+                }
                 if (result.serverTimestamp) {
                     this.setServerTimestamp(result.serverTimestamp);
                 }
@@ -178,7 +230,8 @@ const SheetsSync = {
                 return {
                     orders: Array.isArray(result.data) ? result.data : [],
                     setup: result.setup || null,
-                    serverTimestamp: result.serverTimestamp || null
+                    serverTimestamp: result.serverTimestamp || null,
+                    onlineUsers: result.onlineUsers || []
                 };
             }
         } catch (err) {
@@ -208,8 +261,8 @@ const SheetsSync = {
         const timeoutId = setTimeout(() => controller.abort(), 9000);
 
         try {
-            // Include cache-busters for iOS Safari / Mobile WebKit
-            const url = `${this.getApiUrl()}?action=check_update&since=${encodeURIComponent(this.lastServerTimestamp)}&_t=${Date.now()}&_r=${Math.floor(Math.random() * 100000)}`;
+            // Include cache-busters for iOS Safari / Mobile WebKit and User Heartbeat
+            const url = `${this.getApiUrl()}?action=check_update&since=${encodeURIComponent(this.lastServerTimestamp)}&_t=${Date.now()}&_r=${Math.floor(Math.random() * 100000)}${this.getUserHeartbeatParams()}`;
             const response = await fetch(url, {
                 method: "GET",
                 mode: "cors",
@@ -220,6 +273,11 @@ const SheetsSync = {
             const result = await response.json();
 
             if (result && result.status === "success") {
+                // Update online users presence
+                if (result.onlineUsers) {
+                    this.handleOnlineUsers(result.onlineUsers);
+                }
+
                 // If hasChanges is true, or fallback if server returned full data directly
                 const hasChanges = (result.hasChanges === true) || 
                     (result.hasChanges === undefined && Array.isArray(result.data) && result.data.length > 0);
@@ -228,7 +286,7 @@ const SheetsSync = {
                     console.log("⚡ Live change detected on Google Sheets! Fetching latest state...");
                     // Server has detected changes from another device! Fetch complete data silently
                     const fullData = (result.hasChanges === undefined && Array.isArray(result.data))
-                        ? { orders: result.data, setup: result.setup || null, serverTimestamp: result.serverTimestamp }
+                        ? { orders: result.data, setup: result.setup || null, serverTimestamp: result.serverTimestamp, onlineUsers: result.onlineUsers || [] }
                         : await this.fetchAllData(15000, true);
 
                     if (fullData) {
