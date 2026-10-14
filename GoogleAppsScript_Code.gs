@@ -336,6 +336,70 @@ function getLastDataUpdate() {
 }
 
 /**
+ * ជំនួយការគ្រប់គ្រង User Presence (អ្នកកំពុង Online លើ Web App & Phone)
+ * ប្រើប្រាស់ ScriptProperties ដើម្បីតាមដាន User សកម្មក្នុងរយៈពេល 2 នាទីចុងក្រោយ (Heartbeat)
+ */
+function handleUserPresence(e) {
+  try {
+    var now = Date.now();
+    var props = PropertiesService.getScriptProperties();
+    var raw = props.getProperty("PRESENCE_REGISTRY") || "{}";
+    var registry = {};
+    try {
+      registry = JSON.parse(raw);
+    } catch(err) {
+      registry = {};
+    }
+
+    var username = (e && e.parameter && e.parameter.user) ? String(e.parameter.user).trim().toLowerCase() : "";
+    var action = (e && e.parameter && e.parameter.action) ? String(e.parameter.action).toLowerCase() : "";
+
+    if (action === "logout_presence" && username) {
+      delete registry[username];
+      props.setProperty("PRESENCE_REGISTRY", JSON.stringify(registry));
+    } else if (username) {
+      var displayName = (e.parameter && e.parameter.name) ? String(e.parameter.name).trim() : username;
+      var role = (e.parameter && e.parameter.role) ? String(e.parameter.role).trim() : "User";
+      var device = (e.parameter && e.parameter.device) ? String(e.parameter.device).trim() : "PC";
+      var tab = (e.parameter && e.parameter.tab) ? String(e.parameter.tab).trim() : "dashboard";
+      
+      registry[username] = {
+        username: username,
+        displayName: displayName,
+        role: role,
+        device: device,
+        tab: tab,
+        lastSeen: now
+      };
+      props.setProperty("PRESENCE_REGISTRY", JSON.stringify(registry));
+    }
+
+    // Prune entries older than 2 minutes (120,000 ms)
+    var activeList = [];
+    var changed = false;
+    for (var u in registry) {
+      if (registry.hasOwnProperty(u)) {
+        var entry = registry[u];
+        if (now - entry.lastSeen <= 120000) { // Active within last 2 minutes
+          activeList.push(entry);
+        } else if (now - entry.lastSeen > 600000) { // Clean up stale records older than 10 mins
+          delete registry[u];
+          changed = true;
+        }
+      }
+    }
+
+    if (changed) {
+      props.setProperty("PRESENCE_REGISTRY", JSON.stringify(registry));
+    }
+
+    return activeList;
+  } catch(e) {
+    return [];
+  }
+}
+
+/**
  * Handle GET Requests (Fetch Orders and Setup Master Data)
  */
 function doGet(e) {
@@ -351,16 +415,28 @@ function doGet(e) {
       });
     }
 
-    // 2. Fast Change-Detection Check (Zero sheet reads, latency ~30-50ms!)
-    // Web App លើទូរស័ព្ទដៃ និងកុំព្យូទ័រ ហៅមកកាន់ Endpoint នេះរៀងរាល់ 3-4s ដើម្បីដឹងថាមានទិន្នន័យថ្មីឬអត់ភ្លាមៗ
+    // Explicit Logout Presence (ពេល User ចុច Sign Out)
+    if (action === "logout_presence") {
+      var activeUsers = handleUserPresence(e);
+      return createJsonResponse({
+        status: "success",
+        action: "LOGGED_OUT_PRESENCE",
+        onlineUsers: activeUsers
+      });
+    }
+
+    // 2. Fast Change-Detection & User Presence Check (Zero sheet reads, latency ~30-50ms!)
+    // Web App លើទូរស័ព្ទដៃ និងកុំព្យូទ័រ ហៅមកកាន់ Endpoint នេះរៀងរាល់ 3-4s ដើម្បីដឹងថាមានទិន្នន័យថ្មី និង User ណាខ្លះកំពុង Online
     if (action === "check_update") {
       var clientSince = (e && e.parameter && e.parameter.since) ? String(e.parameter.since).trim() : "0";
       var serverLast = getLastDataUpdate();
       var hasChanges = (serverLast !== "0" && serverLast !== clientSince);
+      var onlineUsers = handleUserPresence(e);
       return createJsonResponse({
         status: "success",
         hasChanges: hasChanges,
         serverTimestamp: serverLast,
+        onlineUsers: onlineUsers,
         checkedAt: Date.now()
       });
     }
@@ -549,6 +625,7 @@ function doGet(e) {
       status: "success",
       count: orders.length,
       serverTimestamp: getLastDataUpdate(),
+      onlineUsers: handleUserPresence(e),
       data: orders,
       setup: {
         customers: customers,
