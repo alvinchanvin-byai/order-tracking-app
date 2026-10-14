@@ -7669,18 +7669,21 @@ window.cleanGoogleSheetNow = cleanGoogleSheetNow;
 
 // Get currently active logged-in user
 function getCurrentUser() {
+    if (AppState.isLoggedOut) {
+        return null;
+    }
     if (!AppState.currentUser) {
         const saved = localStorage.getItem(STORAGE_ACTIVE_USER);
         if (saved) {
             try {
                 const parsed = JSON.parse(saved);
                 const found = (AppState.setup.users || []).find(u => u.id === parsed.id || u.username === parsed.username);
-                AppState.currentUser = found || parsed || (AppState.setup.users || [])[0] || null;
+                AppState.currentUser = found || parsed || null;
             } catch (e) {
-                AppState.currentUser = (AppState.setup.users || [])[0] || null;
+                AppState.currentUser = null;
             }
         } else {
-            AppState.currentUser = (AppState.setup.users || [])[0] || null;
+            AppState.currentUser = null;
         }
     }
     if (AppState.currentUser && !AppState.currentUser.photoUrl && AppState.currentUser.username) {
@@ -7727,7 +7730,20 @@ function getModuleNameKh(moduleName) {
 // Render Header Profile & Navbar Permission Locks
 function renderCurrentUserProfile() {
     const user = getCurrentUser();
-    if (!user) return;
+    if (!user) {
+        const nameEl = document.getElementById("currentUserName");
+        if (nameEl) nameEl.textContent = "ចូលគណនី (Login)";
+        const topHeaderUserEl = document.getElementById("headerUserNameText");
+        if (topHeaderUserEl) topHeaderUserEl.textContent = "ចូលគណនី (Login)";
+        const mobName = document.getElementById("mobileUserName");
+        if (mobName) mobName.textContent = "ចូលគណនី";
+        const roleEl = document.getElementById("currentUserRoleBadge");
+        if (roleEl) {
+            roleEl.textContent = "Guest";
+            roleEl.className = "text-[10px] font-bold text-slate-400 leading-tight";
+        }
+        return;
+    }
 
     // Restore cached avatar photo if missing
     if (!user.photoUrl && user.username) {
@@ -8308,11 +8324,21 @@ function quickSwitchUser(username) {
     const users = AppState.setup.users || [];
     const matched = users.find(u => u.username.toLowerCase() === username.toLowerCase());
     if (matched) {
+        const oldUser = getCurrentUser();
+        if (oldUser && oldUser.username && oldUser.username.toLowerCase() !== matched.username.toLowerCase()) {
+            if (window.SheetsSync) {
+                SheetsSync.logoutPresence(oldUser.username);
+            }
+            AppState.onlineUsers = (AppState.onlineUsers || []).filter(u => 
+                !u.username || u.username.toLowerCase() !== oldUser.username.toLowerCase()
+            );
+        }
         loginUser(matched);
     }
 }
 
 function loginUser(user) {
+    AppState.isLoggedOut = false;
     // Restore cached avatar photo if present
     if (user.username) {
         const cachedPhoto = localStorage.getItem("order_app_avatar_" + user.username.toLowerCase());
@@ -8363,20 +8389,28 @@ function logoutCurrentUser() {
         confirmButtonText: "បាទ/ចាស ចាកចេញ",
         cancelButtonText: "បោះបង់",
         confirmButtonColor: "#ef4444"
-    }).then(res => {
+    }).then(async (res) => {
         if (res.isConfirmed) {
             const user = getCurrentUser();
-            if (user && user.username && window.SheetsSync) {
-                SheetsSync.logoutPresence(user.username);
-            }
+            const loggedOutUsername = user ? user.username : null;
+
+            AppState.isLoggedOut = true;
             AppState.currentUser = null;
             localStorage.removeItem(STORAGE_ACTIVE_USER);
-            if (user && user.username) {
+
+            if (loggedOutUsername) {
+                // 1. Immediately remove from local AppState.onlineUsers
                 AppState.onlineUsers = (AppState.onlineUsers || []).filter(u => 
-                    !u.username || u.username.toLowerCase() !== user.username.toLowerCase()
+                    !u.username || u.username.toLowerCase() !== loggedOutUsername.toLowerCase()
                 );
+                // 2. Notify SheetsSync to update its cache, broadcast across tabs, and send server logout
+                if (window.SheetsSync) {
+                    await SheetsSync.logoutPresence(loggedOutUsername);
+                }
             }
+
             updateOnlineUsersPresence();
+            renderCurrentUserProfile();
             openLoginModal();
         }
     });
@@ -8409,7 +8443,7 @@ function updateOnlineUsersPresence(userList = null) {
     
     // Ensure current active user session is merged into the list regardless of role
     let displayList = [...(AppState.onlineUsers || [])];
-    if (currentU && currentU.username) {
+    if (currentU && currentU.username && !AppState.isLoggedOut) {
         const existingIdx = displayList.findIndex(u => 
             u.username && u.username.toLowerCase() === currentU.username.toLowerCase()
         );
@@ -8427,7 +8461,22 @@ function updateOnlineUsersPresence(userList = null) {
         } else {
             displayList.unshift(myEntry);
         }
+    } else {
+        // If current user is logged out, ensure no entry is marked as self
+        displayList = displayList.filter(u => !u.isSelf);
     }
+
+    // Deduplicate by unique username
+    const uniqueMap = new Map();
+    displayList.forEach(u => {
+        if (u && u.username) {
+            const key = u.username.toLowerCase();
+            if (!uniqueMap.has(key) || u.isSelf) {
+                uniqueMap.set(key, u);
+            }
+        }
+    });
+    displayList = Array.from(uniqueMap.values());
 
     AppState.onlineUsers = displayList;
     const totalCount = displayList.length;
