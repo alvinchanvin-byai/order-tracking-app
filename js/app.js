@@ -418,10 +418,19 @@ function normalizeOrderDates(order) {
         timestamp: formatDateTimeDisplay(order.timestamp),
         pickingStartTime: order.pickingStartTime ? formatDateTimeDisplay(order.pickingStartTime) : "",
         pickingEndTime: order.pickingEndTime ? formatDateTimeDisplay(order.pickingEndTime) : "",
+        pickingDuration: (typeof formatDurationHhMm === "function") 
+            ? formatDurationHhMm(order.pickingDuration, order.pickingStartTime, order.pickingEndTime)
+            : (order.pickingDuration || "-"),
         checkingStartTime: order.checkingStartTime ? formatDateTimeDisplay(order.checkingStartTime) : "",
         checkingEndTime: order.checkingEndTime ? formatDateTimeDisplay(order.checkingEndTime) : "",
+        checkingDuration: (typeof formatDurationHhMm === "function")
+            ? formatDurationHhMm(order.checkingDuration, order.checkingStartTime, order.checkingEndTime)
+            : (order.checkingDuration || "-"),
         deliveryStartTime: order.deliveryStartTime ? formatDateTimeDisplay(order.deliveryStartTime) : "",
         deliveryEndTime: order.deliveryEndTime ? formatDateTimeDisplay(order.deliveryEndTime) : "",
+        deliveryDuration: (typeof formatDurationHhMm === "function")
+            ? formatDurationHhMm(order.deliveryDuration, order.deliveryStartTime, order.deliveryEndTime)
+            : (order.deliveryDuration || "-"),
         lastUpdated: order.lastUpdated ? formatDateTimeDisplay(order.lastUpdated) : "",
         createdBy: order.createdBy || "Admin",
         pickerBy: order.pickerBy || "",
@@ -512,7 +521,7 @@ const DEMO_ORDERS = [
         status: "In Checking",
         pickingStartTime: "04/10/26 09:15",
         pickingEndTime: "04/10/26 09:42",
-        pickingDuration: "27នាទី",
+        pickingDuration: "00:27",
         checkingStartTime: "04/10/26 10:00",
         checkingEndTime: "",
         checkingDuration: "-",
@@ -574,13 +583,13 @@ const DEMO_ORDERS = [
         status: "Success",
         pickingStartTime: "04/10/26 08:00",
         pickingEndTime: "04/10/26 08:35",
-        pickingDuration: "35នាទី",
+        pickingDuration: "00:35",
         checkingStartTime: "04/10/26 08:40",
         checkingEndTime: "04/10/26 08:58",
-        checkingDuration: "18នាទី",
+        checkingDuration: "00:18",
         deliveryStartTime: "04/10/26 09:10",
         deliveryEndTime: "04/10/26 09:55",
-        deliveryDuration: "45នាទី",
+        deliveryDuration: "00:45",
         lastUpdated: "04/10/26 09:55",
         createdBy: "Administrator",
         pickerBy: "Bona Picker",
@@ -7609,6 +7618,28 @@ async function syncFromGoogleSheet() {
         if (btnSideSync) btnSideSync.disabled = false;
     }
 }
+window.syncFromGoogleSheet = syncFromGoogleSheet;
+
+// Clean Google Sheet Headers (remove Khmer) and format durations to hh:mm
+async function cleanGoogleSheetNow() {
+    if (!SheetsSync.isConfigured()) {
+        showToast("Google Sheet មិនទាន់ភ្ជាប់ទេ!", "warning");
+        return;
+    }
+    showToast("កំពុង Clean Headers & Durations ក្នុង Google Sheet...", "info");
+    try {
+        const res = await SheetsSync.cleanSheetHeadersAndDurations();
+        if (res.success) {
+            showToast("✅ បានសម្អាត Headers និង Format Duration ទៅជា hh:mm ជោគជ័យ!", "success");
+            syncFromGoogleSheet();
+        } else {
+            showToast("❌ បរាជ័យក្នុងការ Clean Sheet: " + (res.error || res.message || ""), "error");
+        }
+    } catch(e) {
+        showToast("❌ បរាជ័យ: " + e.message, "error");
+    }
+}
+window.cleanGoogleSheetNow = cleanGoogleSheetNow;
 
 // ========================================================
 // USER MANAGEMENT & PERMISSION ACCESS RIGHT CONTROLLER
