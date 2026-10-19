@@ -1705,18 +1705,47 @@ function setupEventListeners() {
             }
             if (gasUrlInput) gasUrlInput.value = SheetsSync.getApiUrl();
             settingsModal.classList.remove("hidden");
+            if (typeof lucide !== "undefined" && lucide.createIcons) {
+                lucide.createIcons();
+            }
         });
         if (btnCloseSettings) {
             btnCloseSettings.addEventListener("click", () => {
                 settingsModal.classList.add("hidden");
             });
         }
+        const btnResetDefaultUrl = document.getElementById("btnResetDefaultUrl");
+        if (btnResetDefaultUrl) {
+            btnResetDefaultUrl.addEventListener("click", () => {
+                if (gasUrlInput) {
+                    gasUrlInput.value = SheetsSync.MASTER_GAS_URL;
+                    showToast("បានកំណត់ជា Master URL ដើមរួចរាល់!", "info");
+                }
+            });
+        }
         if (btnSaveSettings) {
             btnSaveSettings.addEventListener("click", () => {
+                const user = getCurrentUser();
+                if (!user || user.role !== "Admin") {
+                    showToast("មានតែ Admin ប៉ុណ្ណោះដែលអាចរក្សាទុកការកំណត់នេះបាន!", "error");
+                    return;
+                }
                 const url = gasUrlInput.value.trim();
-                SheetsSync.setApiUrl(url);
-                showToast("បានរក្សាទុក URL Google Apps Script រួចរាល់!", "success");
+                const savedUrl = SheetsSync.setApiUrl(url);
+                if (gasUrlInput) gasUrlInput.value = savedUrl;
+
+                Swal.fire({
+                    title: "រក្សាទុក Master URL បានជោគជ័យ! ✅",
+                    text: "URL នេះត្រូវបានកំណត់ជាមេ (Master URL)។ រាល់ User ទាំងអស់លើគ្រប់ឧបករណ៍ (Phone & PC) នឹងអាចប្រើប្រាស់ និង Auto-Sync ទិន្នន័យបានដោយស្វ័យប្រវត្តិ ដោយមិនបាច់ Setup ឡើយ។",
+                    icon: "success",
+                    confirmButtonText: "យល់ព្រម",
+                    confirmButtonColor: "#2563eb"
+                });
                 settingsModal.classList.add("hidden");
+
+                if (typeof syncFromGoogleSheet === "function") {
+                    syncFromGoogleSheet();
+                }
             });
         }
         if (btnTestConnection) {
