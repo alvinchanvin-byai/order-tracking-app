@@ -43,7 +43,7 @@
     <link rel="dns-prefetch" href="https://script.google.com">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css?v=live-v2.5">
+    <link rel="stylesheet" href="css/style.css?v=live-v2.6">
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -777,10 +777,10 @@
                 <div>
                     <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
                         <span class="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-sm font-bold">1</span>
-                        <span>Module 1: Register Order (ការចុះឈ្មោះ)</span>
+                        <span>Register Order</span>
                         <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">Cards View</span>
                     </h2>
-                    <p class="text-xs sm:text-sm text-slate-500">បញ្ជី Order ដែលបានចុះឈ្មោះរួចរាល់ (Registered)។ ចុច "Start Picking" ដើម្បីចាប់ផ្ដើមរៀបចំទំនិញ និងបញ្ជូនទៅកាន់ Module 2: Physical Picking</p>
+                    <p class="text-xs sm:text-sm text-slate-500">បញ្ជី Order ដែលបានចុះឈ្មោះរួចរាល់ (Registered)។ ចុច "Start Picking" ដើម្បីចាប់ផ្ដើមរៀបចំទំនិញ និងបញ្ជូនទៅកាន់ Physical Picking</p>
                 </div>
                 <div class="flex items-center gap-2">
                     <button type="button" onclick="switchNavbarModule('register')" class="py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5" title="ត្រឡប់ទៅមើលតារាង Register Order">
@@ -801,14 +801,14 @@
         </section>
 
         <!-- ======================================================== -->
-        <!-- VIEW 3: MODULE 2 PHYSICAL PICKING                        -->
+        <!-- VIEW 3: PHYSICAL PICKING                                 -->
         <!-- ======================================================== -->
         <section id="view-picking" class="hidden space-y-6">
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
                 <div>
                     <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
                         <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-sm font-bold">2</span>
-                        <span>Module 2: Physical Picking (ការរៀបចំទំនិញ)</span>
+                        <span>Physical Picking</span>
                         <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">Cards View</span>
                     </h2>
                     <p class="text-xs sm:text-sm text-slate-500">ចុច "Start Picking" ពេលចាប់ផ្ដើមរៀបចំ និង "End Picking" ពេលរៀបចំរួចរាល់ (កត់ត្រា Date/Time ស្វ័យប្រវត្តិ)</p>
@@ -828,14 +828,14 @@
         </section>
 
         <!-- ======================================================== -->
-        <!-- VIEW 4: MODULE 3 PHYSICAL CHECKING                       -->
+        <!-- VIEW 4: PHYSICAL CHECKING                                -->
         <!-- ======================================================== -->
         <section id="view-checking" class="hidden space-y-6">
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
                 <div>
                     <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
                         <span class="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center text-sm font-bold">3</span>
-                        <span>Module 3: Physical Checking (ការត្រួតពិនិត្យ QC)</span>
+                        <span>Physical Checking</span>
                         <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200">Cards View</span>
                     </h2>
                     <p class="text-xs sm:text-sm text-slate-500">ចុច "Start Checking" ពេលចាប់ផ្ដើមត្រួតពិនិត្យ និង "End Checking" ពេលផ្ទៀងផ្ទាត់រួចរាល់</p>
@@ -855,14 +855,14 @@
         </section>
 
         <!-- ======================================================== -->
-        <!-- VIEW 5: MODULE 4 DELIVERY TRACKING                       -->
+        <!-- VIEW 5: DELIVERY                                         -->
         <!-- ======================================================== -->
         <section id="view-delivery" class="hidden space-y-6">
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
                 <div>
                     <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
                         <span class="w-8 h-8 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center text-sm font-bold">4</span>
-                        <span>Module 4: Delivery Tracking (ការដឹកជញ្ជូន)</span>
+                        <span>Delivery</span>
                         <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-sky-100 text-sky-700 border border-sky-200">Cards View</span>
                     </h2>
                     <p class="text-xs sm:text-sm text-slate-500">ចុច "Start Delivery" ពេលឡានចេញដំណើរ និង "End Delivery" ពេលទំនិញដល់ដៃអតិថិជនជោគជ័យ</p>
@@ -882,14 +882,14 @@
         </section>
 
         <!-- ======================================================== -->
-        <!-- VIEW 6: MODULE 5 IN COMPLETED DELIVERY                   -->
+        <!-- VIEW 6: IN COMPLETED DELIVERY                            -->
         <!-- ======================================================== -->
         <section id="view-incompleted-delivery" class="hidden space-y-6">
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
                 <div>
                     <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
                         <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-sm font-bold">5</span>
-                        <span>Module 5: In Completed Delivery (ការដឹកជញ្ជូនមិនបានជោគជ័យ)</span>
+                        <span>In Completed Delivery</span>
                         <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">Cards View</span>
                     </h2>
                     <p class="text-xs sm:text-sm text-slate-500">Order ដែលដឹកមិនបានជោគជ័យ (អតិថិជនបិទទ្វារ ឬមិនទទួល) អាចចុច "Start 2nd Delivery" ដើម្បីបញ្ជូនទៅដឹកជញ្ជូនម្តងទៀត</p>
@@ -909,7 +909,7 @@
         </section>
 
         <!-- ======================================================== -->
-        <!-- VIEW: MODULE REPORT (របាយការណ៍លម្អិត)                   -->
+        <!-- VIEW: REPORT                                             -->
         <!-- ======================================================== -->
         <section id="view-report" class="hidden space-y-6">
             
@@ -920,7 +920,7 @@
                         <span class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-sm font-bold shadow-xs">
                             <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
                         </span>
-                        <span>Module: Report (របាយការណ៍)</span>
+                        <span>Report</span>
                         <span id="reportActiveBadge" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200">Register order</span>
                     </h2>
                     <p class="text-xs sm:text-sm text-slate-500 mt-1">របាយការណ៍លម្អិតតាមដំណាក់កាលនីមួយៗ និង Master Report រួមបញ្ចូលគ្រប់ទិន្នន័យ ជាមួយមុខងារ Filter តាមឆ្នាំ ខែ កាលបរិច្ឆេទ និង Export ជា Excel (.xlsx)</p>
@@ -1084,7 +1084,7 @@
                 <div>
                     <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
                         <span class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-bold">6</span>
-                        <span>Module 6: Setup (ការកំណត់ទិន្នន័យមេ)</span>
+                        <span>Setup</span>
                     </h2>
                     <p class="text-xs sm:text-sm text-slate-500">គ្រប់គ្រង Customer Information, BU, Package Type, និង Document Type (Auto-Sync ទៅកាន់ Google Sheet ផ្ទាល់)</p>
                 </div>
@@ -2868,8 +2868,8 @@
     </div>
 
     <!-- App Core Scripts -->
-    <script src="js/data.js?v=live-v2.5"></script>
-    <script src="js/sheets-sync.js?v=live-v2.5"></script>
-    <script src="js/app.js?v=live-v2.5"></script>
+    <script src="js/data.js?v=live-v2.6"></script>
+    <script src="js/sheets-sync.js?v=live-v2.6"></script>
+    <script src="js/app.js?v=live-v2.6"></script>
 </body>
 </html>
