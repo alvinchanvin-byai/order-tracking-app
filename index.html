@@ -43,7 +43,7 @@
     <link rel="dns-prefetch" href="https://script.google.com">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css?v=live-v2.3">
+    <link rel="stylesheet" href="css/style.css?v=live-v2.4">
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -1322,33 +1322,56 @@
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
 
-            <div class="flex items-center gap-3 mb-5">
-                <div class="w-10 h-10 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center">
-                    <i data-lucide="sheet" class="w-5 h-5"></i>
-                </div>
-                <div>
-                    <h3 class="text-lg font-bold text-slate-900">ការកំណត់ Google Sheets (Auto-Sync)</h3>
-                    <p class="text-xs text-slate-500">ភ្ជាប់ Web App នេះទៅកាន់ Google Sheet របស់អ្នក</p>
+            <div class="flex items-center justify-between gap-3 mb-4 pr-8">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center flex-shrink-0">
+                        <i data-lucide="sheet" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h3 class="text-base sm:text-lg font-bold text-slate-900">ការកំណត់ Google Sheets (Auto-Sync)</h3>
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                <i data-lucide="shield-check" class="w-3 h-3"></i> Role: Admin
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-500">កំណត់ Master URL សម្រាប់ភ្ជាប់ Google Sheet "Tracking order"</p>
+                    </div>
                 </div>
             </div>
 
             <div class="space-y-4">
                 
-                <div class="bg-blue-50/70 border border-blue-200 p-4 rounded-2xl text-xs space-y-2 text-slate-700">
+                <div class="bg-emerald-50/80 border border-emerald-200 p-3.5 rounded-2xl text-xs space-y-1.5 text-emerald-900">
+                    <p class="font-bold flex items-center gap-1.5 text-emerald-950">
+                        <i data-lucide="shield-check" class="w-4 h-4 text-emerald-600 flex-shrink-0"></i>
+                        <span>ប្រព័ន្ធកណ្តាល (Master URL) កំណត់ដោយ Role Admin:</span>
+                    </p>
+                    <p class="text-[11px] text-emerald-800 leading-relaxed">
+                        ពេល Admin រក្សាទុក URL នៅទីនេះ រាល់បុគ្គលិក ឬ User ទាំងអស់ដែលបើកដំណើរការ Web App នេះ (ទាំងលើទូរសព្ទ Phone និងកុំព្យូទ័រ PC) នឹងអាច Sync ទិន្នន័យបានភ្លាមៗដោយស្វ័យប្រវត្តិ <b>ដោយមិនចាំបាច់ Setup ឬបញ្ចូលអ្វីឡើយ</b>។
+                    </p>
+                </div>
+
+                <div class="bg-blue-50/70 border border-blue-200 p-3.5 rounded-2xl text-xs space-y-1 text-slate-700">
                     <p class="font-bold text-blue-900 flex items-center gap-1.5">
                         <i data-lucide="info" class="w-4 h-4 text-blue-600"></i>
                         <span>ឈ្មោះ Sheet តាមការកំណត់របស់អ្នក:</span>
                     </p>
-                    <ul class="list-disc pl-5 space-y-1">
+                    <ul class="list-disc pl-5 space-y-0.5">
                         <li>Google Spreadsheet Name: <b class="text-blue-950 font-mono">Tracking order</b></li>
                         <li>Sheet/Tab Name: <b class="text-blue-950 font-mono">Tracking</b></li>
                     </ul>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1.5">
-                        Google Apps Script Web App URL:
-                    </label>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-xs font-bold text-slate-700">
+                            Google Apps Script Web App URL:
+                        </label>
+                        <button id="btnResetDefaultUrl" type="button" class="text-[11px] text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1 transition">
+                            <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
+                            <span>កំណត់ជា Master URL ដើម</span>
+                        </button>
+                    </div>
                     <input type="url" id="gasUrlInput" placeholder="https://script.google.com/macros/s/.../exec" class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-mono">
                     <p class="text-[11px] text-slate-400 mt-1">URL ដែលបានមកពីការ Deploy Apps Script លើ Google Sheet "Tracking order"</p>
                 </div>
@@ -2840,8 +2863,8 @@
     </div>
 
     <!-- App Core Scripts -->
-    <script src="js/data.js?v=live-v2.3"></script>
-    <script src="js/sheets-sync.js?v=live-v2.3"></script>
-    <script src="js/app.js?v=live-v2.3"></script>
+    <script src="js/data.js?v=live-v2.4"></script>
+    <script src="js/sheets-sync.js?v=live-v2.4"></script>
+    <script src="js/app.js?v=live-v2.4"></script>
 </body>
 </html>
