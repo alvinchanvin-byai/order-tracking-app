@@ -4949,6 +4949,16 @@ function closeTopActiveModal() {
         settingsModal.classList.add("hidden");
         return true;
     }
+    // 7.1 Mobile Guide modal
+    const mobileGuideModal = document.getElementById("mobileGuideModal");
+    if (mobileGuideModal && !mobileGuideModal.classList.contains("hidden")) {
+        if (typeof closeMobileGuideModal === "function") {
+            closeMobileGuideModal();
+        } else {
+            mobileGuideModal.classList.add("hidden");
+        }
+        return true;
+    }
     // 8. Popover menus
     const personalMenu = document.getElementById("personalDisplayMenu");
     if (personalMenu && !personalMenu.classList.contains("hidden")) {
@@ -4978,6 +4988,7 @@ function initModalEscAndBackdrop() {
     // Close on backdrop click (click on modal overlay outside modal dialog)
     const modalIds = [
         "onlineUsersModal",
+        "mobileGuideModal",
         "orderDetailsModal",
         "editOrderModal",
         "createOrderModal",
@@ -7771,6 +7782,8 @@ function renderCurrentUserProfile() {
             roleEl.textContent = "Guest";
             roleEl.className = "text-[10px] font-bold text-slate-400 leading-tight";
         }
+        const topBtnMobileGuide = document.getElementById("topBtnMobileGuide");
+        if (topBtnMobileGuide) topBtnMobileGuide.classList.add("hidden");
         return;
     }
 
@@ -7864,11 +7877,12 @@ function renderCurrentUserProfile() {
         dropRoleChip.textContent = user.role;
     }
 
-    // 6. Role-Based Visibility: Settings, Sync Now, Switch Account, and User Management
-    // Non-Admin users: HIDE Settings, Sync Now, Switch Account, and User Management
+    // 6. Role-Based Visibility: Settings, Sync Now, Mobile Guide, Switch Account, and User Management
+    // Non-Admin users: HIDE Settings, Mobile Guide, Sync Now, Switch Account, and User Management
     const btnOpenSettings = document.getElementById("btnOpenSettings");
     const btnSyncNow = document.getElementById("btnSyncNow");
     const topBtnSyncNow = document.getElementById("topBtnSyncNow");
+    const topBtnMobileGuide = document.getElementById("topBtnMobileGuide");
     const sidebarActionGrid = document.getElementById("sidebarActionGrid");
 
     // Top Header Sync Now is ALWAYS visible for all roles (including non-Admin) as requested
@@ -7878,10 +7892,12 @@ function renderCurrentUserProfile() {
         if (btnOpenSettings) btnOpenSettings.classList.remove("hidden");
         if (btnSyncNow) btnSyncNow.classList.remove("hidden");
         if (sidebarActionGrid) sidebarActionGrid.classList.remove("hidden");
+        if (topBtnMobileGuide) topBtnMobileGuide.classList.remove("hidden");
     } else {
         if (btnOpenSettings) btnOpenSettings.classList.add("hidden");
         if (btnSyncNow) btnSyncNow.classList.add("hidden");
         if (sidebarActionGrid) sidebarActionGrid.classList.add("hidden");
+        if (topBtnMobileGuide) topBtnMobileGuide.classList.add("hidden");
     }
 
     const switchUserItem = document.getElementById("dropdownItemSwitchUser");
@@ -9594,6 +9610,14 @@ window.getEnglishKhansForProvince = getEnglishKhansForProvince;
 // MOBILE PHONE GUIDE & QR ACCESS MODAL
 // ==============================================================================
 function openMobileGuideModal() {
+    const user = getCurrentUser();
+    if (!user || user.role !== "Admin") {
+        if (typeof showToast === "function") {
+            showToast("មុខងារ 'បើកលើទូរស័ព្ទ' អាចប្រើប្រាស់បានតែ Role Admin ប៉ុណ្ណោះ!", "warning");
+        }
+        return;
+    }
+
     const modal = document.getElementById("mobileGuideModal");
     if (!modal) return;
 
