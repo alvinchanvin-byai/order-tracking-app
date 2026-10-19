@@ -13,6 +13,9 @@ const SheetsSync = {
     STORAGE_KEY_QUEUE: "order_tracker_sync_queue",
     STORAGE_KEY_SERVER_TS: "order_tracker_server_ts",
     
+    // Master Google Apps Script Web App URL (Configured by Admin, used as default for all users and devices)
+    MASTER_GAS_URL: "https://script.google.com/macros/s/AKfycbzyBUQpDr4m_GGAM3V5TQkQU7f_ynfponv6bXKDpuRsDKOW-5G7PKQ2cFFOvTm26Snh/exec",
+    
     clientId: "client_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now(),
     lastServerTimestamp: localStorage.getItem("order_tracker_server_ts") || "0",
     
@@ -105,28 +108,57 @@ const SheetsSync = {
         }
     },
 
-    // Get configured Web App URL
+    // Get configured Web App URL (Auto-falls back to Master URL so all users/devices work immediately)
     getApiUrl() {
-        return localStorage.getItem(this.STORAGE_KEY_URL) || "";
+        let stored = "";
+        try {
+            stored = localStorage.getItem(this.STORAGE_KEY_URL) || "";
+        } catch(e) {}
+
+        if (!stored || !stored.trim() || !stored.startsWith("https://script.google.com/macros/s/")) {
+            stored = this.MASTER_GAS_URL;
+            try {
+                localStorage.setItem(this.STORAGE_KEY_URL, stored);
+            } catch(e) {}
+        }
+        return stored.trim();
     },
 
     // Set and save Web App URL
     setApiUrl(url) {
-        const trimmed = (url || "").trim();
-        localStorage.setItem(this.STORAGE_KEY_URL, trimmed);
+        let trimmed = (url || "").trim();
+        // If empty or invalid, fallback to master URL
+        if (!trimmed || !trimmed.startsWith("https://script.google.com/macros/s/")) {
+            trimmed = this.MASTER_GAS_URL;
+        }
+        // Normalize: ensure /exec suffix
+        if (trimmed.includes("/macros/s/") && !trimmed.endsWith("/exec")) {
+            trimmed = trimmed.replace(/\/(edit|dev)?(\?.*)?$/, "") + "/exec";
+        }
+        try {
+            localStorage.setItem(this.STORAGE_KEY_URL, trimmed);
+        } catch(e) {}
+
         this.updateStatusBadge();
         if (this.isConfigured()) {
             this.startLivePolling();
         } else {
             this.stopLivePolling();
         }
+        // Broadcast configuration update to any other open tabs on this browser
+        this.broadcast("CONFIG_SYNC", { apiUrl: trimmed });
         return trimmed;
+    },
+
+    // Reset URL to the default Master URL
+    resetToDefaultUrl() {
+        return this.setApiUrl(this.MASTER_GAS_URL);
     },
 
     // Check if configured
     isConfigured() {
         const url = this.getApiUrl();
-        return url.startsWith("https://script.google.com/macros/s/");
+        return Boolean(url && url.startsWith("https://script.google.com/macros/s/"));
     },
 
     // Track server timestamp for change detection
@@ -202,6 +234,14 @@ const SheetsSync = {
         }
         if (msg.type === "PRESENCE_SYNC" && msg.payload && msg.payload.onlineUsers) {
             this.handleOnlineUsers(msg.payload.onlineUsers, false);
+        }
+        if (msg.type === "CONFIG_SYNC" && msg.payload && msg.payload.apiUrl) {
+            try {
+                localStorage.setItem(this.STORAGE_KEY_URL, msg.payload.apiUrl);
+                if (this.isConfigured()) {
+                    this.startLivePolling();
+                }
+            } catch(e) {}
         }
         if (typeof this.onBroadcastReceived === "function") {
             this.onBroadcastReceived(msg);
