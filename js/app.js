@@ -3429,11 +3429,11 @@ async function handleOrderRegistration(e) {
 
     Swal.fire({
         title: "ចុះឈ្មោះ Order បានជោគជ័យ! 📦",
-        html: `Order <b>${soNumber}</b> ត្រូវបានបង្កើត និងធ្លាក់ចូលទៅកាន់ <b>Module 1: Register Order</b> រួចរាល់។<br>លោកអ្នកអាចចុច <b>"Start Picking"</b> ដើម្បីចាប់ផ្ដើមរៀបចំទំនិញភ្លាមៗ!`,
+        html: `Order <b>${soNumber}</b> ត្រូវបានបង្កើត និងធ្លាក់ចូលទៅកាន់ <b>Register Order</b> រួចរាល់។<br>លោកអ្នកអាចចុច <b>"Start Picking"</b> ដើម្បីចាប់ផ្ដើមរៀបចំទំនិញភ្លាមៗ!`,
         icon: "success",
         showCancelButton: true,
         confirmButtonText: "Start Picking ភ្លាម",
-        cancelButtonText: "មើលក្នុង Register Module",
+        cancelButtonText: "មើលក្នុង Register Order",
         confirmButtonColor: "#f59e0b",
         cancelButtonColor: "#2563eb"
     }).then((result) => {
@@ -3685,7 +3685,7 @@ async function startPicking(soNumber) {
 
     Swal.fire({
         title: "ចាប់ផ្ដើម Picking! 📦",
-        html: `Order <b>${soNumber}</b> បានចាប់ផ្ដើម Picking ដោយ <b>${escapeHtml(pickerName)}</b> និងបញ្ជូនទៅ <b>Module 2: Physical Picking</b> រួចរាល់។`,
+        html: `Order <b>${soNumber}</b> បានចាប់ផ្ដើម Picking ដោយ <b>${escapeHtml(pickerName)}</b> និងបញ្ជូនទៅ <b>Physical Picking</b> រួចរាល់។`,
         icon: "success",
         showCancelButton: true,
         confirmButtonText: "ទៅកាន់ Physical Picking",
@@ -3719,7 +3719,7 @@ async function endPicking(soNumber) {
 
     Swal.fire({
         title: "បញ្ចប់ Picking រួចរាល់! 📦",
-        html: `SO#: <b>${soNumber}</b><br>អ្នករៀបចំ: <b class="text-blue-700">${escapeHtml(pickerName)}</b><br>រយៈពេល Picking: <b class="text-amber-600">${order.pickingDuration}</b><br>Order ត្រូវបានបញ្ជូនទៅកាន់ <b>Module 3: Physical Checking</b> (Status: <b>Waiting Checking</b>)។`,
+        html: `SO#: <b>${soNumber}</b><br>អ្នករៀបចំ: <b class="text-blue-700">${escapeHtml(pickerName)}</b><br>រយៈពេល Picking: <b class="text-amber-600">${order.pickingDuration}</b><br>Order ត្រូវបានបញ្ជូនទៅកាន់ <b>Physical Checking</b> (Status: <b>Waiting Checking</b>)។`,
         icon: "success",
         showCancelButton: true,
         confirmButtonText: "ទៅកាន់ Physical Checking",
@@ -3769,7 +3769,7 @@ function renderCheckingView() {
             <div class="col-span-full text-center py-16 bg-white rounded-2xl border border-slate-200">
                 <i data-lucide="clipboard-check" class="w-12 h-12 text-slate-300 mx-auto mb-2"></i>
                 <h4 class="text-slate-600 font-semibold">មិនមាន Order រង់ចាំ Checking ទេ</h4>
-                <p class="text-xs text-slate-400 mt-1">រាល់ Order ត្រូវបញ្ចប់ Picking នៅក្នុង Module 2 ជាមុនសិន</p>
+                <p class="text-xs text-slate-400 mt-1">រាល់ Order ត្រូវបញ្ចប់ Picking ជាមុនសិន</p>
             </div>
         `;
         lucide.createIcons();
@@ -4025,7 +4025,7 @@ async function confirmEndChecking() {
               `ចំនួនកញ្ចប់ (Total Package): <b class="text-emerald-700 font-mono text-base">${rawTotalPkg} ${escapeHtml(selectedUnit)}</b><br>` +
               `អ្នកត្រួតពិនិត្យ: <b class="text-purple-700">${escapeHtml(checkerName)}</b><br>` +
               `រយៈពេល Checking: <b class="text-purple-600">${order.checkingDuration}</b><br><br>` +
-              `Order ត្រូវបានបញ្ជូនទៅកាន់ <b>Module 4: Delivery</b> (Status: <b>Waiting Delivery</b>)។`,
+              `Order ត្រូវបានបញ្ជូនទៅកាន់ <b>Delivery</b> (Status: <b>Waiting Delivery</b>)។`,
         icon: "success",
         showCancelButton: true,
         confirmButtonText: "ទៅកាន់ Delivery",
@@ -4366,7 +4366,7 @@ async function confirmEndDelivery() {
         const nextAttempt = (Number(order.deliveryAttempts) || 1) + 1;
         Swal.fire({
             title: "ស្ថានភាព: មិនបានជោគជ័យ (Incomplete) ⚠️",
-            html: `SO#: <b>${soNumber}</b><br>អតិថិជន: <b>${escapeHtml(order.customerName)}</b><br>ស្ថានភាពចុងក្រោយ: <b class="text-amber-600">Incomplete</b><br>រយៈពេលដឹកជញ្ជូន: <b class="text-slate-700">${order.deliveryDuration}</b><br><br>Order នេះត្រូវបានផ្លាស់ទីទៅកាន់ <b>Module 5: In Completed Delivery</b> រួចរាល់។<br><span class="text-xs text-slate-500">លោកអ្នកអាចចុច "Start ${getOrdinal(nextAttempt)} Delivery" នៅក្នុង Module In Completed Delivery ដើម្បីដឹកជញ្ជូនម្ដងទៀត។</span>`,
+            html: `SO#: <b>${soNumber}</b><br>អតិថិជន: <b>${escapeHtml(order.customerName)}</b><br>ស្ថានភាពចុងក្រោយ: <b class="text-amber-600">Incomplete</b><br>រយៈពេលដឹកជញ្ជូន: <b class="text-slate-700">${order.deliveryDuration}</b><br><br>Order នេះត្រូវបានផ្លាស់ទីទៅកាន់ <b>In Completed Delivery</b> រួចរាល់។<br><span class="text-xs text-slate-500">លោកអ្នកអាចចុច "Start ${getOrdinal(nextAttempt)} Delivery" នៅក្នុង In Completed Delivery ដើម្បីដឹកជញ្ជូនម្ដងទៀត។</span>`,
             icon: "warning",
             showCancelButton: true,
             confirmButtonText: "ទៅកាន់ In Completed Delivery",
@@ -4522,7 +4522,7 @@ async function startSecondDelivery(soNumber) {
 
     const confirmRes = await Swal.fire({
         title: `ចាប់ផ្ដើមដឹកលើកទី ${nextAttempt}? 🚚`,
-        html: `Order: <b class="font-mono text-blue-700">${escapeHtml(order.soNumber)}</b><br>អតិថិជន: <b>${escapeHtml(order.customerName)}</b><br><br>តើអ្នកពិតជាចង់ចាប់ផ្ដើម <b>Start ${nextAttemptName} Delivery</b> មែនទេ?<br><span class="text-xs text-slate-500">Order នេះនឹងត្រូវរត់ត្រឡប់ចូលទៅកាន់ <b>Module 4: Delivery</b> វិញជាមួយស្ថានភាព <b>"${nextAttemptName} Delivery"</b>។</span>`,
+        html: `Order: <b class="font-mono text-blue-700">${escapeHtml(order.soNumber)}</b><br>អតិថិជន: <b>${escapeHtml(order.customerName)}</b><br><br>តើអ្នកពិតជាចង់ចាប់ផ្ដើម <b>Start ${nextAttemptName} Delivery</b> មែនទេ?<br><span class="text-xs text-slate-500">Order នេះនឹងត្រូវរត់ត្រឡប់ចូលទៅកាន់ <b>Delivery</b> វិញជាមួយស្ថានភាព <b>"${nextAttemptName} Delivery"</b>។</span>`,
         icon: "question",
         showCancelButton: true,
         confirmButtonText: `បាទ/ចាស ចាប់ផ្ដើមលើកទី ${nextAttempt}`,
@@ -4558,10 +4558,10 @@ async function startSecondDelivery(soNumber) {
 
     Swal.fire({
         title: `បានចាប់ផ្ដើមដឹកលើកទី ${nextAttempt} (${nextStatus})! 🚀`,
-        html: `Order <b class="font-mono text-blue-700">${escapeHtml(order.soNumber)}</b> បានរត់ត្រឡប់ចូលទៅកាន់ <b>Module 4: Delivery</b> ជាមួយស្ថានភាព <b>"${nextStatus}"</b> (លើកទី ${nextAttempt}) រួចរាល់។`,
+        html: `Order <b class="font-mono text-blue-700">${escapeHtml(order.soNumber)}</b> បានរត់ត្រឡប់ចូលទៅកាន់ <b>Delivery</b> ជាមួយស្ថានភាព <b>"${nextStatus}"</b> (លើកទី ${nextAttempt}) រួចរាល់។`,
         icon: "success",
         showCancelButton: true,
-        confirmButtonText: "ទៅកាន់ Module 4: Delivery ឥឡូវ",
+        confirmButtonText: "ទៅកាន់ Delivery ឥឡូវ",
         cancelButtonText: "នៅទីនេះ",
         confirmButtonColor: "#0284c7",
         cancelButtonColor: "#64748b"
@@ -4732,7 +4732,7 @@ function viewOrderDetails(soNumber) {
                             <span class="w-7 h-7 rounded-xl bg-blue-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">1</span>
                             <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">ជោគជ័យ</span>
                         </div>
-                        <h5 class="text-xs font-bold text-slate-900">Module 1: Register Order</h5>
+                        <h5 class="text-xs font-bold text-slate-900">Register Order</h5>
                         <p class="text-[11px] text-slate-500 mt-0.5">បានចុះឈ្មោះក្នុងប្រព័ន្ធ</p>
                     </div>
                     <div class="mt-3 pt-2 border-t border-slate-100 font-mono text-[11px] text-slate-600 space-y-0.5">
@@ -4751,7 +4751,7 @@ function viewOrderDetails(soNumber) {
                             </span>
                         </div>
                         <div class="flex items-center justify-between">
-                            <h5 class="text-xs font-bold text-slate-900">Module 2: Picking</h5>
+                            <h5 class="text-xs font-bold text-slate-900">Physical Picking</h5>
                             ${order.pickingDuration && order.pickingDuration !== '-' ? `<span class="text-[11px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">${order.pickingDuration}</span>` : ''}
                         </div>
                         <p class="text-[11px] text-slate-500 mt-0.5">រៀបចំទំនិញក្នុងឃ្លាំង</p>
@@ -4773,7 +4773,7 @@ function viewOrderDetails(soNumber) {
                             </span>
                         </div>
                         <div class="flex items-center justify-between">
-                            <h5 class="text-xs font-bold text-slate-900">Module 3: Checking</h5>
+                            <h5 class="text-xs font-bold text-slate-900">Physical Checking</h5>
                             ${order.checkingDuration && order.checkingDuration !== '-' ? `<span class="text-[11px] font-bold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded border border-purple-200">${order.checkingDuration}</span>` : ''}
                         </div>
                         <p class="text-[11px] text-slate-500 mt-0.5">ផ្ទៀងផ្ទាត់គុណភាព &amp; ចំនួន</p>
@@ -4795,7 +4795,7 @@ function viewOrderDetails(soNumber) {
                             </span>
                         </div>
                         <div class="flex items-center justify-between">
-                            <h5 class="text-xs font-bold text-slate-900">Module 4: Delivery</h5>
+                            <h5 class="text-xs font-bold text-slate-900">Delivery</h5>
                             ${order.deliveryDuration && order.deliveryDuration !== '-' ? `<span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">${order.deliveryDuration}</span>` : ''}
                         </div>
                         <p class="text-[11px] text-slate-500 mt-0.5">ដឹកជញ្ជូនដល់អតិថិជន</p>
