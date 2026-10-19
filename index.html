@@ -43,7 +43,7 @@
     <link rel="dns-prefetch" href="https://script.google.com">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css?v=live-v2.4">
+    <link rel="stylesheet" href="css/style.css?v=live-v2.5">
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -389,7 +389,7 @@
 
             <!-- Top Header Right Controls -->
             <div class="flex items-center gap-2 sm:gap-3">
-                <button id="topBtnMobileGuide" onclick="openMobileGuideModal()" class="p-2 sm:px-3 sm:py-1.5 rounded-xl border border-indigo-200/90 bg-indigo-50/80 hover:bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center gap-1.5 shadow-2xs hover:shadow-xs transition cursor-pointer active:scale-95" title="របៀបបើកលើទូរស័ព្ទដៃ និងស្កេន QR (Mobile Guide)">
+                <button id="topBtnMobileGuide" onclick="openMobileGuideModal()" class="hidden p-2 sm:px-3 sm:py-1.5 rounded-xl border border-indigo-200/90 bg-indigo-50/80 hover:bg-indigo-100 text-indigo-700 text-xs font-bold flex items-center gap-1.5 shadow-2xs hover:shadow-xs transition cursor-pointer active:scale-95" title="របៀបបើកលើទូរស័ព្ទដៃ និងស្កេន QR (Mobile Guide) - សម្រាប់តែ Admin">
                     <i data-lucide="smartphone" class="w-4 h-4 text-indigo-600"></i>
                     <span class="hidden sm:inline">បើកលើទូរស័ព្ទ 📱</span>
                 </button>
@@ -2587,7 +2587,12 @@
                     <i data-lucide="smartphone" class="w-6 h-6"></i>
                 </div>
                 <div>
-                    <h3 class="text-base sm:text-lg font-black text-slate-900 tracking-tight">របៀបបើក Web App លើទូរស័ព្ទដៃ 📱</h3>
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-base sm:text-lg font-black text-slate-900 tracking-tight">របៀបបើក Web App លើទូរស័ព្ទដៃ 📱</h3>
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                            <i data-lucide="shield-check" class="w-3 h-3"></i> Role: Admin
+                        </span>
+                    </div>
                     <p class="text-xs text-slate-500 mt-0.5">ស្កេន QR Code និងគ្រប់គ្រង Order បានគ្រប់ទីកន្លែងលើ iPhone & Android</p>
                 </div>
             </div>
@@ -2863,8 +2868,8 @@
     </div>
 
     <!-- App Core Scripts -->
-    <script src="js/data.js?v=live-v2.4"></script>
-    <script src="js/sheets-sync.js?v=live-v2.4"></script>
-    <script src="js/app.js?v=live-v2.4"></script>
+    <script src="js/data.js?v=live-v2.5"></script>
+    <script src="js/sheets-sync.js?v=live-v2.5"></script>
+    <script src="js/app.js?v=live-v2.5"></script>
 </body>
 </html>
