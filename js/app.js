@@ -7016,15 +7016,16 @@ function renderReportView() {
 
     // KPI Card 2: Invoice Amount Breakdown by Currency
     if (elInvoiceUSD) {
-        elInvoiceUSD.innerHTML = invoiceUSD > 0
-            ? `<span class="text-emerald-600 font-bold">$${invoiceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>`
-            : '<span class="text-slate-400 font-normal">$0.00</span>';
+        elInvoiceUSD.textContent = `$${invoiceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
 
     if (elInvoiceKHR) {
-        elInvoiceKHR.innerHTML = invoiceKHR > 0
-            ? `<span class="text-amber-600 font-bold">៛${invoiceKHR.toLocaleString('en-US')}</span>`
-            : '<span class="text-slate-400 font-normal">៛0</span>';
+        elInvoiceKHR.textContent = `៛${invoiceKHR.toLocaleString('en-US')}`;
+    }
+
+    const elInvoiceCount = document.getElementById("reportSummaryInvoiceOrdersCount");
+    if (elInvoiceCount) {
+        elInvoiceCount.textContent = `${totalOrders.toLocaleString()} orders`;
     }
 
     if (elInvoiceBadge) {
@@ -7042,10 +7043,9 @@ function renderReportView() {
 
     if (sumTotalAmount) {
         const invParts = [];
-        if (invoiceUSD > 0) invParts.push(`<span class="text-emerald-600 font-bold">$${invoiceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>`);
-        if (invoiceKHR > 0) invParts.push(`<span class="text-amber-600 font-bold">៛${invoiceKHR.toLocaleString('en-US')}</span>`);
-        const invTotalFormatted = invParts.length > 0 ? invParts.join(' <span class="text-slate-300 font-normal">|</span> ') : '<span class="text-slate-400 font-normal">$0.00</span>';
-        sumTotalAmount.innerHTML = `Total: ${invTotalFormatted}`;
+        if (invoiceUSD > 0) invParts.push(`$${invoiceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+        if (invoiceKHR > 0) invParts.push(`៛${invoiceKHR.toLocaleString('en-US')}`);
+        sumTotalAmount.textContent = invParts.join(" | ") || "$0.00";
     }
 
     function formatPaymentCurrencyPair(usd, khr) {
@@ -7062,11 +7062,23 @@ function renderReportView() {
 
     const totalPayUSD = accountUSD + cashUSD;
     const totalPayKHR = accountKHR + cashKHR;
-    const totParts = [];
-    if (totalPayUSD > 0) totParts.push(`<span class="text-emerald-600 font-bold">$${totalPayUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>`);
-    if (totalPayKHR > 0) totParts.push(`<span class="text-amber-600 font-bold">៛${totalPayKHR.toLocaleString('en-US')}</span>`);
-    const totalPayFormatted = totParts.length > 0 ? totParts.join(' <span class="text-slate-300 font-normal">|</span> ') : '<span class="text-slate-400 font-normal">$0.00</span>';
-    if (elPayTotal) elPayTotal.innerHTML = `Total: ${totalPayFormatted}`;
+
+    const elPayTotalUSD = document.getElementById("reportSummaryPaymentTotalUSD");
+    const elPayTotalKHR = document.getElementById("reportSummaryPaymentTotalKHR");
+
+    if (elPayTotalUSD) {
+        elPayTotalUSD.textContent = `$${totalPayUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    if (elPayTotalKHR) {
+        elPayTotalKHR.textContent = `៛${totalPayKHR.toLocaleString('en-US')}`;
+    }
+
+    if (elPayTotal) {
+        const totParts = [];
+        if (totalPayUSD > 0) totParts.push(`$${totalPayUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+        if (totalPayKHR > 0) totParts.push(`៛${totalPayKHR.toLocaleString('en-US')}`);
+        elPayTotal.textContent = totParts.join(" | ") || "$0.00";
+    }
 
     // 5. Render Table Thead based on subTab (with interactive Sort on SO Date)
     const thead = document.getElementById("reportTableHead");
