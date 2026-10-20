@@ -7002,8 +7002,8 @@ function renderReportView() {
 
     function formatPaymentCurrencyPair(usd, khr) {
         const parts = [];
-        if (usd > 0) parts.push(`$${usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
-        if (khr > 0) parts.push(`៛${khr.toLocaleString('en-US')}`);
+        if (usd > 0) parts.push(`<span class="text-emerald-600 font-bold">$${usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>`);
+        if (khr > 0) parts.push(`<span class="text-amber-600 font-bold">៛${khr.toLocaleString('en-US')}</span>`);
         if (parts.length === 0) return '<span class="text-slate-400 font-normal">$0.00</span>';
         return parts.join(' <span class="text-slate-300 font-normal">|</span> ');
     }
@@ -7015,10 +7015,10 @@ function renderReportView() {
     const totalPayUSD = accountUSD + cashUSD;
     const totalPayKHR = accountKHR + cashKHR;
     const totParts = [];
-    if (totalPayUSD > 0) totParts.push(`$${totalPayUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
-    if (totalPayKHR > 0) totParts.push(`៛${totalPayKHR.toLocaleString('en-US')}`);
-    const totalPayFormatted = totParts.length > 0 ? totParts.join(" | ") : "$0.00";
-    if (elPayTotal) elPayTotal.textContent = `Total: ${totalPayFormatted}`;
+    if (totalPayUSD > 0) totParts.push(`<span class="text-emerald-600 font-bold">$${totalPayUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>`);
+    if (totalPayKHR > 0) totParts.push(`<span class="text-amber-600 font-bold">៛${totalPayKHR.toLocaleString('en-US')}</span>`);
+    const totalPayFormatted = totParts.length > 0 ? totParts.join(' <span class="text-slate-300 font-normal">|</span> ') : '<span class="text-slate-400 font-normal">$0.00</span>';
+    if (elPayTotal) elPayTotal.innerHTML = `Total: ${totalPayFormatted}`;
 
     // 5. Render Table Thead based on subTab (with interactive Sort on SO Date)
     const thead = document.getElementById("reportTableHead");
