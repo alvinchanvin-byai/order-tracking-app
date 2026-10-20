@@ -76,6 +76,7 @@ const DASHBOARD_COLUMNS = [
     { key: "checkerBy", label: "Checker by" },
     { key: "deliveryBy", label: "Delivery by" },
     { key: "specialNotes", label: "Special Notes" },
+    { key: "paymentReceipt", label: "Payment Receipt" },
     { key: "deliveryNotes", label: "Delivery Notes" },
     { key: "processTimeline", label: "Process Timeline" },
     { key: "actions", label: "Actions" }
@@ -460,9 +461,193 @@ function normalizeOrderDates(order) {
         createdBy: order.createdBy || "Admin",
         pickerBy: order.pickerBy || "",
         checkerBy: order.checkerBy || "",
-        deliveryBy: order.deliveryBy || ""
+        deliveryBy: order.deliveryBy || "",
+        paymentReceipt: order.paymentReceipt || "",
+        paymentReceiptType: order.paymentReceiptType || "",
+        paymentReceiptAmount: (order.paymentReceiptAmount !== undefined && order.paymentReceiptAmount !== null && order.paymentReceiptAmount !== "") ? Number(order.paymentReceiptAmount) : 0,
+        paymentAccountAmount: (order.paymentAccountAmount !== undefined && order.paymentAccountAmount !== null && order.paymentAccountAmount !== "") ? Number(order.paymentAccountAmount) : 0,
+        paymentCashAmount: (order.paymentCashAmount !== undefined && order.paymentCashAmount !== null && order.paymentCashAmount !== "") ? Number(order.paymentCashAmount) : 0
     };
 }
+
+// ========================================================
+// PAYMENT RECEIPT HELPERS: FORMAT & BADGE RENDERER
+// ========================================================
+function formatPaymentReceiptDisplay(order) {
+    if (!order) return "-";
+    const type = order.paymentReceiptType || "";
+    const accAmt = Number(order.paymentAccountAmount || 0);
+    const cashAmt = Number(order.paymentCashAmount || 0);
+    const totalAmt = Number(order.paymentReceiptAmount || 0);
+    const curr = (order.currency === "KHR") ? "៛" : "$";
+
+    if (type === "Paid to Company Account & Cash" || (accAmt > 0 && cashAmt > 0)) {
+        return `Company Account: ${curr}${accAmt.toLocaleString()} | Cash: ${curr}${cashAmt.toLocaleString()}`;
+    }
+    if (type === "Paid to Company Account" || (accAmt > 0 && cashAmt === 0)) {
+        const amt = accAmt > 0 ? accAmt : totalAmt;
+        return amt > 0 ? `Paid to Company Account (${curr}${amt.toLocaleString()})` : "Paid to Company Account";
+    }
+    if (type === "Cash" || (cashAmt > 0 && accAmt === 0)) {
+        const amt = cashAmt > 0 ? cashAmt : totalAmt;
+        return amt > 0 ? `Cash (${curr}${amt.toLocaleString()})` : "Cash";
+    }
+    if (order.paymentReceipt && String(order.paymentReceipt).trim() && String(order.paymentReceipt).trim() !== "-") {
+        return String(order.paymentReceipt).trim();
+    }
+    return "-";
+}
+window.formatPaymentReceiptDisplay = formatPaymentReceiptDisplay;
+
+function renderPaymentReceiptBadge(order) {
+    if (!order) return '<span class="text-slate-300 font-semibold">-</span>';
+    const type = order.paymentReceiptType || "";
+    const accAmt = Number(order.paymentAccountAmount || 0);
+    const cashAmt = Number(order.paymentCashAmount || 0);
+    const totalAmt = Number(order.paymentReceiptAmount || 0);
+    const curr = (order.currency === "KHR") ? "៛" : "$";
+
+    // 1. Both Company Account & Cash
+    if (type === "Paid to Company Account & Cash" || (accAmt > 0 && cashAmt > 0)) {
+        return `
+            <div class="flex flex-col gap-1 items-start">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/80 font-bold text-[11px] whitespace-nowrap shadow-2xs">
+                    <i data-lucide="building-2" class="w-3 h-3 text-blue-600 shrink-0"></i>
+                    <span>Account: ${curr}${accAmt.toLocaleString()}</span>
+                </span>
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/80 font-bold text-[11px] whitespace-nowrap shadow-2xs">
+                    <i data-lucide="banknote" class="w-3 h-3 text-emerald-600 shrink-0"></i>
+                    <span>Cash: ${curr}${cashAmt.toLocaleString()}</span>
+                </span>
+            </div>
+        `;
+    }
+
+    // 2. Company Account only
+    if (type === "Paid to Company Account" || (accAmt > 0 && cashAmt === 0)) {
+        const amt = accAmt > 0 ? accAmt : totalAmt;
+        const amtText = amt > 0 ? `: ${curr}${amt.toLocaleString()}` : "";
+        return `
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200/80 font-bold text-xs whitespace-nowrap shadow-2xs" title="Paid to Company Account">
+                <i data-lucide="building-2" class="w-3.5 h-3.5 text-blue-600 shrink-0"></i>
+                <span>Company Account${amtText}</span>
+            </span>
+        `;
+    }
+
+    // 3. Cash only
+    if (type === "Cash" || (cashAmt > 0 && accAmt === 0)) {
+        const amt = cashAmt > 0 ? cashAmt : totalAmt;
+        const amtText = amt > 0 ? `: ${curr}${amt.toLocaleString()}` : "";
+        return `
+            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/80 font-bold text-xs whitespace-nowrap shadow-2xs" title="Cash">
+                <i data-lucide="banknote" class="w-3.5 h-3.5 text-emerald-600 shrink-0"></i>
+                <span>Cash${amtText}</span>
+            </span>
+        `;
+    }
+
+    // 4. Fallback from string format
+    const raw = String(order.paymentReceipt || "").trim();
+    if (raw && raw !== "-") {
+        const isCash = /cash/i.test(raw);
+        const isAcc = /account|aba|acleda|wing/i.test(raw);
+        if (isAcc) {
+            return `
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200/80 font-bold text-xs whitespace-nowrap shadow-2xs">
+                    <i data-lucide="building-2" class="w-3.5 h-3.5 text-blue-600 shrink-0"></i>
+                    <span>${escapeHtml(raw)}</span>
+                </span>
+            `;
+        } else if (isCash) {
+            return `
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/80 font-bold text-xs whitespace-nowrap shadow-2xs">
+                    <i data-lucide="banknote" class="w-3.5 h-3.5 text-emerald-600 shrink-0"></i>
+                    <span>${escapeHtml(raw)}</span>
+                </span>
+            `;
+        }
+        return `<span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-semibold text-xs whitespace-nowrap">${escapeHtml(raw)}</span>`;
+    }
+
+    return '<span class="text-slate-300 font-semibold">-</span>';
+}
+window.renderPaymentReceiptBadge = renderPaymentReceiptBadge;
+
+function togglePaymentOption(type) {
+    const chkAccount = document.getElementById("chkPaymentAccount");
+    const chkCash = document.getElementById("chkPaymentCash");
+    const grpAccount = document.getElementById("inputGroupPaymentAccount");
+    const grpCash = document.getElementById("inputGroupPaymentCash");
+    const cardAccount = document.getElementById("cardPaymentAccount");
+    const cardCash = document.getElementById("cardPaymentCash");
+    const amtAccount = document.getElementById("amountPaymentAccount");
+    const amtCash = document.getElementById("amountPaymentCash");
+
+    const soNumber = document.getElementById("endDeliverySONumber")?.value;
+    const order = AppState.orders.find(o => o.soNumber === soNumber);
+    const invoiceAmt = order ? (Number(order.invoiceAmount) || 0) : 0;
+
+    if (type === "account") {
+        if (chkAccount && chkAccount.checked) {
+            if (grpAccount) grpAccount.classList.remove("hidden");
+            if (cardAccount) cardAccount.className = "p-3 rounded-xl border-2 border-blue-500 bg-blue-50/30 transition-all";
+            if (amtAccount && (!amtAccount.value || amtAccount.value === "0")) {
+                const remAmt = (chkCash && chkCash.checked && amtCash) 
+                    ? Math.max(0, invoiceAmt - (parseFloat(amtCash.value) || 0))
+                    : invoiceAmt;
+                if (remAmt > 0) amtAccount.value = remAmt;
+            }
+            if (amtAccount) amtAccount.focus();
+        } else {
+            if (grpAccount) grpAccount.classList.add("hidden");
+            if (cardAccount) cardAccount.className = "p-3 rounded-xl border border-slate-200 bg-white hover:border-blue-300 transition-all";
+            if (amtAccount) amtAccount.value = "";
+        }
+    } else if (type === "cash") {
+        if (chkCash && chkCash.checked) {
+            if (grpCash) grpCash.classList.remove("hidden");
+            if (cardCash) cardCash.className = "p-3 rounded-xl border-2 border-emerald-500 bg-emerald-50/30 transition-all";
+            if (amtCash && (!amtCash.value || amtCash.value === "0")) {
+                const remAmt = (chkAccount && chkAccount.checked && amtAccount)
+                    ? Math.max(0, invoiceAmt - (parseFloat(amtAccount.value) || 0))
+                    : invoiceAmt;
+                if (remAmt > 0) amtCash.value = remAmt;
+            }
+            if (amtCash) amtCash.focus();
+        } else {
+            if (grpCash) grpCash.classList.add("hidden");
+            if (cardCash) cardCash.className = "p-3 rounded-xl border border-slate-200 bg-white hover:border-emerald-300 transition-all";
+            if (amtCash) amtCash.value = "";
+        }
+    }
+}
+window.togglePaymentOption = togglePaymentOption;
+
+function quickFillPaymentAmount(type) {
+    const soNumber = document.getElementById("endDeliverySONumber")?.value;
+    const order = AppState.orders.find(o => o.soNumber === soNumber);
+    const invoiceAmt = order ? (Number(order.invoiceAmount) || 0) : 0;
+
+    if (type === "account") {
+        const chk = document.getElementById("chkPaymentAccount");
+        if (chk && !chk.checked) {
+            chk.checked = true;
+            togglePaymentOption("account");
+        }
+        const amtEl = document.getElementById("amountPaymentAccount");
+        if (amtEl) amtEl.value = invoiceAmt > 0 ? invoiceAmt : "";
+    } else if (type === "cash") {
+        const chk = document.getElementById("chkPaymentCash");
+        if (chk && !chk.checked) {
+            chk.checked = true;
+            togglePaymentOption("cash");
+        }
+        const amtEl = document.getElementById("amountPaymentCash");
+        if (amtEl) amtEl.value = invoiceAmt > 0 ? invoiceAmt : "";
+    }
+}
+window.quickFillPaymentAmount = quickFillPaymentAmount;
 
 // ========================================================
 // LOCATION HELPERS: STRICT ENGLISH MAPPING FOR CITY & KHAN
@@ -619,7 +804,12 @@ const DEMO_ORDERS = [
         createdBy: "Administrator",
         pickerBy: "Bona Picker",
         checkerBy: "Chanthy Checker",
-        deliveryBy: "Dara Driver"
+        deliveryBy: "Dara Driver",
+        paymentReceiptType: "Paid to Company Account",
+        paymentAccountAmount: 3200,
+        paymentCashAmount: 0,
+        paymentReceiptAmount: 3200,
+        paymentReceipt: "Paid to Company Account ($3,200.00)"
     },
     {
         timestamp: "04/10/26 10:30",
@@ -2956,7 +3146,12 @@ function renderDashboardTable() {
                     ${order.specialNotes ? escapeHtml(order.specialNotes) : '<span class="text-slate-300 not-italic">-</span>'}
                 </td>
 
-                <!-- 13.1 Delivery Notes -->
+                <!-- 13.1 Payment Receipt -->
+                <td data-col="paymentReceipt" class="py-3 px-3.5 whitespace-nowrap">
+                    ${renderPaymentReceiptBadge(order)}
+                </td>
+
+                <!-- 13.2 Delivery Notes -->
                 <td data-col="deliveryNotes" class="py-3 px-3.5 text-slate-600 whitespace-nowrap max-w-[200px] truncate font-mono text-[11px]" title="${escapeHtml(order.deliveryNotes || "គ្មាន")}">
                     ${order.deliveryNotes ? escapeHtml(order.deliveryNotes.replace(/\r?\n/g, ' | ')) : '<span class="text-slate-300 font-sans not-italic">-</span>'}
                 </td>
@@ -4280,6 +4475,51 @@ function openEndDeliveryModal(soNumber) {
         successBadgeEl.textContent = attempts > 1 ? successName : "ជោគជ័យ";
     }
 
+    // Setup Payment Receipt UI with order currency and existing values
+    const currSymbol = (order.currency === "KHR") ? "៛" : "$";
+    const symAcc = document.getElementById("symbolPaymentAccount");
+    const symCash = document.getElementById("symbolPaymentCash");
+    if (symAcc) symAcc.textContent = currSymbol;
+    if (symCash) symCash.textContent = currSymbol;
+
+    const chkAcc = document.getElementById("chkPaymentAccount");
+    const chkCash = document.getElementById("chkPaymentCash");
+    const amtAcc = document.getElementById("amountPaymentAccount");
+    const amtCash = document.getElementById("amountPaymentCash");
+    const grpAcc = document.getElementById("inputGroupPaymentAccount");
+    const grpCash = document.getElementById("inputGroupPaymentCash");
+    const cardAcc = document.getElementById("cardPaymentAccount");
+    const cardCash = document.getElementById("cardPaymentCash");
+
+    const hasAcc = (order.paymentReceiptType === "Paid to Company Account" || order.paymentReceiptType === "Paid to Company Account & Cash" || (Number(order.paymentAccountAmount) > 0));
+    const hasCash = (order.paymentReceiptType === "Cash" || order.paymentReceiptType === "Paid to Company Account & Cash" || (Number(order.paymentCashAmount) > 0));
+
+    if (chkAcc) {
+        chkAcc.checked = hasAcc;
+        if (hasAcc) {
+            if (grpAcc) grpAcc.classList.remove("hidden");
+            if (cardAcc) cardAcc.className = "p-3 rounded-xl border-2 border-blue-500 bg-blue-50/30 transition-all";
+            if (amtAcc) amtAcc.value = Number(order.paymentAccountAmount) || Number(order.paymentReceiptAmount) || (Number(order.invoiceAmount) || "");
+        } else {
+            if (grpAcc) grpAcc.classList.add("hidden");
+            if (cardAcc) cardAcc.className = "p-3 rounded-xl border border-slate-200 bg-white hover:border-blue-300 transition-all";
+            if (amtAcc) amtAcc.value = "";
+        }
+    }
+
+    if (chkCash) {
+        chkCash.checked = hasCash;
+        if (hasCash) {
+            if (grpCash) grpCash.classList.remove("hidden");
+            if (cardCash) cardCash.className = "p-3 rounded-xl border-2 border-emerald-500 bg-emerald-50/30 transition-all";
+            if (amtCash) amtCash.value = Number(order.paymentCashAmount) || (Number(order.invoiceAmount) || "");
+        } else {
+            if (grpCash) grpCash.classList.add("hidden");
+            if (cardCash) cardCash.className = "p-3 rounded-xl border border-slate-200 bg-white hover:border-emerald-300 transition-all";
+            if (amtCash) amtCash.value = "";
+        }
+    }
+
     // Reset radio to Success
     const defaultRadio = document.querySelector("input[name='deliveryFinalStatus'][value='Success']") ||
                          document.querySelector("input[name='deliveryFinalStatus'][value='Delivered']");
@@ -4357,6 +4597,49 @@ async function confirmEndDelivery() {
 
     const notes = document.getElementById("endDeliveryNotes")?.value.trim() || "";
 
+    // Payment Receipt handling (Paid to Company Account & Cash)
+    const chkAcc = document.getElementById("chkPaymentAccount");
+    const chkCash = document.getElementById("chkPaymentCash");
+    const amtAccEl = document.getElementById("amountPaymentAccount");
+    const amtCashEl = document.getElementById("amountPaymentCash");
+
+    let isAccChecked = Boolean(chkAcc && chkAcc.checked);
+    let isCashChecked = Boolean(chkCash && chkCash.checked);
+    let accAmt = isAccChecked ? (parseFloat(amtAccEl?.value) || 0) : 0;
+    let cashAmt = isCashChecked ? (parseFloat(amtCashEl?.value) || 0) : 0;
+
+    if (isAccChecked && accAmt <= 0) {
+        showToast("សូមបញ្ចូលចំនួនទឹកប្រាក់សម្រាប់ Paid to Company Account!", "warning");
+        if (amtAccEl) amtAccEl.focus();
+        return;
+    }
+    if (isCashChecked && cashAmt <= 0) {
+        showToast("សូមបញ្ចូលចំនួនទឹកប្រាក់សម្រាប់ Cash!", "warning");
+        if (amtCashEl) amtCashEl.focus();
+        return;
+    }
+
+    const curr = (order.currency === "KHR") ? "៛" : "$";
+    let paymentType = "";
+    let paymentReceiptStr = "";
+
+    if (isAccChecked && isCashChecked) {
+        paymentType = "Paid to Company Account & Cash";
+        paymentReceiptStr = `Company Account: ${curr}${accAmt.toLocaleString()} | Cash: ${curr}${cashAmt.toLocaleString()}`;
+    } else if (isAccChecked) {
+        paymentType = "Paid to Company Account";
+        paymentReceiptStr = `Paid to Company Account (${curr}${accAmt.toLocaleString()})`;
+    } else if (isCashChecked) {
+        paymentType = "Cash";
+        paymentReceiptStr = `Cash (${curr}${cashAmt.toLocaleString()})`;
+    }
+
+    order.paymentReceiptType = paymentType;
+    order.paymentAccountAmount = accAmt;
+    order.paymentCashAmount = cashAmt;
+    order.paymentReceiptAmount = accAmt + cashAmt;
+    order.paymentReceipt = paymentReceiptStr;
+
     const curUser = getCurrentUser();
     const deliveryName = order.deliveryBy || (curUser ? (curUser.displayName || curUser.username) : "Admin");
 
@@ -4380,7 +4663,12 @@ async function confirmEndDelivery() {
     SheetsSync.syncStageUpdate(soNumber, "DELIVERY_END", now, order.deliveryDuration, statusVal, order.specialNotes, {
         deliveryBy: deliveryName,
         deliveryAttempts: order.deliveryAttempts,
-        deliveryNotes: order.deliveryNotes
+        deliveryNotes: order.deliveryNotes,
+        paymentReceipt: order.paymentReceipt,
+        paymentReceiptType: order.paymentReceiptType,
+        paymentReceiptAmount: order.paymentReceiptAmount,
+        paymentAccountAmount: order.paymentAccountAmount,
+        paymentCashAmount: order.paymentCashAmount
     });
 
     const isSuccess = (statusVal === "Success" || statusVal.endsWith("Success") || statusVal === "Delivered");
@@ -4415,7 +4703,7 @@ async function confirmEndDelivery() {
 
     Swal.fire({
         title: titleText,
-        html: `SO#: <b>${soNumber}</b><br>អតិថិជន: <b>${escapeHtml(order.customerName)}</b><br>ស្ថានភាពចុងក្រោយ: <b class="text-emerald-700 font-bold">${statusVal}</b><br>រយៈពេលដឹកជញ្ជូន: <b class="text-slate-700">${order.deliveryDuration}</b><br>ទិន្នន័យបាន Auto-Update ទៅ Google Sheet។`,
+        html: `SO#: <b>${soNumber}</b><br>អតិថិជន: <b>${escapeHtml(order.customerName)}</b><br>ស្ថានភាពចុងក្រោយ: <b class="text-emerald-700 font-bold">${statusVal}</b><br>រយៈពេលដឹកជញ្ជូន: <b class="text-slate-700">${order.deliveryDuration}</b><br>${order.paymentReceipt ? `បង្កាន់ដៃទូទាត់ (Payment): <b class="text-indigo-700">${escapeHtml(order.paymentReceipt)}</b><br>` : ''}ទិន្នន័យបាន Auto-Update ទៅ Google Sheet។`,
         icon: iconType,
         confirmButtonText: "រួចរាល់",
         confirmButtonColor: isSuccess ? "#10b981" : "#ef4444"
@@ -4742,6 +5030,21 @@ function viewOrderDetails(soNumber) {
                 </div>
             </div>` : ''}
         </div>
+
+        <!-- Payment Receipt Info (ប្រសិនបើមាន) -->
+        ${(order.paymentReceipt && order.paymentReceipt !== '-' && order.paymentReceipt.trim() !== '') ? `
+        <div class="mb-4 p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-200/90 flex items-start gap-2.5 text-xs text-slate-700 shadow-2xs">
+            <i data-lucide="receipt" class="w-4 h-4 text-indigo-600 shrink-0 mt-0.5"></i>
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center justify-between mb-1.5">
+                    <span class="font-bold text-indigo-950">បង្កាន់ដៃទូទាត់ប្រាក់ (Payment Receipt):</span>
+                    <span class="text-[10px] font-semibold px-2 py-0.5 bg-indigo-100 text-indigo-800 rounded-md">${escapeHtml(order.paymentReceiptType || "Payment Collected")}</span>
+                </div>
+                <div class="font-semibold text-slate-800 flex items-center gap-2">
+                    ${renderPaymentReceiptBadge(order)}
+                </div>
+            </div>
+        </div>` : ''}
 
         <!-- 4 Modules Step Progress Timeline (Horizontal 4-columns layout) -->
         <div class="mb-4">
@@ -5130,6 +5433,12 @@ function openEditOrderModal(soNumber) {
     const notesInput = document.getElementById("editSpecialNotes");
     if (notesInput) notesInput.value = order.specialNotes || "";
 
+    const payTypeSelect = document.getElementById("editPaymentReceiptType");
+    if (payTypeSelect) payTypeSelect.value = order.paymentReceiptType || "";
+
+    const payAmtInput = document.getElementById("editPaymentReceiptAmount");
+    if (payAmtInput) payAmtInput.value = (order.paymentReceiptAmount !== undefined && order.paymentReceiptAmount !== null && order.paymentReceiptAmount !== "") ? order.paymentReceiptAmount : "";
+
     const editModal = document.getElementById("editOrderModal");
     if (editModal) editModal.classList.remove("hidden");
     lucide.createIcons();
@@ -5213,6 +5522,29 @@ async function handleEditOrderSubmit(e) {
     order.bu = document.getElementById("editBU")?.value || "";
     order.documentType = document.getElementById("editDocType")?.value || "";
     order.specialNotes = document.getElementById("editSpecialNotes").value.trim();
+
+    // Update Payment Receipt fields from edit modal
+    const editPayType = document.getElementById("editPaymentReceiptType")?.value || "";
+    const editPayAmt = parseFloat(document.getElementById("editPaymentReceiptAmount")?.value) || 0;
+    order.paymentReceiptType = editPayType;
+    order.paymentReceiptAmount = editPayAmt;
+    const currSym = (order.currency === "KHR") ? "៛" : "$";
+    if (editPayType === "Paid to Company Account") {
+        order.paymentAccountAmount = editPayAmt;
+        order.paymentCashAmount = 0;
+        order.paymentReceipt = editPayAmt > 0 ? `Paid to Company Account (${currSym}${editPayAmt.toLocaleString()})` : "Paid to Company Account";
+    } else if (editPayType === "Cash") {
+        order.paymentCashAmount = editPayAmt;
+        order.paymentAccountAmount = 0;
+        order.paymentReceipt = editPayAmt > 0 ? `Cash (${currSym}${editPayAmt.toLocaleString()})` : "Cash";
+    } else if (editPayType === "Paid to Company Account & Cash") {
+        order.paymentReceipt = editPayAmt > 0 ? `Paid (${currSym}${editPayAmt.toLocaleString()})` : "Paid to Company Account & Cash";
+    } else {
+        order.paymentAccountAmount = 0;
+        order.paymentCashAmount = 0;
+        order.paymentReceipt = "";
+    }
+
     order.lastUpdated = formatDateTimeDisplay(new Date());
 
     saveOrdersToStorage();
@@ -6213,7 +6545,8 @@ function getReportHeaders(subTab) {
         "Total Package",
         "BU",
         "Document Type",
-        "Special Note"
+        "Special Note",
+        "Payment Receipt"
     ];
 
     if (subTab === "register") {
@@ -6260,7 +6593,8 @@ function getReportRowData(order, subTab) {
         formatPackageWithUnit(order.totalPackage, order.packageUnit),
         order.bu || "-",
         order.documentType || "SO to customer",
-        order.specialNotes || "-"
+        order.specialNotes || "-",
+        formatPaymentReceiptDisplay(order)
     ];
 
     if (subTab === "register") {
@@ -6657,6 +6991,11 @@ function renderReportView() {
                 <!-- 13. Special Note -->
                 <td class="py-3 px-3.5 text-slate-600 whitespace-nowrap max-w-[200px] truncate" title="${escapeHtml(order.specialNotes || '')}">
                     ${escapeHtml(order.specialNotes || "-")}
+                </td>
+
+                <!-- 13.1 Payment Receipt -->
+                <td class="py-3 px-3.5 whitespace-nowrap">
+                    ${renderPaymentReceiptBadge(order)}
                 </td>
 
                 <!-- Stage Specific Columns (14-17) -->
