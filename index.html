@@ -43,7 +43,7 @@
     <link rel="dns-prefetch" href="https://script.google.com">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css?v=live-v3.1">
+    <link rel="stylesheet" href="css/style.css?v=live-v3.2">
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -1010,8 +1010,8 @@
                                 <i data-lucide="building-2" class="w-3.5 h-3.5 text-blue-600 shrink-0"></i>
                                 <span class="truncate">Account:</span>
                             </span>
-                            <div id="reportSummaryPaymentAccount" class="text-xs sm:text-sm font-bold font-mono text-blue-700 text-right whitespace-nowrap">
-                                $0.00
+                            <div id="reportSummaryPaymentAccount" class="text-xs sm:text-sm font-bold font-mono text-right whitespace-nowrap">
+                                <span class="text-slate-400 font-normal">$0.00</span>
                             </div>
                         </div>
 
@@ -1021,15 +1021,25 @@
                                 <i data-lucide="banknote" class="w-3.5 h-3.5 text-emerald-600 shrink-0"></i>
                                 <span class="truncate">Cash:</span>
                             </span>
-                            <div id="reportSummaryPaymentCash" class="text-xs sm:text-sm font-bold font-mono text-emerald-700 text-right whitespace-nowrap">
-                                $0.00
+                            <div id="reportSummaryPaymentCash" class="text-xs sm:text-sm font-bold font-mono text-right whitespace-nowrap">
+                                <span class="text-slate-400 font-normal">$0.00</span>
                             </div>
                         </div>
                     </div>
 
                     <div class="text-[10px] text-slate-400 flex items-center justify-between pt-1 border-t border-slate-100">
-                        <span class="truncate">Bank vs Cash</span>
-                        <span id="reportSummaryPaymentTotal" class="font-bold font-mono text-slate-600 whitespace-nowrap">Total: $0.00</span>
+                        <div class="flex items-center gap-1.5 font-medium">
+                            <span class="inline-flex items-center gap-1 text-[10px] text-emerald-700">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                <span>$ USD</span>
+                            </span>
+                            <span class="text-slate-300">/</span>
+                            <span class="inline-flex items-center gap-1 text-[10px] text-amber-700">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                <span>៛ KHR</span>
+                            </span>
+                        </div>
+                        <div id="reportSummaryPaymentTotal" class="text-[10px] sm:text-[11px] font-bold font-mono text-slate-600 whitespace-nowrap text-right">Total: $0.00</div>
                     </div>
                 </div>
             </div>
@@ -3005,8 +3015,8 @@
     </div>
 
     <!-- App Core Scripts -->
-    <script src="js/data.js?v=live-v3.1"></script>
-    <script src="js/sheets-sync.js?v=live-v3.1"></script>
-    <script src="js/app.js?v=live-v3.1"></script>
+    <script src="js/data.js?v=live-v3.2"></script>
+    <script src="js/sheets-sync.js?v=live-v3.2"></script>
+    <script src="js/app.js?v=live-v3.2"></script>
 </body>
 </html>
