@@ -50,22 +50,23 @@ const HEADERS_TRACKING = [
   "BU",                   // Col L (12)
   "Document Type",        // Col M (13)
   "Special Notes",        // Col N (14)
-  "Overall Status",       // Col O (15)
-  "Picking Start Time",   // Col P (16)
-  "Picking End Time",     // Col Q (17)
-  "Picking Duration",     // Col R (18)
-  "Checking Start Time",  // Col S (19)
-  "Checking End Time",    // Col T (20)
-  "Checking Duration",    // Col U (21)
-  "Delivery Start Time",  // Col V (22)
-  "Delivery End Time",    // Col W (23)
-  "Delivery Duration",    // Col X (24)
-  "Last Updated",         // Col Y (25)
-  "Created by",           // Col Z (26)
-  "Picker by",            // Col AA (27)
-  "Checker by",           // Col AB (28)
-  "Delivery by",          // Col AC (29)
-  "Delivery Notes"        // Col AD (30)
+  "Payment Receipt",      // Col O (15)
+  "Overall Status",       // Col P (16)
+  "Picking Start Time",   // Col Q (17)
+  "Picking End Time",     // Col R (18)
+  "Picking Duration",     // Col S (19)
+  "Checking Start Time",  // Col T (20)
+  "Checking End Time",    // Col U (21)
+  "Checking Duration",    // Col V (22)
+  "Delivery Start Time",  // Col W (23)
+  "Delivery End Time",    // Col X (24)
+  "Delivery Duration",    // Col Y (25)
+  "Last Updated",         // Col Z (26)
+  "Created by",           // Col AA (27)
+  "Picker by",            // Col AB (28)
+  "Checker by",           // Col AC (29)
+  "Delivery by",          // Col AD (30)
+  "Delivery Notes"        // Col AE (31)
 ];
 
 // 2. Column Definitions for "Customer Information"
@@ -285,7 +286,27 @@ function setupTrackingHeaders() {
 function cleanAndFormatAllHeadersAndDurations() {
   var ss = getSpreadsheet();
   
-  // 1. Update Headers for all 6 sheets
+  // 1. Ensure "Payment Receipt" column exists in SHEET_TRACKING right after "Special Notes"
+  var trackSheet = ss.getSheetByName(SHEET_TRACKING);
+  if (trackSheet) {
+    var lastCol = Math.max(trackSheet.getLastColumn(), 1);
+    var curHeaders = trackSheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    var hasPaymentCol = curHeaders.some(function(h) { return String(h).trim().toLowerCase() === "payment receipt"; });
+    if (!hasPaymentCol) {
+      var specCol = -1;
+      for (var i = 0; i < curHeaders.length; i++) {
+        if (String(curHeaders[i]).trim().toLowerCase().indexOf("special notes") !== -1) {
+          specCol = i + 1; // 1-based index
+          break;
+        }
+      }
+      if (specCol > 0) {
+        trackSheet.insertColumnAfter(specCol);
+      }
+    }
+  }
+
+  // Update Headers for all 6 sheets
   var sheetsDef = [
     { name: SHEET_TRACKING, headers: HEADERS_TRACKING },
     { name: SHEET_CUSTOMER, headers: HEADERS_CUSTOMER },
@@ -665,25 +686,74 @@ function doGet(e) {
     var lastRow = trackSheet.getLastRow();
     var orders = [];
     if (lastRow > 1) {
-      var data = trackSheet.getRange(2, 1, lastRow - 1, HEADERS_TRACKING.length).getValues();
+      var numCols = Math.max(trackSheet.getLastColumn(), HEADERS_TRACKING.length);
+      var hRow = trackSheet.getRange(1, 1, 1, numCols).getValues()[0];
+      var colMap = {};
+      for (var hi = 0; hi < hRow.length; hi++) {
+        var hn = String(hRow[hi] || "").trim().toLowerCase();
+        if (hn) colMap[hn] = hi;
+      }
+      function getColIdx(names, fallback) {
+        for (var ni = 0; ni < names.length; ni++) {
+          if (colMap[names[ni]] !== undefined) return colMap[names[ni]];
+        }
+        return fallback;
+      }
+
+      var cTs = getColIdx(["timestamp"], 0);
+      var cSo = getColIdx(["so#"], 1);
+      var cCust = getColIdx(["customer name"], 2);
+      var cCity = getColIdx(["city/province", "city / province"], 3);
+      var cKhan = getColIdx(["khan", "khan / district"], 4);
+      var cPl = getColIdx(["packing list#"], 5);
+      var cInv = getColIdx(["invoice#"], 6);
+      var cAmt = getColIdx(["amount", "invoice amount"], 7);
+      var cCurr = getColIdx(["currency"], 8);
+      var cPkg = getColIdx(["total package#", "total package"], 9);
+      var cUnit = getColIdx(["package unit"], 10);
+      var cBu = getColIdx(["bu"], 11);
+      var cDoc = getColIdx(["document type"], 12);
+      var cSpec = getColIdx(["special notes"], 13);
+      var cPay = getColIdx(["payment receipt"], 14);
+      var hasPayCol = (cPay !== -1 && cPay < 16);
+      var cStatus = getColIdx(["overall status", "status"], hasPayCol ? 15 : 14);
+      var cPStart = getColIdx(["picking start time"], hasPayCol ? 16 : 15);
+      var cPEnd = getColIdx(["picking end time"], hasPayCol ? 17 : 16);
+      var cPDur = getColIdx(["picking duration"], hasPayCol ? 18 : 17);
+      var cCStart = getColIdx(["checking start time"], hasPayCol ? 19 : 18);
+      var cCEnd = getColIdx(["checking end time"], hasPayCol ? 20 : 19);
+      var cCDur = getColIdx(["checking duration"], hasPayCol ? 21 : 20);
+      var cDStart = getColIdx(["delivery start time"], hasPayCol ? 22 : 21);
+      var cDEnd = getColIdx(["delivery end time"], hasPayCol ? 23 : 22);
+      var cDDur = getColIdx(["delivery duration"], hasPayCol ? 24 : 23);
+      var cUpdated = getColIdx(["last updated"], hasPayCol ? 25 : 24);
+      var cCreated = getColIdx(["created by"], hasPayCol ? 26 : 25);
+      var cPicker = getColIdx(["picker by"], hasPayCol ? 27 : 26);
+      var cChecker = getColIdx(["checker by"], hasPayCol ? 28 : 27);
+      var cDriver = getColIdx(["delivery by"], hasPayCol ? 29 : 28);
+      var cDNotes = getColIdx(["delivery notes"], hasPayCol ? 30 : 29);
+
+      var data = trackSheet.getRange(2, 1, lastRow - 1, numCols).getValues();
       orders = data.map(function(row) {
+        var rawCheckingEnd = String(row[cCEnd] || "").trim();
         return {
-          timestamp: formatDateTimeGAS(row[0]),
-          soNumber: String(row[1] || ""),
-          customerName: String(row[2] || ""),
-          cityProvince: String(row[3] || ""),
-          khan: String(row[4] || ""),
-          packingListNumber: String(row[5] || ""),
-          invoiceNumber: String(row[6] || ""),
-          invoiceAmount: row[7] !== "" ? Number(row[7]) : 0,
-          currency: String(row[8] || "USD"),
-          totalPackage: (row[9] !== "" && row[9] !== null && Number(row[9]) > 0 && String(row[19] || "").trim() !== "" && String(row[19] || "").trim() !== "-") ? Number(row[9]) : "",
-          packageUnit: (row[9] !== "" && row[9] !== null && Number(row[9]) > 0 && String(row[19] || "").trim() !== "" && String(row[19] || "").trim() !== "-") ? String(row[10] || "") : "",
-          bu: String(row[11] || ""),
-          documentType: String(row[12] || ""),
+          timestamp: formatDateTimeGAS(row[cTs]),
+          soNumber: String(row[cSo] || ""),
+          customerName: String(row[cCust] || ""),
+          cityProvince: String(row[cCity] || ""),
+          khan: String(row[cKhan] || ""),
+          packingListNumber: String(row[cPl] || ""),
+          invoiceNumber: String(row[cInv] || ""),
+          invoiceAmount: row[cAmt] !== "" ? Number(row[cAmt]) : 0,
+          currency: String(row[cCurr] || "USD"),
+          totalPackage: (row[cPkg] !== "" && row[cPkg] !== null && Number(row[cPkg]) > 0 && rawCheckingEnd !== "" && rawCheckingEnd !== "-") ? Number(row[cPkg]) : "",
+          packageUnit: (row[cPkg] !== "" && row[cPkg] !== null && Number(row[cPkg]) > 0 && rawCheckingEnd !== "" && rawCheckingEnd !== "-") ? String(row[cUnit] || "") : "",
+          bu: String(row[cBu] || ""),
+          documentType: String(row[cDoc] || ""),
+          paymentReceipt: (cPay !== -1 && row[cPay] !== undefined && row[cPay] !== null) ? String(row[cPay] || "").trim() : "",
           specialNotes: (function() {
-            var rawSpec = String(row[13] || "");
-            var rawDeliv = String(row[29] || "");
+            var rawSpec = String(row[cSpec] || "");
+            var rawDeliv = (cDNotes !== -1) ? String(row[cDNotes] || "") : "";
             if (rawSpec && !rawDeliv) {
               var parts = rawSpec.split(/\s*\|\s*|\r?\n/);
               var kept = [];
@@ -701,8 +771,8 @@ function doGet(e) {
             return rawSpec;
           })(),
           deliveryNotes: (function() {
-            var rawSpec = String(row[13] || "");
-            var rawDeliv = String(row[29] || "");
+            var rawSpec = String(row[cSpec] || "");
+            var rawDeliv = (cDNotes !== -1) ? String(row[cDNotes] || "") : "";
             if (rawDeliv) return rawDeliv;
             if (rawSpec) {
               var parts = rawSpec.split(/\s*\|\s*|\r?\n/);
@@ -720,30 +790,30 @@ function doGet(e) {
             }
             return "";
           })(),
-          status: String(row[14] || "Registered"),
+          status: String(row[cStatus] || "Registered"),
           deliveryAttempts: (function() {
-            var st = String(row[14] || "");
+            var st = String(row[cStatus] || "");
             var m = st.match(/^(\d+)(?:st|nd|rd|th)\s+(?:Success|Delivery)/i);
             if (m) return parseInt(m[1], 10);
-            var notes = String(row[13] || "") + " " + String(row[29] || "");
+            var notes = String(row[cSpec] || "") + " " + String((cDNotes !== -1 ? row[cDNotes] : "") || "");
             var nm = notes.match(/(?:Start|Delivery)\s+(\d+)(?:st|nd|rd|th)/i);
             if (nm) return parseInt(nm[1], 10);
             return 1;
           })(),
-          pickingStartTime: formatDateTimeGAS(row[15]),
-          pickingEndTime: formatDateTimeGAS(row[16]),
-          pickingDuration: formatDurationGAS(row[17], row[15], row[16]),
-          checkingStartTime: formatDateTimeGAS(row[18]),
-          checkingEndTime: formatDateTimeGAS(row[19]),
-          checkingDuration: formatDurationGAS(row[20], row[18], row[19]),
-          deliveryStartTime: formatDateTimeGAS(row[21]),
-          deliveryEndTime: formatDateTimeGAS(row[22]),
-          deliveryDuration: formatDurationGAS(row[23], row[21], row[22]),
-          lastUpdated: formatDateTimeGAS(row[24]),
-          createdBy: String(row[25] || ""),
-          pickerBy: String(row[26] || ""),
-          checkerBy: String(row[27] || ""),
-          deliveryBy: String(row[28] || "")
+          pickingStartTime: formatDateTimeGAS(row[cPStart]),
+          pickingEndTime: formatDateTimeGAS(row[cPEnd]),
+          pickingDuration: formatDurationGAS(row[cPDur], row[cPStart], row[cPEnd]),
+          checkingStartTime: formatDateTimeGAS(row[cCStart]),
+          checkingEndTime: formatDateTimeGAS(row[cCEnd]),
+          checkingDuration: formatDurationGAS(row[cCDur], row[cCStart], row[cCEnd]),
+          deliveryStartTime: formatDateTimeGAS(row[cDStart]),
+          deliveryEndTime: formatDateTimeGAS(row[cDEnd]),
+          deliveryDuration: formatDurationGAS(row[cDDur], row[cDStart], row[cDEnd]),
+          lastUpdated: formatDateTimeGAS(row[cUpdated]),
+          createdBy: String(row[cCreated] || ""),
+          pickerBy: String(row[cPicker] || ""),
+          checkerBy: String(row[cChecker] || ""),
+          deliveryBy: String(row[cDriver] || "")
         };
       });
     }
@@ -933,6 +1003,7 @@ function doPost(e) {
         order.bu || "",
         order.documentType || "",
         order.specialNotes || "",
+        order.paymentReceipt || "",
         order.status || "Registered",
         asTextDate(order.pickingStartTime || ""),
         asTextDate(order.pickingEndTime || ""),
@@ -953,10 +1024,10 @@ function doPost(e) {
       
       if (rowIndex > 0) {
         var existingRow = sheet.getRange(rowIndex, 1, 1, HEADERS_TRACKING.length).getValues()[0];
-        if (!order.createdBy && existingRow[25]) rowValues[25] = existingRow[25];
-        if (!order.pickerBy && existingRow[26]) rowValues[26] = existingRow[26];
-        if (!order.checkerBy && existingRow[27]) rowValues[27] = existingRow[27];
-        if (!order.deliveryBy && existingRow[28]) rowValues[28] = existingRow[28];
+        if (!order.createdBy && existingRow[26]) rowValues[26] = existingRow[26];
+        if (!order.pickerBy && existingRow[27]) rowValues[27] = existingRow[27];
+        if (!order.checkerBy && existingRow[28]) rowValues[28] = existingRow[28];
+        if (!order.deliveryBy && existingRow[29]) rowValues[29] = existingRow[29];
         sheet.getRange(rowIndex, 1, 1, rowValues.length).setValues([rowValues]);
         return createJsonResponse({ status: "success", action: "UPDATED", soNumber: soNumber, row: rowIndex, serverTimestamp: markDataUpdated() });
       } else {
@@ -980,66 +1051,105 @@ function doPost(e) {
       var time = payload.timestamp || nowFormatted;
       var duration = payload.duration || "";
       var newStatus = payload.status || "";
+
+      var numCols = Math.max(sheet.getLastColumn(), HEADERS_TRACKING.length);
+      var hRow = sheet.getRange(1, 1, 1, numCols).getValues()[0];
+      function findTrackingCol(names, fallback) {
+        for (var i = 0; i < hRow.length; i++) {
+          var hn = String(hRow[i] || "").trim().toLowerCase();
+          for (var j = 0; j < names.length; j++) {
+            if (hn === names[j]) return i + 1; // 1-based index
+          }
+        }
+        return fallback;
+      }
+
+      var colPayment = findTrackingCol(["payment receipt"], 15);
+      var hasPaymentCol = (colPayment <= 16);
+      var colStatus = findTrackingCol(["overall status", "status"], hasPaymentCol ? 16 : 15);
+      var colPStart = findTrackingCol(["picking start time"], hasPaymentCol ? 17 : 16);
+      var colPEnd = findTrackingCol(["picking end time"], hasPaymentCol ? 18 : 17);
+      var colPDur = findTrackingCol(["picking duration"], hasPaymentCol ? 19 : 18);
+      var colCStart = findTrackingCol(["checking start time"], hasPaymentCol ? 20 : 19);
+      var colCEnd = findTrackingCol(["checking end time"], hasPaymentCol ? 21 : 20);
+      var colCDur = findTrackingCol(["checking duration"], hasPaymentCol ? 22 : 21);
+      var colDStart = findTrackingCol(["delivery start time"], hasPaymentCol ? 23 : 22);
+      var colDEnd = findTrackingCol(["delivery end time"], hasPaymentCol ? 24 : 23);
+      var colDDur = findTrackingCol(["delivery duration"], hasPaymentCol ? 25 : 24);
+      var colUpdated = findTrackingCol(["last updated"], hasPaymentCol ? 26 : 25);
+      var colCreated = findTrackingCol(["created by"], hasPaymentCol ? 27 : 26);
+      var colPicker = findTrackingCol(["picker by"], hasPaymentCol ? 28 : 27);
+      var colChecker = findTrackingCol(["checker by"], hasPaymentCol ? 29 : 28);
+      var colDriver = findTrackingCol(["delivery by"], hasPaymentCol ? 30 : 29);
+      var colDNotes = findTrackingCol(["delivery notes"], hasPaymentCol ? 31 : 30);
+      var colSpecNotes = findTrackingCol(["special notes"], 14);
+      var colPkg = findTrackingCol(["total package#", "total package"], 10);
+      var colUnit = findTrackingCol(["package unit"], 11);
       
       if (stage === "PICKING_START") {
-        sheet.getRange(rowIndex, 16).setValue(asTextDate(time));
-        sheet.getRange(rowIndex, 15).setValue(newStatus || "In Picking");
-        if (payload.pickerBy) sheet.getRange(rowIndex, 27).setValue(payload.pickerBy);
+        sheet.getRange(rowIndex, colPStart).setValue(asTextDate(time));
+        sheet.getRange(rowIndex, colStatus).setValue(newStatus || "In Picking");
+        if (payload.pickerBy) sheet.getRange(rowIndex, colPicker).setValue(payload.pickerBy);
       } else if (stage === "PICKING_END") {
-        sheet.getRange(rowIndex, 17).setValue(asTextDate(time));
-        var pStart = sheet.getRange(rowIndex, 16).getValue();
+        sheet.getRange(rowIndex, colPEnd).setValue(asTextDate(time));
+        var pStart = sheet.getRange(rowIndex, colPStart).getValue();
         var pDur = duration ? formatDurationGAS(duration, pStart, time) : "";
-        if (pDur && pDur !== "-") sheet.getRange(rowIndex, 18).setValue(asTextDate(pDur));
-        sheet.getRange(rowIndex, 15).setValue(newStatus || "Waiting Checking");
-        if (payload.pickerBy) sheet.getRange(rowIndex, 27).setValue(payload.pickerBy);
+        if (pDur && pDur !== "-") sheet.getRange(rowIndex, colPDur).setValue(asTextDate(pDur));
+        sheet.getRange(rowIndex, colStatus).setValue(newStatus || "Waiting Checking");
+        if (payload.pickerBy) sheet.getRange(rowIndex, colPicker).setValue(payload.pickerBy);
       } else if (stage === "CHECKING_START") {
-        sheet.getRange(rowIndex, 19).setValue(asTextDate(time));
-        sheet.getRange(rowIndex, 15).setValue(newStatus || "In Checking");
-        if (payload.checkerBy) sheet.getRange(rowIndex, 28).setValue(payload.checkerBy);
+        sheet.getRange(rowIndex, colCStart).setValue(asTextDate(time));
+        sheet.getRange(rowIndex, colStatus).setValue(newStatus || "In Checking");
+        if (payload.checkerBy) sheet.getRange(rowIndex, colChecker).setValue(payload.checkerBy);
       } else if (stage === "CHECKING_END") {
-        sheet.getRange(rowIndex, 20).setValue(asTextDate(time));
-        var cStart = sheet.getRange(rowIndex, 19).getValue();
+        sheet.getRange(rowIndex, colCEnd).setValue(asTextDate(time));
+        var cStart = sheet.getRange(rowIndex, colCStart).getValue();
         var cDur = duration ? formatDurationGAS(duration, cStart, time) : "";
-        if (cDur && cDur !== "-") sheet.getRange(rowIndex, 21).setValue(asTextDate(cDur));
-        sheet.getRange(rowIndex, 15).setValue(newStatus || "Waiting Delivery");
-        if (payload.checkerBy) sheet.getRange(rowIndex, 28).setValue(payload.checkerBy);
+        if (cDur && cDur !== "-") sheet.getRange(rowIndex, colCDur).setValue(asTextDate(cDur));
+        sheet.getRange(rowIndex, colStatus).setValue(newStatus || "Waiting Delivery");
+        if (payload.checkerBy) sheet.getRange(rowIndex, colChecker).setValue(payload.checkerBy);
       } else if (stage === "DELIVERY_START") {
-        sheet.getRange(rowIndex, 22).setValue(asTextDate(time));
-        sheet.getRange(rowIndex, 15).setValue(newStatus || "In Delivery");
-        sheet.getRange(rowIndex, 23).setValue(""); // Clear end time for 2nd delivery
-        sheet.getRange(rowIndex, 24).setValue(""); // Clear duration for 2nd delivery
-        if (payload.deliveryBy) sheet.getRange(rowIndex, 29).setValue(payload.deliveryBy);
+        sheet.getRange(rowIndex, colDStart).setValue(asTextDate(time));
+        sheet.getRange(rowIndex, colStatus).setValue(newStatus || "In Delivery");
+        sheet.getRange(rowIndex, colDEnd).setValue(""); // Clear end time for 2nd delivery
+        sheet.getRange(rowIndex, colDDur).setValue(""); // Clear duration for 2nd delivery
+        if (payload.deliveryBy) sheet.getRange(rowIndex, colDriver).setValue(payload.deliveryBy);
       } else if (stage === "DELIVERY_END") {
-        sheet.getRange(rowIndex, 23).setValue(asTextDate(time));
-        var dStart = sheet.getRange(rowIndex, 22).getValue();
+        sheet.getRange(rowIndex, colDEnd).setValue(asTextDate(time));
+        var dStart = sheet.getRange(rowIndex, colDStart).getValue();
         var dDur = duration ? formatDurationGAS(duration, dStart, time) : "";
-        if (dDur && dDur !== "-") sheet.getRange(rowIndex, 24).setValue(asTextDate(dDur));
-        sheet.getRange(rowIndex, 15).setValue(newStatus || "Success");
-        if (payload.deliveryBy) sheet.getRange(rowIndex, 29).setValue(payload.deliveryBy);
+        if (dDur && dDur !== "-") sheet.getRange(rowIndex, colDDur).setValue(asTextDate(dDur));
+        sheet.getRange(rowIndex, colStatus).setValue(newStatus || "Success");
+        if (payload.deliveryBy) sheet.getRange(rowIndex, colDriver).setValue(payload.deliveryBy);
       }
       
       if (payload.specialNotes !== undefined && payload.specialNotes !== null) {
-        sheet.getRange(rowIndex, 14).setValue(payload.specialNotes);
+        sheet.getRange(rowIndex, colSpecNotes).setValue(payload.specialNotes);
       }
       if (payload.deliveryNotes !== undefined && payload.deliveryNotes !== null) {
-        sheet.getRange(rowIndex, 30).setValue(payload.deliveryNotes);
+        sheet.getRange(rowIndex, colDNotes).setValue(payload.deliveryNotes);
       }
       
+      // Update Payment Receipt if provided
+      if (payload.paymentReceipt !== undefined && payload.paymentReceipt !== null) {
+        sheet.getRange(rowIndex, colPayment).setValue(payload.paymentReceipt);
+      }
+
       // Update package quantity and unit if provided (e.g. from End Checking modal)
       if (payload.totalPackage !== undefined && payload.totalPackage !== null && payload.totalPackage !== "") {
-        sheet.getRange(rowIndex, 10).setValue(Number(payload.totalPackage));
+        sheet.getRange(rowIndex, colPkg).setValue(Number(payload.totalPackage));
       }
       if (payload.packageUnit) {
-        sheet.getRange(rowIndex, 11).setValue(payload.packageUnit);
+        sheet.getRange(rowIndex, colUnit).setValue(payload.packageUnit);
       }
 
       // Update operator fields if explicitly provided
-      if (payload.createdBy) sheet.getRange(rowIndex, 26).setValue(payload.createdBy);
-      if (payload.pickerBy && stage !== "PICKING_START" && stage !== "PICKING_END") sheet.getRange(rowIndex, 27).setValue(payload.pickerBy);
-      if (payload.checkerBy && stage !== "CHECKING_START" && stage !== "CHECKING_END") sheet.getRange(rowIndex, 28).setValue(payload.checkerBy);
-      if (payload.deliveryBy && stage !== "DELIVERY_START" && stage !== "DELIVERY_END") sheet.getRange(rowIndex, 29).setValue(payload.deliveryBy);
+      if (payload.createdBy) sheet.getRange(rowIndex, colCreated).setValue(payload.createdBy);
+      if (payload.pickerBy && stage !== "PICKING_START" && stage !== "PICKING_END") sheet.getRange(rowIndex, colPicker).setValue(payload.pickerBy);
+      if (payload.checkerBy && stage !== "CHECKING_START" && stage !== "CHECKING_END") sheet.getRange(rowIndex, colChecker).setValue(payload.checkerBy);
+      if (payload.deliveryBy && stage !== "DELIVERY_START" && stage !== "DELIVERY_END") sheet.getRange(rowIndex, colDriver).setValue(payload.deliveryBy);
       
-      sheet.getRange(rowIndex, 25).setValue(asTextDate(nowFormatted));
+      sheet.getRange(rowIndex, colUpdated).setValue(asTextDate(nowFormatted));
       return createJsonResponse({ status: "success", action: "STAGE_UPDATED", soNumber: soNumber, stage: stage, serverTimestamp: markDataUpdated() });
     }
     
