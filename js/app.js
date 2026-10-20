@@ -6925,7 +6925,8 @@ function renderReportView() {
     if (AppState.report.currentPage < 1) AppState.report.currentPage = 1;
 
     // 4. Update KPI Summary Metric Cards
-    let totalAmount = 0;
+    let invoiceUSD = 0, invoiceKHR = 0;
+    let countInvoiceUSD = 0, countInvoiceKHR = 0;
     let totalPackages = 0;
     let accountUSD = 0, accountKHR = 0;
     let cashUSD = 0, cashKHR = 0;
@@ -6933,7 +6934,18 @@ function renderReportView() {
 
     filteredOrders.forEach(o => {
         const amt = Number(String(o.invoiceAmount || 0).replace(/[^0-9.-]+/g, ""));
-        if (!isNaN(amt)) totalAmount += amt;
+        const rawCurr = String(o.currency || "$").trim().toUpperCase();
+        const isKHR = (rawCurr === "KHR" || rawCurr === "៛");
+
+        if (!isNaN(amt) && amt > 0) {
+            if (isKHR) {
+                invoiceKHR += amt;
+                countInvoiceKHR++;
+            } else {
+                invoiceUSD += amt;
+                countInvoiceUSD++;
+            }
+        }
 
         if (hasOrderTotalPackage(o)) {
             const pkg = Number(String(o.totalPackage || 0).replace(/[^0-9.-]+/g, ""));
@@ -6989,6 +7001,9 @@ function renderReportView() {
     });
 
     const sumTotalOrders = document.getElementById("reportSummaryTotalOrders");
+    const elInvoiceUSD = document.getElementById("reportSummaryInvoiceUSD");
+    const elInvoiceKHR = document.getElementById("reportSummaryInvoiceKHR");
+    const elInvoiceBadge = document.getElementById("reportSummaryInvoiceBadge");
     const sumTotalAmount = document.getElementById("reportSummaryTotalAmount");
     const sumTotalPackages = document.getElementById("reportSummaryTotalPackages");
     const elPayAccount = document.getElementById("reportSummaryPaymentAccount");
@@ -6997,8 +7012,41 @@ function renderReportView() {
     const elPayTotal = document.getElementById("reportSummaryPaymentTotal");
 
     if (sumTotalOrders) sumTotalOrders.textContent = totalOrders.toLocaleString();
-    if (sumTotalAmount) sumTotalAmount.textContent = `$${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     if (sumTotalPackages) sumTotalPackages.textContent = totalPackages.toLocaleString();
+
+    // KPI Card 2: Invoice Amount Breakdown by Currency
+    if (elInvoiceUSD) {
+        elInvoiceUSD.innerHTML = invoiceUSD > 0
+            ? `<span class="text-emerald-600 font-bold">$${invoiceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>`
+            : '<span class="text-slate-400 font-normal">$0.00</span>';
+    }
+
+    if (elInvoiceKHR) {
+        elInvoiceKHR.innerHTML = invoiceKHR > 0
+            ? `<span class="text-amber-600 font-bold">៛${invoiceKHR.toLocaleString('en-US')}</span>`
+            : '<span class="text-slate-400 font-normal">៛0</span>';
+    }
+
+    if (elInvoiceBadge) {
+        if (invoiceUSD > 0 && invoiceKHR > 0) {
+            elInvoiceBadge.textContent = "USD & KHR";
+            elInvoiceBadge.className = "text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/70 font-mono";
+        } else if (invoiceKHR > 0) {
+            elInvoiceBadge.textContent = "KHR only";
+            elInvoiceBadge.className = "text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200/70 font-mono";
+        } else {
+            elInvoiceBadge.textContent = "USD only";
+            elInvoiceBadge.className = "text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/70 font-mono";
+        }
+    }
+
+    if (sumTotalAmount) {
+        const invParts = [];
+        if (invoiceUSD > 0) invParts.push(`<span class="text-emerald-600 font-bold">$${invoiceUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>`);
+        if (invoiceKHR > 0) invParts.push(`<span class="text-amber-600 font-bold">៛${invoiceKHR.toLocaleString('en-US')}</span>`);
+        const invTotalFormatted = invParts.length > 0 ? invParts.join(' <span class="text-slate-300 font-normal">|</span> ') : '<span class="text-slate-400 font-normal">$0.00</span>';
+        sumTotalAmount.innerHTML = `Total: ${invTotalFormatted}`;
+    }
 
     function formatPaymentCurrencyPair(usd, khr) {
         const parts = [];
