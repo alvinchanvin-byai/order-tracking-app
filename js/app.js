@@ -392,6 +392,17 @@ function renderDeliveryNotesItems(rawNotes) {
     }).join("");
 }
 
+// Check if an order has reached or completed End Checking and has a valid Total Package count
+function hasOrderTotalPackage(order) {
+    if (!order) return false;
+    const hasEndedChecking = !!(order.checkingEndTime && String(order.checkingEndTime).trim() !== "" && String(order.checkingEndTime).trim() !== "-");
+    const isPostCheckingStatus = /Waiting Delivery|Delivery|Success|Return|Incomplete|In Complete|Completed/i.test(String(order.status || ""));
+    const isChecked = hasEndedChecking || isPostCheckingStatus;
+    const hasValidNum = (order.totalPackage !== undefined && order.totalPackage !== null && order.totalPackage !== "" && Number(order.totalPackage) > 0);
+    return Boolean(isChecked && hasValidNum);
+}
+window.hasOrderTotalPackage = hasOrderTotalPackage;
+
 // Normalize all date and status fields of an order object
 function normalizeOrderDates(order) {
     if (!order) return order;
@@ -408,11 +419,25 @@ function normalizeOrderDates(order) {
         ? order.documentType.trim()
         : "SO to customer";
 
+    // Total Package & Unit: strictly only available after End Checking has occurred
+    const hasEndedChecking = !!(order.checkingEndTime && String(order.checkingEndTime).trim() !== "" && String(order.checkingEndTime).trim() !== "-");
+    const isPostCheckingStatus = /Waiting Delivery|Delivery|Success|Return|Incomplete|In Complete|Completed/i.test(String(order.status || ""));
+    const isChecked = hasEndedChecking || isPostCheckingStatus;
+
+    let cleanTotalPackage = "";
+    let cleanPackageUnit = "";
+    if (isChecked && order.totalPackage !== undefined && order.totalPackage !== null && order.totalPackage !== "" && Number(order.totalPackage) > 0) {
+        cleanTotalPackage = Number(order.totalPackage);
+        cleanPackageUnit = String(order.packageUnit || "Carton").trim();
+    }
+
     return {
         ...order,
         deliveryAttempts: attempts,
         status: normalizeOrderStatus(order.status, attempts),
         documentType: docType,
+        totalPackage: cleanTotalPackage,
+        packageUnit: cleanPackageUnit,
         specialNotes: order.specialNotes || "",
         deliveryNotes: order.deliveryNotes || "",
         timestamp: formatDateTimeDisplay(order.timestamp),
@@ -513,8 +538,8 @@ const DEMO_ORDERS = [
         invoiceNumber: "INV-2026-041",
         invoiceAmount: 4850,
         currency: "USD",
-        totalPackage: 15,
-        packageUnit: "Carton",
+        totalPackage: "",
+        packageUnit: "",
         bu: "Healthcare & Pharma (សុខាភិបាល)",
         documentType: "Tax Invoice (វិក្កយបត្រពន្ធ)",
         specialNotes: "ទំនិញឱសថត្រជាក់ សីតុណ្ហភាព 2-8°C សូមប្រយ័ត្ន",
@@ -544,8 +569,8 @@ const DEMO_ORDERS = [
         invoiceNumber: "INV-2026-042",
         invoiceAmount: 12500,
         currency: "USD",
-        totalPackage: 4,
-        packageUnit: "Pallet",
+        totalPackage: "",
+        packageUnit: "",
         bu: "Consumer Goods / FMCG (ទំនិញប្រើប្រាស់)",
         documentType: "Commercial Invoice (វិក្កយបត្រពាណិជ្ជកម្ម)",
         specialNotes: "ទាមទារឡានដឹកធំ មានជណ្ដើរលើក Forklift",
@@ -606,8 +631,8 @@ const DEMO_ORDERS = [
         invoiceNumber: "INV-2026-045",
         invoiceAmount: 5600,
         currency: "USD",
-        totalPackage: 10,
-        packageUnit: "Carton",
+        totalPackage: "",
+        packageUnit: "",
         bu: "Healthcare & Pharma (សុខាភិបាល)",
         documentType: "Tax Invoice (វិក្កយបត្រពន្ធ)",
         specialNotes: "ទំនិញថ្មីចុះឈ្មោះ រង់ចាំក្រុមការងារចាប់ផ្ដើម Picking",
@@ -2887,9 +2912,11 @@ function renderDashboardTable() {
 
                 <!-- 10. Total Package# -->
                 <td data-col="totalPackage" class="py-3 px-3.5 whitespace-nowrap">
-                    <span class="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-bold text-xs">
-                        ${order.totalPackage} ${escapeHtml(order.packageUnit || "")}
-                    </span>
+                    ${hasOrderTotalPackage(order) ? `
+                        <span class="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-bold text-xs">
+                            ${order.totalPackage} ${escapeHtml(order.packageUnit || "")}
+                        </span>
+                    ` : '<span class="text-slate-300 font-semibold">-</span>'}
                 </td>
 
                 <!-- 11. BU -->
@@ -3340,9 +3367,9 @@ async function handleOrderRegistration(e) {
     const invoiceNumber = document.getElementById("fieldInvoiceNumber").value.trim();
     const invoiceAmount = parseFloat(document.getElementById("fieldInvoiceAmount").value) || 0;
     const currency = document.getElementById("fieldCurrency")?.value || "USD";
-    const totalPkgEl = document.getElementById("fieldTotalPackage");
-    const totalPackage = totalPkgEl ? (parseInt(totalPkgEl.value, 10) || 0) : 0;
-    const packageUnit = document.getElementById("fieldPackageUnit")?.value || "";
+    // Total Package & Unit are NOT set at registration; they are entered upon End Checking
+    const totalPackage = "";
+    const packageUnit = "";
     const bu = document.getElementById("fieldBU")?.value || "";
     const documentType = document.getElementById("fieldDocType")?.value.trim() || "SO to customer";
     const specialNotes = document.getElementById("fieldSpecialNotes").value.trim();
@@ -3804,7 +3831,7 @@ function renderCheckingView() {
                 </div>
 
                 <div class="grid grid-cols-2 gap-2 text-xs text-slate-600 bg-white/80 p-3 rounded-xl border border-slate-100 mb-4">
-                    <div><b>ចំនួនកញ្ចប់:</b> ${order.totalPackage} ${escapeHtml(order.packageUnit || "")}</div>
+                    <div><b>ចំនួនកញ្ចប់:</b> ${hasOrderTotalPackage(order) ? `${order.totalPackage} ${escapeHtml(order.packageUnit || "")}` : '<span class="text-slate-400 font-normal">-</span>'}</div>
                     <div><b>Packing List:</b> ${escapeHtml(order.packingListNumber || "-")}</div>
                     <div><b>Invoice#:</b> ${escapeHtml(order.invoiceNumber || "-")}</div>
                     <div><b>Invoice Amount:</b> <span class="font-semibold text-emerald-700">${order.currency === "USD" ? "$" : "៛"}${Number(order.invoiceAmount || 0).toLocaleString()}</span></div>
@@ -3901,11 +3928,11 @@ function openEndCheckingModal(soNumber) {
     const currentChecker = order.checkerBy || (curUser ? (curUser.displayName || curUser.username) : "Admin");
     if (checkerEl) checkerEl.textContent = currentChecker;
 
-    // Prefill total package quantity
+    // Prefill total package quantity (empty if not yet set so checker inputs count)
     if (totalPkgInput) {
-        totalPkgInput.value = (order.totalPackage !== undefined && order.totalPackage !== null && order.totalPackage !== "")
+        totalPkgInput.value = (order.totalPackage !== undefined && order.totalPackage !== null && order.totalPackage !== "" && Number(order.totalPackage) > 0)
             ? order.totalPackage
-            : 1;
+            : "";
 
         if (!totalPkgInput._hasEnterListener) {
             totalPkgInput.addEventListener("keydown", (e) => {
@@ -4121,7 +4148,7 @@ function renderDeliveryView() {
                 </div>
 
                 <div class="grid grid-cols-2 gap-2 text-xs text-slate-600 bg-white/80 p-3 rounded-xl border border-slate-100 mb-4">
-                    <div><b>ចំនួនកញ្ចប់:</b> ${order.totalPackage} ${escapeHtml(order.packageUnit || "")}</div>
+                    <div><b>ចំនួនកញ្ចប់:</b> ${hasOrderTotalPackage(order) ? `${order.totalPackage} ${escapeHtml(order.packageUnit || "")}` : '<span class="text-slate-400 font-normal">-</span>'}</div>
                     <div><b>Invoice#:</b> ${escapeHtml(order.invoiceNumber || "-")}</div>
                     <div class="col-span-2 flex items-center gap-1.5 text-slate-700 pt-1.5 border-t border-slate-100/80">
                         <i data-lucide="map-pin" class="w-3.5 h-3.5 text-red-500 shrink-0"></i>
@@ -4446,7 +4473,7 @@ function renderIncompletedDeliveryView() {
                 </div>
 
                 <div class="grid grid-cols-2 gap-2 text-xs text-slate-600 bg-white/90 p-3 rounded-xl border border-amber-100 mb-3 shadow-2xs">
-                    <div><b>ចំនួនកញ្ចប់:</b> ${order.totalPackage} ${escapeHtml(order.packageUnit || "")}</div>
+                    <div><b>ចំនួនកញ្ចប់:</b> ${hasOrderTotalPackage(order) ? `${order.totalPackage} ${escapeHtml(order.packageUnit || "")}` : '<span class="text-slate-400 font-normal">-</span>'}</div>
                     <div><b>Invoice#:</b> ${escapeHtml(order.invoiceNumber || "-")}</div>
                     <div><b>Packing List:</b> ${escapeHtml(order.packingListNumber || "-")}</div>
                     <div class="flex items-center gap-1"><b>Doc Type:</b> ${renderDocumentTypeBadge(order.documentType)}</div>
@@ -4648,7 +4675,9 @@ function viewOrderDetails(soNumber) {
                     <i data-lucide="package" class="w-4 h-4 text-purple-600"></i>
                 </div>
                 <div class="text-xl font-extrabold text-purple-900 font-mono">
-                    ${order.totalPackage} <span class="text-xs font-semibold text-purple-700 font-sans">${escapeHtml(order.packageUnit || "")}</span>
+                    ${hasOrderTotalPackage(order)
+                        ? `${order.totalPackage} <span class="text-xs font-semibold text-purple-700 font-sans">${escapeHtml(order.packageUnit || "")}</span>`
+                        : '<span class="text-slate-400 font-medium text-lg">-</span>'}
                 </div>
                 <div class="text-[11px] text-purple-600">
                     ប្រភេទកញ្ចប់ / Unit
@@ -5096,7 +5125,7 @@ function openEditOrderModal(soNumber) {
     if (currSelect) currSelect.value = order.currency || "USD";
 
     const totalPkgInput = document.getElementById("editTotalPackage");
-    if (totalPkgInput) totalPkgInput.value = order.totalPackage || 1;
+    if (totalPkgInput) totalPkgInput.value = hasOrderTotalPackage(order) ? (order.totalPackage || "") : "";
 
     const notesInput = document.getElementById("editSpecialNotes");
     if (notesInput) notesInput.value = order.specialNotes || "";
@@ -5174,8 +5203,13 @@ async function handleEditOrderSubmit(e) {
     order.invoiceAmount = parseFloat(document.getElementById("editInvoiceAmount").value) || 0;
     order.currency = document.getElementById("editCurrency")?.value || "USD";
     const editPkgVal = document.getElementById("editTotalPackage")?.value.trim();
-    order.totalPackage = editPkgVal !== "" ? (parseInt(editPkgVal, 10) || 0) : 0;
-    order.packageUnit = document.getElementById("editPackageUnit")?.value || "";
+    if (editPkgVal && parseInt(editPkgVal, 10) > 0) {
+        order.totalPackage = parseInt(editPkgVal, 10);
+        order.packageUnit = document.getElementById("editPackageUnit")?.value || "";
+    } else {
+        order.totalPackage = "";
+        order.packageUnit = "";
+    }
     order.bu = document.getElementById("editBU")?.value || "";
     order.documentType = document.getElementById("editDocType")?.value || "";
     order.specialNotes = document.getElementById("editSpecialNotes").value.trim();
@@ -5950,9 +5984,11 @@ window.formatInvoiceAmountWithCurrency = formatInvoiceAmountWithCurrency;
 
 // Format Total package with package unit
 function formatPackageWithUnit(pkg, unit) {
-    const p = (pkg !== undefined && pkg !== null && pkg !== "") ? pkg : "0";
-    const u = (unit && String(unit).trim()) ? unit.trim() : "Package";
-    return `${p} ${u}`;
+    if (pkg === undefined || pkg === null || pkg === "" || Number(pkg) <= 0) {
+        return "-";
+    }
+    const u = (unit && String(unit).trim()) ? unit.trim() : "Carton";
+    return `${pkg} ${u}`;
 }
 window.formatPackageWithUnit = formatPackageWithUnit;
 
@@ -6342,8 +6378,10 @@ function renderReportView() {
         const amt = Number(String(o.invoiceAmount || 0).replace(/[^0-9.-]+/g, ""));
         if (!isNaN(amt)) totalAmount += amt;
 
-        const pkg = Number(String(o.totalPackage || 0).replace(/[^0-9.-]+/g, ""));
-        if (!isNaN(pkg)) totalPackages += pkg;
+        if (hasOrderTotalPackage(o)) {
+            const pkg = Number(String(o.totalPackage || 0).replace(/[^0-9.-]+/g, ""));
+            if (!isNaN(pkg)) totalPackages += pkg;
+        }
 
         let start = "", end = "";
         if (currentSubTab === "picking") { start = o.pickingStartTime; end = o.pickingEndTime; }
@@ -6602,8 +6640,8 @@ function renderReportView() {
                 </td>
 
                 <!-- 10. Total package with package unit -->
-                <td class="py-3 px-3.5 font-mono font-semibold text-slate-700 whitespace-nowrap">
-                    ${pkgStr}
+                <td class="py-3 px-3.5 whitespace-nowrap">
+                    ${pkgStr !== "-" ? `<span class="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-bold text-xs">${pkgStr}</span>` : '<span class="text-slate-300 font-semibold">-</span>'}
                 </td>
 
                 <!-- 11. BU -->
