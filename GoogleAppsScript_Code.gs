@@ -153,6 +153,8 @@ function getOrCreateSheet(sheetName, headers) {
     if (sheet.getLastRow() === 0 || sheet.getRange(1, 1).getValue() === "") {
       sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
       formatSheetHeader(sheet, headers.length);
+    } else if (sheetName === SHEET_TRACKING) {
+      ensureTrackingHeaders(sheet);
     } else if (sheet.getLastColumn() < headers.length) {
       // Auto extend headers if new columns were added
       sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
@@ -280,6 +282,36 @@ function setupTrackingHeaders() {
 }
 
 /**
+ * ធានាថា Tracking Sheet មាន Column "Payment Receipt" នៅជាប់ Column "Special Notes" (Col 15)
+ */
+function ensureTrackingHeaders(sheet) {
+  if (!sheet) return;
+  try {
+    var lastCol = Math.max(sheet.getLastColumn(), 1);
+    var curHeaders = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    var payCol = -1, specCol = -1;
+    for (var i = 0; i < curHeaders.length; i++) {
+      var h = String(curHeaders[i] || "").trim().toLowerCase();
+      if (h === "payment receipt") payCol = i + 1;
+      if (h.indexOf("special notes") !== -1) specCol = i + 1;
+    }
+    if (payCol === -1) {
+      var insertAfter = (specCol > 0) ? specCol : 14;
+      sheet.insertColumnAfter(insertAfter);
+      var newCol = insertAfter + 1;
+      sheet.getRange(1, newCol).setValue("Payment Receipt");
+      sheet.getRange(1, newCol)
+        .setBackground("#f8fafc")
+        .setFontWeight("bold")
+        .setFontColor("#1e293b")
+        .setHorizontalAlignment("center");
+    }
+  } catch(err) {
+    Logger.log("ensureTrackingHeaders error: " + err);
+  }
+}
+
+/**
  * បង្កើត និង កែសម្រួល Header គ្រប់ Sheet ទាំងអស់ទៅជាភាសាអង់គ្លេសសុទ្ធ (ដកអក្សរខ្មែរ)
  * និង កែសម្រួលទិន្នន័យ Duration ក្នុង Tracking Sheet ទៅជាទម្រង់ hh:mm (00:10, 00:01, 02:14...)
  */
@@ -289,21 +321,7 @@ function cleanAndFormatAllHeadersAndDurations() {
   // 1. Ensure "Payment Receipt" column exists in SHEET_TRACKING right after "Special Notes"
   var trackSheet = ss.getSheetByName(SHEET_TRACKING);
   if (trackSheet) {
-    var lastCol = Math.max(trackSheet.getLastColumn(), 1);
-    var curHeaders = trackSheet.getRange(1, 1, 1, lastCol).getValues()[0];
-    var hasPaymentCol = curHeaders.some(function(h) { return String(h).trim().toLowerCase() === "payment receipt"; });
-    if (!hasPaymentCol) {
-      var specCol = -1;
-      for (var i = 0; i < curHeaders.length; i++) {
-        if (String(curHeaders[i]).trim().toLowerCase().indexOf("special notes") !== -1) {
-          specCol = i + 1; // 1-based index
-          break;
-        }
-      }
-      if (specCol > 0) {
-        trackSheet.insertColumnAfter(specCol);
-      }
-    }
+    ensureTrackingHeaders(trackSheet);
   }
 
   // Update Headers for all 6 sheets
@@ -325,20 +343,19 @@ function cleanAndFormatAllHeadersAndDurations() {
   });
 
   // 2. Format Duration Columns in "Tracking" Sheet
-  var trackSheet = ss.getSheetByName(SHEET_TRACKING);
   var updatedCount = 0;
   if (trackSheet) {
     var lastRow = trackSheet.getLastRow();
     if (lastRow > 1) {
       var numRows = lastRow - 1;
-      var range = trackSheet.getRange(2, 16, numRows, 9);
+      var range = trackSheet.getRange(2, 17, numRows, 9);
       var vals = range.getValues();
       var changed = false;
 
       var colPairs = [
-        { sIdx: 0, eIdx: 1, dIdx: 2 }, // Picking: Start=col 16 (idx 0), End=col 17 (idx 1), Dur=col 18 (idx 2)
-        { sIdx: 3, eIdx: 4, dIdx: 5 }, // Checking: Start=col 19 (idx 3), End=col 20 (idx 4), Dur=col 21 (idx 5)
-        { sIdx: 6, eIdx: 7, dIdx: 8 }  // Delivery: Start=col 22 (idx 6), End=col 23 (idx 7), Dur=col 24 (idx 8)
+        { sIdx: 0, eIdx: 1, dIdx: 2 }, // Picking: Start=col 17 (idx 0), End=col 18 (idx 1), Dur=col 19 (idx 2)
+        { sIdx: 3, eIdx: 4, dIdx: 5 }, // Checking: Start=col 20 (idx 3), End=col 21 (idx 4), Dur=col 22 (idx 5)
+        { sIdx: 6, eIdx: 7, dIdx: 8 }  // Delivery: Start=col 23 (idx 6), End=col 24 (idx 7), Dur=col 25 (idx 8)
       ];
 
       for (var r = 0; r < numRows; r++) {
@@ -373,8 +390,8 @@ function cleanAndFormatAllHeadersAndDurations() {
       try {
         var allRows = trackSheet.getRange(2, 1, numRows, HEADERS_TRACKING.length).getValues();
         for (var r = 0; r < numRows; r++) {
-          var status = String(allRows[r][14] || "").trim();
-          var checkingEnd = String(allRows[r][19] || "").trim();
+          var status = String(allRows[r][15] || "").trim();
+          var checkingEnd = String(allRows[r][20] || "").trim();
           if ((!checkingEnd || checkingEnd === "-") && (status === "Registered" || status === "In Picking" || status === "Waiting Checking" || status === "In Checking")) {
             if (allRows[r][9] !== "" || allRows[r][10] !== "") {
               trackSheet.getRange(r + 2, 10).setValue("");
@@ -387,9 +404,9 @@ function cleanAndFormatAllHeadersAndDurations() {
 
       // Ensure Plain Text format for duration columns
       try {
-        trackSheet.getRange(2, 18, numRows, 1).setNumberFormat("@");
-        trackSheet.getRange(2, 21, numRows, 1).setNumberFormat("@");
-        trackSheet.getRange(2, 24, numRows, 1).setNumberFormat("@");
+        trackSheet.getRange(2, 19, numRows, 1).setNumberFormat("@");
+        trackSheet.getRange(2, 22, numRows, 1).setNumberFormat("@");
+        trackSheet.getRange(2, 25, numRows, 1).setNumberFormat("@");
       } catch(e) {}
     }
   }
@@ -676,6 +693,7 @@ function doGet(e) {
     
     // 1. Fetch Orders from "Tracking"
     var trackSheet = getOrCreateSheet(SHEET_TRACKING, HEADERS_TRACKING);
+    ensureTrackingHeaders(trackSheet);
     // Auto-check if old Khmer headers still exist in row 1, if so auto-clean and migrate
     try {
       var firstHdr = trackSheet.getRange(1, 1).getValue();
@@ -714,8 +732,8 @@ function doGet(e) {
       var cBu = getColIdx(["bu"], 11);
       var cDoc = getColIdx(["document type"], 12);
       var cSpec = getColIdx(["special notes"], 13);
-      var cPay = getColIdx(["payment receipt"], 14);
-      var hasPayCol = (cPay !== -1 && cPay < 16);
+      var cPay = getColIdx(["payment receipt"], -1);
+      var hasPayCol = (cPay !== -1);
       var cStatus = getColIdx(["overall status", "status"], hasPayCol ? 15 : 14);
       var cPStart = getColIdx(["picking start time"], hasPayCol ? 16 : 15);
       var cPEnd = getColIdx(["picking end time"], hasPayCol ? 17 : 16);
@@ -978,6 +996,7 @@ function doPost(e) {
     // ==========================================
     if (action === "REGISTER_ORDER" || action === "SAVE_ORDER") {
       var sheet = getOrCreateSheet(SHEET_TRACKING, HEADERS_TRACKING);
+      ensureTrackingHeaders(sheet);
       var order = payload.order || payload;
       var soNumber = String(order.soNumber || "").trim();
       var originalSo = String(payload.originalSoNumber || order.originalSoNumber || soNumber).trim();
@@ -1041,6 +1060,7 @@ function doPost(e) {
     // ==========================================
     else if (action === "UPDATE_STAGE") {
       var sheet = getOrCreateSheet(SHEET_TRACKING, HEADERS_TRACKING);
+      ensureTrackingHeaders(sheet);
       var soNumber = String(payload.soNumber || "").trim();
       if (!soNumber) throw new Error("SO# is required!");
       
@@ -1065,23 +1085,22 @@ function doPost(e) {
       }
 
       var colPayment = findTrackingCol(["payment receipt"], 15);
-      var hasPaymentCol = (colPayment <= 16);
-      var colStatus = findTrackingCol(["overall status", "status"], hasPaymentCol ? 16 : 15);
-      var colPStart = findTrackingCol(["picking start time"], hasPaymentCol ? 17 : 16);
-      var colPEnd = findTrackingCol(["picking end time"], hasPaymentCol ? 18 : 17);
-      var colPDur = findTrackingCol(["picking duration"], hasPaymentCol ? 19 : 18);
-      var colCStart = findTrackingCol(["checking start time"], hasPaymentCol ? 20 : 19);
-      var colCEnd = findTrackingCol(["checking end time"], hasPaymentCol ? 21 : 20);
-      var colCDur = findTrackingCol(["checking duration"], hasPaymentCol ? 22 : 21);
-      var colDStart = findTrackingCol(["delivery start time"], hasPaymentCol ? 23 : 22);
-      var colDEnd = findTrackingCol(["delivery end time"], hasPaymentCol ? 24 : 23);
-      var colDDur = findTrackingCol(["delivery duration"], hasPaymentCol ? 25 : 24);
-      var colUpdated = findTrackingCol(["last updated"], hasPaymentCol ? 26 : 25);
-      var colCreated = findTrackingCol(["created by"], hasPaymentCol ? 27 : 26);
-      var colPicker = findTrackingCol(["picker by"], hasPaymentCol ? 28 : 27);
-      var colChecker = findTrackingCol(["checker by"], hasPaymentCol ? 29 : 28);
-      var colDriver = findTrackingCol(["delivery by"], hasPaymentCol ? 30 : 29);
-      var colDNotes = findTrackingCol(["delivery notes"], hasPaymentCol ? 31 : 30);
+      var colStatus = findTrackingCol(["overall status", "status"], 16);
+      var colPStart = findTrackingCol(["picking start time"], 17);
+      var colPEnd = findTrackingCol(["picking end time"], 18);
+      var colPDur = findTrackingCol(["picking duration"], 19);
+      var colCStart = findTrackingCol(["checking start time"], 20);
+      var colCEnd = findTrackingCol(["checking end time"], 21);
+      var colCDur = findTrackingCol(["checking duration"], 22);
+      var colDStart = findTrackingCol(["delivery start time"], 23);
+      var colDEnd = findTrackingCol(["delivery end time"], 24);
+      var colDDur = findTrackingCol(["delivery duration"], 25);
+      var colUpdated = findTrackingCol(["last updated"], 26);
+      var colCreated = findTrackingCol(["created by"], 27);
+      var colPicker = findTrackingCol(["picker by"], 28);
+      var colChecker = findTrackingCol(["checker by"], 29);
+      var colDriver = findTrackingCol(["delivery by"], 30);
+      var colDNotes = findTrackingCol(["delivery notes"], 31);
       var colSpecNotes = findTrackingCol(["special notes"], 14);
       var colPkg = findTrackingCol(["total package#", "total package"], 10);
       var colUnit = findTrackingCol(["package unit"], 11);
