@@ -43,7 +43,7 @@
     <link rel="dns-prefetch" href="https://script.google.com">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css?v=live-v3.3">
+    <link rel="stylesheet" href="css/style.css?v=live-v3.4">
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -987,23 +987,23 @@
                         </div>
                     </div>
 
-                    <div class="space-y-1.5 my-auto py-0.5">
-                        <!-- USD Breakdown -->
+                    <div class="space-y-1.5 my-auto py-1">
+                        <!-- Total USD Row -->
                         <div class="flex items-center justify-between gap-1">
-                            <span class="text-[11px] font-semibold text-slate-600 flex items-center gap-1 min-w-0">
+                            <span class="text-[11px] font-semibold text-slate-600 flex items-center gap-1.5 min-w-0">
                                 <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
-                                <span class="truncate">USD ($):</span>
+                                <span class="truncate">Total USD:</span>
                             </span>
                             <div id="reportSummaryInvoiceUSD" class="text-xs sm:text-sm font-bold font-mono text-emerald-600 text-right whitespace-nowrap">
                                 <span class="text-slate-400 font-normal">$0.00</span>
                             </div>
                         </div>
 
-                        <!-- KHR Breakdown -->
+                        <!-- Total KHR Row -->
                         <div class="flex items-center justify-between gap-1">
-                            <span class="text-[11px] font-semibold text-slate-600 flex items-center gap-1 min-w-0">
+                            <span class="text-[11px] font-semibold text-slate-600 flex items-center gap-1.5 min-w-0">
                                 <span class="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
-                                <span class="truncate">KHR (៛):</span>
+                                <span class="truncate">Total KHR:</span>
                             </span>
                             <div id="reportSummaryInvoiceKHR" class="text-xs sm:text-sm font-bold font-mono text-amber-600 text-right whitespace-nowrap">
                                 <span class="text-slate-400 font-normal">៛0</span>
@@ -1012,18 +1012,9 @@
                     </div>
 
                     <div class="text-[10px] text-slate-400 flex items-center justify-between pt-1 border-t border-slate-100">
-                        <div class="flex items-center gap-1.5 font-medium">
-                            <span class="inline-flex items-center gap-1 text-[10px] text-emerald-700">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                <span>$ USD</span>
-                            </span>
-                            <span class="text-slate-300">/</span>
-                            <span class="inline-flex items-center gap-1 text-[10px] text-amber-700">
-                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                                <span>៛ KHR</span>
-                            </span>
-                        </div>
-                        <div id="reportSummaryTotalAmount" class="text-[10px] sm:text-[11px] font-bold font-mono text-slate-600 whitespace-nowrap text-right">Total: $0.00</div>
+                        <span class="truncate">Total Invoice Amount</span>
+                        <span id="reportSummaryInvoiceOrdersCount" class="font-bold font-mono text-slate-500 whitespace-nowrap text-right">0 orders</span>
+                        <div id="reportSummaryTotalAmount" class="hidden">Total: $0.00</div>
                     </div>
                 </div>
                 <div class="metric-card-modern p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs">
@@ -1048,7 +1039,7 @@
                         </div>
                     </div>
 
-                    <div class="space-y-1.5 my-auto py-0.5">
+                    <div class="space-y-1 my-auto py-0.5">
                         <!-- Company Account Breakdown -->
                         <div class="flex items-center justify-between gap-1">
                             <span class="text-[11px] font-semibold text-slate-600 flex items-center gap-1 min-w-0">
@@ -1072,19 +1063,27 @@
                         </div>
                     </div>
 
-                    <div class="text-[10px] text-slate-400 flex items-center justify-between pt-1 border-t border-slate-100">
-                        <div class="flex items-center gap-1.5 font-medium">
-                            <span class="inline-flex items-center gap-1 text-[10px] text-emerald-700">
+                    <!-- Total Section: Total USD (Row 1) & Total KHR (Row 2) -->
+                    <div class="pt-1.5 border-t border-slate-100 space-y-0.5">
+                        <div class="flex items-center justify-between text-[10px] sm:text-[11px] font-mono">
+                            <span class="text-slate-500 font-semibold flex items-center gap-1.5">
                                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                                <span>$ USD</span>
+                                <span>Total USD:</span>
                             </span>
-                            <span class="text-slate-300">/</span>
-                            <span class="inline-flex items-center gap-1 text-[10px] text-amber-700">
-                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                                <span>៛ KHR</span>
+                            <span id="reportSummaryPaymentTotalUSD" class="font-bold text-emerald-600 whitespace-nowrap text-right">
+                                $0.00
                             </span>
                         </div>
-                        <div id="reportSummaryPaymentTotal" class="text-[10px] sm:text-[11px] font-bold font-mono text-slate-600 whitespace-nowrap text-right">Total: $0.00</div>
+                        <div class="flex items-center justify-between text-[10px] sm:text-[11px] font-mono">
+                            <span class="text-slate-500 font-semibold flex items-center gap-1.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                <span>Total KHR:</span>
+                            </span>
+                            <span id="reportSummaryPaymentTotalKHR" class="font-bold text-amber-600 whitespace-nowrap text-right">
+                                ៛0
+                            </span>
+                        </div>
+                        <div id="reportSummaryPaymentTotal" class="hidden">Total: $0.00</div>
                     </div>
                 </div>
             </div>
@@ -3060,8 +3059,8 @@
     </div>
 
     <!-- App Core Scripts -->
-    <script src="js/data.js?v=live-v3.3"></script>
-    <script src="js/sheets-sync.js?v=live-v3.3"></script>
-    <script src="js/app.js?v=live-v3.3"></script>
+    <script src="js/data.js?v=live-v3.4"></script>
+    <script src="js/sheets-sync.js?v=live-v3.4"></script>
+    <script src="js/app.js?v=live-v3.4"></script>
 </body>
 </html>
