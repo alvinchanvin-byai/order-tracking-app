@@ -348,6 +348,22 @@ function cleanAndFormatAllHeadersAndDurations() {
         range.setValues(vals);
       }
 
+      // Clear package quantity/unit for orders that have not completed Checking yet
+      try {
+        var allRows = trackSheet.getRange(2, 1, numRows, HEADERS_TRACKING.length).getValues();
+        for (var r = 0; r < numRows; r++) {
+          var status = String(allRows[r][14] || "").trim();
+          var checkingEnd = String(allRows[r][19] || "").trim();
+          if ((!checkingEnd || checkingEnd === "-") && (status === "Registered" || status === "In Picking" || status === "Waiting Checking" || status === "In Checking")) {
+            if (allRows[r][9] !== "" || allRows[r][10] !== "") {
+              trackSheet.getRange(r + 2, 10).setValue("");
+              trackSheet.getRange(r + 2, 11).setValue("");
+              updatedCount++;
+            }
+          }
+        }
+      } catch(ePkg) {}
+
       // Ensure Plain Text format for duration columns
       try {
         trackSheet.getRange(2, 18, numRows, 1).setNumberFormat("@");
@@ -661,8 +677,8 @@ function doGet(e) {
           invoiceNumber: String(row[6] || ""),
           invoiceAmount: row[7] !== "" ? Number(row[7]) : 0,
           currency: String(row[8] || "USD"),
-          totalPackage: row[9] !== "" ? Number(row[9]) : 0,
-          packageUnit: String(row[10] || "Carton"),
+          totalPackage: (row[9] !== "" && row[9] !== null && Number(row[9]) > 0 && String(row[19] || "").trim() !== "" && String(row[19] || "").trim() !== "-") ? Number(row[9]) : "",
+          packageUnit: (row[9] !== "" && row[9] !== null && Number(row[9]) > 0 && String(row[19] || "").trim() !== "" && String(row[19] || "").trim() !== "-") ? String(row[10] || "") : "",
           bu: String(row[11] || ""),
           documentType: String(row[12] || ""),
           specialNotes: (function() {
@@ -912,8 +928,8 @@ function doPost(e) {
         order.invoiceNumber || "",
         order.invoiceAmount || 0,
         order.currency || "USD",
-        order.totalPackage || 1,
-        order.packageUnit || "Carton",
+        (order.totalPackage !== undefined && order.totalPackage !== null && order.totalPackage !== "" && Number(order.totalPackage) > 0) ? Number(order.totalPackage) : "",
+        (order.totalPackage !== undefined && order.totalPackage !== null && order.totalPackage !== "" && Number(order.totalPackage) > 0) ? (order.packageUnit || "") : "",
         order.bu || "",
         order.documentType || "",
         order.specialNotes || "",
