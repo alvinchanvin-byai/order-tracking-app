@@ -6816,8 +6816,9 @@ function renderReportView() {
     // 4. Update KPI Summary Metric Cards
     let totalAmount = 0;
     let totalPackages = 0;
-    let totalDurationMinutes = 0;
-    let countWithDuration = 0;
+    let accountUSD = 0, accountKHR = 0;
+    let cashUSD = 0, cashKHR = 0;
+    let paidOrdersCount = 0;
 
     filteredOrders.forEach(o => {
         const amt = Number(String(o.invoiceAmount || 0).replace(/[^0-9.-]+/g, ""));
@@ -6828,51 +6829,85 @@ function renderReportView() {
             if (!isNaN(pkg)) totalPackages += pkg;
         }
 
-        let start = "", end = "";
-        if (currentSubTab === "picking") { start = o.pickingStartTime; end = o.pickingEndTime; }
-        else if (currentSubTab === "checking") { start = o.checkingStartTime; end = o.checkingEndTime; }
-        else if (currentSubTab === "delivery") { start = o.deliveryStartTime; end = o.deliveryEndTime; }
+        // Aggregate Payment Receipt (Company Account & Cash with Currency)
+        const rawReceipt = String(o.paymentReceipt || "").trim();
+        const hasReceipt = rawReceipt && rawReceipt !== "-";
+        const payType = o.paymentReceiptType || "";
+        let accAmt = Number(o.paymentAccountAmount || 0);
+        let cashAmt = Number(o.paymentCashAmount || 0);
+        const totalPayAmt = Number(o.paymentReceiptAmount || 0);
 
-        if (start && end) {
-            const sd = parseAppDateTime(start);
-            const ed = parseAppDateTime(end);
-            if (sd && ed && ed >= sd) {
-                totalDurationMinutes += Math.floor((ed.getTime() - sd.getTime()) / (1000 * 60));
-                countWithDuration++;
+        // Fallback for older orders or string-only data
+        if (accAmt === 0 && cashAmt === 0 && (totalPayAmt > 0 || hasReceipt)) {
+            if (payType === "Paid to Company Account") {
+                accAmt = totalPayAmt;
+            } else if (payType === "Cash") {
+                cashAmt = totalPayAmt;
+            } else if (hasReceipt) {
+                const isCash = /cash/i.test(rawReceipt);
+                const isAcc = /company account|aba|acleda|wing/i.test(rawReceipt);
+                if (isAcc && isCash) {
+                    const mAcc = rawReceipt.match(/Company Account:\s*([$៛]?)\s*([\d,]+(?:\.\d+)?)/i);
+                    const mCash = rawReceipt.match(/Cash:\s*([$៛]?)\s*([\d,]+(?:\.\d+)?)/i);
+                    if (mAcc) accAmt = parseFloat(mAcc[2].replace(/,/g, "")) || 0;
+                    if (mCash) cashAmt = parseFloat(mCash[2].replace(/,/g, "")) || 0;
+                } else if (isAcc) {
+                    const m = rawReceipt.match(/([$៛]?)\s*([\d,]+(?:\.\d+)?)/);
+                    if (m) accAmt = parseFloat(m[2].replace(/,/g, "")) || totalPayAmt;
+                } else if (isCash) {
+                    const m = rawReceipt.match(/([$៛]?)\s*([\d,]+(?:\.\d+)?)/);
+                    if (m) cashAmt = parseFloat(m[2].replace(/,/g, "")) || totalPayAmt;
+                }
             }
+        }
+
+        if (accAmt > 0 || cashAmt > 0 || hasReceipt) {
+            paidOrdersCount++;
+        }
+
+        const { accCurr, cashCurr } = getPaymentReceiptCurrencies(o);
+
+        if (accAmt > 0) {
+            if (accCurr === "KHR") accountKHR += accAmt;
+            else accountUSD += accAmt;
+        }
+        if (cashAmt > 0) {
+            if (cashCurr === "KHR") cashKHR += cashAmt;
+            else cashUSD += cashAmt;
         }
     });
 
     const sumTotalOrders = document.getElementById("reportSummaryTotalOrders");
     const sumTotalAmount = document.getElementById("reportSummaryTotalAmount");
     const sumTotalPackages = document.getElementById("reportSummaryTotalPackages");
-    const sumAvgDuration = document.getElementById("reportSummaryAvgDuration");
-    const stat4Label = document.getElementById("reportSummaryStat4Label");
-    const stat4Sub = document.getElementById("reportSummaryStat4Sub");
+    const elPayAccount = document.getElementById("reportSummaryPaymentAccount");
+    const elPayCash = document.getElementById("reportSummaryPaymentCash");
+    const elPayBadge = document.getElementById("reportSummaryPaymentReceiptBadge");
+    const elPayTotal = document.getElementById("reportSummaryPaymentTotal");
 
     if (sumTotalOrders) sumTotalOrders.textContent = totalOrders.toLocaleString();
     if (sumTotalAmount) sumTotalAmount.textContent = `$${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     if (sumTotalPackages) sumTotalPackages.textContent = totalPackages.toLocaleString();
 
-    if (sumAvgDuration && stat4Label && stat4Sub) {
-        if (currentSubTab === "register" || currentSubTab === "master") {
-            stat4Label.textContent = "អតិថិជនសរុប (Customers)";
-            stat4Sub.textContent = "Unique Customers";
-            const uniqueCust = new Set(filteredOrders.map(o => o.customerName).filter(Boolean)).size;
-            sumAvgDuration.textContent = uniqueCust;
-        } else {
-            stat4Label.textContent = "រយៈពេលមធ្យម (Avg Duration)";
-            stat4Sub.textContent = "Formula: Average (hh:mm)";
-            if (countWithDuration > 0) {
-                const avgMin = Math.round(totalDurationMinutes / countWithDuration);
-                const avgH = Math.floor(avgMin / 60);
-                const avgM = avgMin % 60;
-                sumAvgDuration.textContent = `${String(avgH).padStart(2, '0')}:${String(avgM).padStart(2, '0')}`;
-            } else {
-                sumAvgDuration.textContent = "-";
-            }
-        }
+    function formatPaymentCurrencyPair(usd, khr) {
+        const parts = [];
+        if (usd > 0) parts.push(`$${usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+        if (khr > 0) parts.push(`៛${khr.toLocaleString('en-US')}`);
+        if (parts.length === 0) return '<span class="text-slate-400 font-normal">$0.00</span>';
+        return parts.join(' <span class="text-slate-300 font-normal">|</span> ');
     }
+
+    if (elPayAccount) elPayAccount.innerHTML = formatPaymentCurrencyPair(accountUSD, accountKHR);
+    if (elPayCash) elPayCash.innerHTML = formatPaymentCurrencyPair(cashUSD, cashKHR);
+    if (elPayBadge) elPayBadge.textContent = `${paidOrdersCount.toLocaleString()} paid`;
+
+    const totalPayUSD = accountUSD + cashUSD;
+    const totalPayKHR = accountKHR + cashKHR;
+    const totParts = [];
+    if (totalPayUSD > 0) totParts.push(`$${totalPayUSD.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+    if (totalPayKHR > 0) totParts.push(`៛${totalPayKHR.toLocaleString('en-US')}`);
+    const totalPayFormatted = totParts.length > 0 ? totParts.join(" | ") : "$0.00";
+    if (elPayTotal) elPayTotal.textContent = `Total: ${totalPayFormatted}`;
 
     // 5. Render Table Thead based on subTab (with interactive Sort on SO Date)
     const thead = document.getElementById("reportTableHead");
