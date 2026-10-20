@@ -404,6 +404,78 @@ function hasOrderTotalPackage(order) {
 }
 window.hasOrderTotalPackage = hasOrderTotalPackage;
 
+// Parse a payment receipt string (e.g. "Paid to Company Account ($10,200.00)" or "Company Account: $10,200 | Cash: ៛450,000")
+function parsePaymentReceiptString(str, baseCurr = "USD") {
+    if (!str || typeof str !== "string") return null;
+    str = str.trim();
+    if (!str || str === "-") return null;
+
+    let res = {
+        type: "",
+        accountAmount: 0,
+        accountCurrency: "USD",
+        cashAmount: 0,
+        cashCurrency: "USD",
+        totalAmount: 0
+    };
+
+    const hasAcc = /Company Account|ABA|Acleda|Wing/i.test(str);
+    const hasCash = /Cash/i.test(str);
+
+    if (hasAcc && hasCash) {
+        res.type = "Paid to Company Account & Cash";
+        const mAcc = str.match(/Company Account:\s*([$៛]?)\s*([\d,]+(?:\.\d+)?)/i);
+        if (mAcc) {
+            res.accountCurrency = (mAcc[1] === "៛") ? "KHR" : (mAcc[1] === "$" ? "USD" : baseCurr);
+            res.accountAmount = parseFloat(mAcc[2].replace(/,/g, "")) || 0;
+        }
+        const mCash = str.match(/Cash:\s*([$៛]?)\s*([\d,]+(?:\.\d+)?)/i);
+        if (mCash) {
+            res.cashCurrency = (mCash[1] === "៛") ? "KHR" : (mCash[1] === "$" ? "USD" : baseCurr);
+            res.cashAmount = parseFloat(mCash[2].replace(/,/g, "")) || 0;
+        }
+        res.totalAmount = res.accountAmount + res.cashAmount;
+        return res;
+    }
+
+    if (hasAcc) {
+        res.type = "Paid to Company Account";
+        const m = str.match(/(?:Company Account|Paid to Company Account|\()\s*([$៛]?)\s*([\d,]+(?:\.\d+)?)/i);
+        if (m) {
+            res.accountCurrency = (m[1] === "៛" || str.includes("៛")) ? "KHR" : (m[1] === "$" || str.includes("$") ? "USD" : baseCurr);
+            res.accountAmount = parseFloat(m[2].replace(/,/g, "")) || 0;
+            res.totalAmount = res.accountAmount;
+        }
+        return res;
+    }
+
+    if (hasCash) {
+        res.type = "Cash";
+        const m = str.match(/(?:Cash|\()\s*([$៛]?)\s*([\d,]+(?:\.\d+)?)/i);
+        if (m) {
+            res.cashCurrency = (m[1] === "៛" || str.includes("៛")) ? "KHR" : (m[1] === "$" || str.includes("$") ? "USD" : baseCurr);
+            res.cashAmount = parseFloat(m[2].replace(/,/g, "")) || 0;
+            res.totalAmount = res.cashAmount;
+        }
+        return res;
+    }
+
+    // Generic fallback for amounts in string
+    const mGen = str.match(/([$៛]?)\s*([\d,]+(?:\.\d+)?)/);
+    if (mGen) {
+        const curr = (mGen[1] === "៛" || str.includes("៛")) ? "KHR" : "USD";
+        const amt = parseFloat(mGen[2].replace(/,/g, "")) || 0;
+        res.type = "Paid to Company Account";
+        res.accountAmount = amt;
+        res.accountCurrency = curr;
+        res.totalAmount = amt;
+        return res;
+    }
+
+    return null;
+}
+window.parsePaymentReceiptString = parsePaymentReceiptString;
+
 // Normalize all date and status fields of an order object
 function normalizeOrderDates(order) {
     if (!order) return order;
@@ -431,6 +503,26 @@ function normalizeOrderDates(order) {
         cleanTotalPackage = Number(order.totalPackage);
         cleanPackageUnit = String(order.packageUnit || "Carton").trim();
     }
+
+    const rawPay = String(order.paymentReceipt || "").trim();
+    const payParsed = (rawPay && rawPay !== "-" && (!order.paymentReceiptType || (!order.paymentAccountAmount && !order.paymentCashAmount)))
+        ? parsePaymentReceiptString(rawPay, order.currency || "USD")
+        : null;
+
+    const payType = order.paymentReceiptType || (payParsed ? payParsed.type : "");
+    const payAccAmt = (order.paymentAccountAmount !== undefined && order.paymentAccountAmount !== null && order.paymentAccountAmount !== "" && Number(order.paymentAccountAmount) > 0)
+        ? Number(order.paymentAccountAmount)
+        : (payParsed ? payParsed.accountAmount : 0);
+    const payCashAmt = (order.paymentCashAmount !== undefined && order.paymentCashAmount !== null && order.paymentCashAmount !== "" && Number(order.paymentCashAmount) > 0)
+        ? Number(order.paymentCashAmount)
+        : (payParsed ? payParsed.cashAmount : 0);
+    const payTotAmt = (order.paymentReceiptAmount !== undefined && order.paymentReceiptAmount !== null && order.paymentReceiptAmount !== "" && Number(order.paymentReceiptAmount) > 0)
+        ? Number(order.paymentReceiptAmount)
+        : (payAccAmt + payCashAmt || (payParsed ? payParsed.totalAmount : 0));
+
+    const payAccCurr = order.paymentAccountCurrency || (payParsed ? payParsed.accountCurrency : (rawPay.includes("៛") ? "KHR" : (order.currency || "USD")));
+    const payCashCurr = order.paymentCashCurrency || (payParsed ? payParsed.cashCurrency : (rawPay.includes("៛") ? "KHR" : (order.currency || "USD")));
+    const payReceiptCurr = order.paymentReceiptCurrency || (rawPay.includes("៛") ? "KHR" : (order.currency || "USD"));
 
     return {
         ...order,
@@ -462,14 +554,14 @@ function normalizeOrderDates(order) {
         pickerBy: order.pickerBy || "",
         checkerBy: order.checkerBy || "",
         deliveryBy: order.deliveryBy || "",
-        paymentReceipt: order.paymentReceipt || "",
-        paymentReceiptType: order.paymentReceiptType || "",
-        paymentReceiptAmount: (order.paymentReceiptAmount !== undefined && order.paymentReceiptAmount !== null && order.paymentReceiptAmount !== "") ? Number(order.paymentReceiptAmount) : 0,
-        paymentAccountAmount: (order.paymentAccountAmount !== undefined && order.paymentAccountAmount !== null && order.paymentAccountAmount !== "") ? Number(order.paymentAccountAmount) : 0,
-        paymentCashAmount: (order.paymentCashAmount !== undefined && order.paymentCashAmount !== null && order.paymentCashAmount !== "") ? Number(order.paymentCashAmount) : 0,
-        paymentAccountCurrency: order.paymentAccountCurrency || (order.paymentReceipt && order.paymentReceipt.includes("៛") ? "KHR" : (order.currency || "USD")),
-        paymentCashCurrency: order.paymentCashCurrency || (order.paymentReceipt && order.paymentReceipt.includes("៛") ? "KHR" : (order.currency || "USD")),
-        paymentReceiptCurrency: order.paymentReceiptCurrency || (order.paymentReceipt && order.paymentReceipt.includes("៛") ? "KHR" : (order.currency || "USD"))
+        paymentReceipt: rawPay,
+        paymentReceiptType: payType,
+        paymentReceiptAmount: payTotAmt,
+        paymentAccountAmount: payAccAmt,
+        paymentCashAmount: payCashAmt,
+        paymentAccountCurrency: payAccCurr,
+        paymentCashCurrency: payCashCurr,
+        paymentReceiptCurrency: payReceiptCurr
     };
 }
 
@@ -2221,14 +2313,31 @@ function applyLiveServerUpdate(fullData) {
     if (fullData.orders && Array.isArray(fullData.orders)) {
         const incomingOrders = fullData.orders.map(normalizeOrderDates);
         
-        // Fast signature comparison
+        // Fast signature comparison (including paymentReceipt)
         const makeSig = (list) => list.map(o => 
-            `${o.soNumber}|${o.status}|${o.pickingStartTime || ''}|${o.pickingEndTime || ''}|${o.checkingStartTime || ''}|${o.checkingEndTime || ''}|${o.deliveryStartTime || ''}|${o.deliveryEndTime || ''}|${o.pickerBy || ''}|${o.checkerBy || ''}|${o.deliveryBy || ''}|${o.specialNotes || ''}|${o.deliveryNotes || ''}`
+            `${o.soNumber}|${o.status}|${o.pickingStartTime || ''}|${o.pickingEndTime || ''}|${o.checkingStartTime || ''}|${o.checkingEndTime || ''}|${o.deliveryStartTime || ''}|${o.deliveryEndTime || ''}|${o.pickerBy || ''}|${o.checkerBy || ''}|${o.deliveryBy || ''}|${o.specialNotes || ''}|${o.deliveryNotes || ''}|${o.paymentReceipt || ''}`
         ).join("###");
 
         if (makeSig(AppState.orders) !== makeSig(incomingOrders)) {
             console.log("⚡ Live Update: Merging fresh orders from Google Sheet...");
-            AppState.orders = incomingOrders;
+            // Smart Merge: Don't let an empty cloud paymentReceipt overwrite a locally recorded paymentReceipt
+            const merged = incomingOrders.map(inc => {
+                const existing = AppState.orders.find(o => o.soNumber === inc.soNumber);
+                if (existing) {
+                    if ((!inc.paymentReceipt || inc.paymentReceipt === "-") && existing.paymentReceipt && existing.paymentReceipt !== "-") {
+                        inc.paymentReceipt = existing.paymentReceipt;
+                        inc.paymentReceiptType = existing.paymentReceiptType;
+                        inc.paymentReceiptAmount = existing.paymentReceiptAmount;
+                        inc.paymentAccountAmount = existing.paymentAccountAmount;
+                        inc.paymentCashAmount = existing.paymentCashAmount;
+                        inc.paymentAccountCurrency = existing.paymentAccountCurrency;
+                        inc.paymentCashCurrency = existing.paymentCashCurrency;
+                        inc.paymentReceiptCurrency = existing.paymentReceiptCurrency;
+                    }
+                }
+                return inc;
+            });
+            AppState.orders = merged;
             saveOrdersToStorage(false); // Do not re-broadcast locally
             hasOrderChanges = true;
         }
@@ -4755,7 +4864,9 @@ async function confirmEndDelivery() {
     }
 
     saveOrdersToStorage();
-    renderAll();
+    renderAll(true);
+    if (typeof renderDashboardTable === "function") renderDashboardTable();
+    if (typeof renderReportView === "function") renderReportView();
     closeEndDeliveryModal();
 
     // Auto sync to Google Sheets
@@ -8149,7 +8260,24 @@ async function syncFromGoogleSheet() {
 
         let updatedMsg = [];
         if (data.orders && data.orders.length > 0) {
-            AppState.orders = data.orders.map(normalizeOrderDates);
+            const incomingOrders = data.orders.map(normalizeOrderDates);
+            const merged = incomingOrders.map(inc => {
+                const existing = AppState.orders.find(o => o.soNumber === inc.soNumber);
+                if (existing) {
+                    if ((!inc.paymentReceipt || inc.paymentReceipt === "-") && existing.paymentReceipt && existing.paymentReceipt !== "-") {
+                        inc.paymentReceipt = existing.paymentReceipt;
+                        inc.paymentReceiptType = existing.paymentReceiptType;
+                        inc.paymentReceiptAmount = existing.paymentReceiptAmount;
+                        inc.paymentAccountAmount = existing.paymentAccountAmount;
+                        inc.paymentCashAmount = existing.paymentCashAmount;
+                        inc.paymentAccountCurrency = existing.paymentAccountCurrency;
+                        inc.paymentCashCurrency = existing.paymentCashCurrency;
+                        inc.paymentReceiptCurrency = existing.paymentReceiptCurrency;
+                    }
+                }
+                return inc;
+            });
+            AppState.orders = merged;
             saveOrdersToStorage();
             updatedMsg.push(`${data.orders.length} Orders`);
         }
