@@ -43,7 +43,7 @@
     <link rel="dns-prefetch" href="https://script.google.com">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css?v=live-v2.7">
+    <link rel="stylesheet" href="css/style.css?v=live-v2.8">
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -748,6 +748,7 @@
                                 <th data-col="checkerBy" class="py-3.5 px-3.5">Checker by</th>
                                 <th data-col="deliveryBy" class="py-3.5 px-3.5">Delivery by</th>
                                 <th data-col="specialNotes" class="py-3.5 px-3.5">Special Notes</th>
+                                <th data-col="paymentReceipt" class="py-3.5 px-3.5">Payment Receipt</th>
                                 <th data-col="deliveryNotes" class="py-3.5 px-3.5">Delivery Notes</th>
                                 <th data-col="processTimeline" class="py-3.5 px-3.5 text-center">Process Timeline</th>
                                 <th data-col="actions" class="py-3.5 px-3.5 text-right">Actions</th>
@@ -1617,6 +1618,33 @@
                         </label>
                         <textarea id="editSpecialNotes" rows="2" class="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl"></textarea>
                     </div>
+
+                    <!-- Payment Receipt (Edit Mode) -->
+                    <div class="sm:col-span-2 p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                        <label class="block text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                            <i data-lucide="receipt" class="w-4 h-4 text-indigo-600"></i>
+                            <span>Payment Receipt (បង្កាន់ដៃទូទាត់ប្រាក់)</span>
+                        </label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600 mb-1">
+                                    ប្រភេទនៃការទូទាត់ (Payment Type)
+                                </label>
+                                <select id="editPaymentReceiptType" class="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                                    <option value="">-- មិនទាន់ទូទាត់ (None) --</option>
+                                    <option value="Paid to Company Account">Paid to Company Account (ABA, Acleda, Wing...)</option>
+                                    <option value="Cash">Cash (សាច់ប្រាក់សុទ្ធ)</option>
+                                    <option value="Paid to Company Account & Cash">Both (Company Account & Cash)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-600 mb-1">
+                                    ចំនួនទឹកប្រាក់ទូទាត់ (Payment Amount)
+                                </label>
+                                <input type="number" id="editPaymentReceiptAmount" step="any" min="0" placeholder="0.00" class="w-full px-3 py-2 text-xs font-mono font-bold text-slate-800 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="flex items-center justify-end gap-2 pt-4 border-t border-slate-100">
@@ -2016,6 +2044,68 @@
                             <p class="text-xs text-rose-700/90 mt-0.5">អតិថិជនបដិសេធទទួល ឬទំនិញត្រូវបានដឹកត្រឡប់មកឃ្លាំងវិញ</p>
                         </div>
                     </label>
+                </div>
+
+                <!-- Payment Receipt Section (ក្រោម Tab Return តាមការណែនាំរបស់អ្នកប្រើប្រាស់) -->
+                <div id="endDeliveryPaymentReceiptSection" class="p-3.5 sm:p-4 rounded-2xl bg-slate-50/90 border border-slate-200/90 space-y-3 transition-all">
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                            <i data-lucide="receipt" class="w-4 h-4 text-indigo-600"></i>
+                            <span>បង្កាន់ដៃទូទាត់ប្រាក់ (Payment Receipt)</span>
+                        </label>
+                        <span class="text-[11px] text-slate-500 font-medium">ជ្រើសរើសរបៀបទូទាត់ &amp; បញ្ចូលទឹកប្រាក់</span>
+                    </div>
+
+                    <!-- 2 Payment Option Cards (Paid to Company Account & Cash) -->
+                    <div class="space-y-2.5">
+                        <!-- Option 1: Paid to Company Account (ABA, Acleda, Wing...) -->
+                        <div id="cardPaymentAccount" class="p-3 rounded-xl border border-slate-200 bg-white hover:border-blue-300 transition-all">
+                            <div class="flex items-center justify-between">
+                                <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                                    <input type="checkbox" id="chkPaymentAccount" onchange="togglePaymentOption('account')" class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 cursor-pointer">
+                                    <span class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+                                        <i data-lucide="building-2" class="w-3.5 h-3.5 text-blue-600"></i>
+                                        <span>Paid to Company Account (ABA, Acleda, Wing...)</span>
+                                    </span>
+                                </label>
+                                <button type="button" onclick="quickFillPaymentAmount('account')" class="text-[11px] font-semibold text-blue-600 hover:text-blue-800 hover:underline">
+                                    ពេញទឹកប្រាក់ (Full)
+                                </button>
+                            </div>
+                            <!-- Amount Input Field -->
+                            <div id="inputGroupPaymentAccount" class="hidden mt-2.5 pt-2.5 border-t border-slate-100 flex items-center gap-2">
+                                <label for="amountPaymentAccount" class="text-[11px] font-medium text-slate-500 whitespace-nowrap">ចំនួនទឹកប្រាក់ (Amount):</label>
+                                <div class="relative flex-1">
+                                    <span id="symbolPaymentAccount" class="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 font-mono">$</span>
+                                    <input type="number" id="amountPaymentAccount" step="any" min="0" placeholder="0.00" class="w-full pl-7 pr-3 py-1.5 text-xs font-mono font-bold text-blue-900 bg-blue-50/40 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Option 2: Cash -->
+                        <div id="cardPaymentCash" class="p-3 rounded-xl border border-slate-200 bg-white hover:border-emerald-300 transition-all">
+                            <div class="flex items-center justify-between">
+                                <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                                    <input type="checkbox" id="chkPaymentCash" onchange="togglePaymentOption('cash')" class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500 cursor-pointer">
+                                    <span class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+                                        <i data-lucide="banknote" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                        <span>Cash (សាច់ប្រាក់សុទ្ធ)</span>
+                                    </span>
+                                </label>
+                                <button type="button" onclick="quickFillPaymentAmount('cash')" class="text-[11px] font-semibold text-emerald-600 hover:text-emerald-800 hover:underline">
+                                    ពេញទឹកប្រាក់ (Full)
+                                </button>
+                            </div>
+                            <!-- Amount Input Field -->
+                            <div id="inputGroupPaymentCash" class="hidden mt-2.5 pt-2.5 border-t border-slate-100 flex items-center gap-2">
+                                <label for="amountPaymentCash" class="text-[11px] font-medium text-slate-500 whitespace-nowrap">ចំនួនទឹកប្រាក់ (Amount):</label>
+                                <div class="relative flex-1">
+                                    <span id="symbolPaymentCash" class="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 font-mono">$</span>
+                                    <input type="number" id="amountPaymentCash" step="any" min="0" placeholder="0.00" class="w-full pl-7 pr-3 py-1.5 text-xs font-mono font-bold text-emerald-900 bg-emerald-50/40 border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Notes / Reason -->
@@ -2868,8 +2958,8 @@
     </div>
 
     <!-- App Core Scripts -->
-    <script src="js/data.js?v=live-v2.7"></script>
-    <script src="js/sheets-sync.js?v=live-v2.7"></script>
-    <script src="js/app.js?v=live-v2.7"></script>
+    <script src="js/data.js?v=live-v2.8"></script>
+    <script src="js/sheets-sync.js?v=live-v2.8"></script>
+    <script src="js/app.js?v=live-v2.8"></script>
 </body>
 </html>
