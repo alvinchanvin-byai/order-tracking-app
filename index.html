@@ -43,7 +43,7 @@
     <link rel="dns-prefetch" href="https://script.google.com">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css?v=live-v3.0">
+    <link rel="stylesheet" href="css/style.css?v=live-v3.1">
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -989,13 +989,48 @@
                     <div id="reportSummaryTotalPackages" class="text-2xl font-black text-blue-600 font-mono">0</div>
                     <span class="text-[10px] text-slate-400">Total Packages</span>
                 </div>
-                <div class="metric-card-modern p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs">
-                    <div class="flex items-center justify-between text-slate-400 mb-1.5">
-                        <span id="reportSummaryStat4Label" class="text-xs font-semibold text-slate-500">រយៈពេលមធ្យម (Avg)</span>
-                        <i data-lucide="clock" class="w-4 h-4 text-amber-500"></i>
+                <!-- KPI Card 4: Payment Receipt (Breakdown: Company Account & Cash with Currency) -->
+                <div class="metric-card-modern p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex flex-col justify-between">
+                    <div class="flex items-center justify-between text-slate-400 mb-1">
+                        <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                            <span>Payment Receipt</span>
+                        </span>
+                        <div class="flex items-center gap-1.5">
+                            <span id="reportSummaryPaymentReceiptBadge" class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200/70 font-mono">
+                                0 paid
+                            </span>
+                            <i data-lucide="receipt" class="w-4 h-4 text-indigo-500"></i>
+                        </div>
                     </div>
-                    <div id="reportSummaryAvgDuration" class="text-2xl font-black text-amber-600 font-mono">-</div>
-                    <span id="reportSummaryStat4Sub" class="text-[10px] text-slate-400">Average Duration (hh:mm)</span>
+
+                    <div class="space-y-1.5 my-auto py-0.5">
+                        <!-- Company Account Breakdown -->
+                        <div class="flex items-center justify-between gap-1">
+                            <span class="text-[11px] font-semibold text-slate-600 flex items-center gap-1 min-w-0">
+                                <i data-lucide="building-2" class="w-3.5 h-3.5 text-blue-600 shrink-0"></i>
+                                <span class="truncate">Account:</span>
+                            </span>
+                            <div id="reportSummaryPaymentAccount" class="text-xs sm:text-sm font-bold font-mono text-blue-700 text-right whitespace-nowrap">
+                                $0.00
+                            </div>
+                        </div>
+
+                        <!-- Cash Breakdown -->
+                        <div class="flex items-center justify-between gap-1">
+                            <span class="text-[11px] font-semibold text-slate-600 flex items-center gap-1 min-w-0">
+                                <i data-lucide="banknote" class="w-3.5 h-3.5 text-emerald-600 shrink-0"></i>
+                                <span class="truncate">Cash:</span>
+                            </span>
+                            <div id="reportSummaryPaymentCash" class="text-xs sm:text-sm font-bold font-mono text-emerald-700 text-right whitespace-nowrap">
+                                $0.00
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-[10px] text-slate-400 flex items-center justify-between pt-1 border-t border-slate-100">
+                        <span class="truncate">Bank vs Cash</span>
+                        <span id="reportSummaryPaymentTotal" class="font-bold font-mono text-slate-600 whitespace-nowrap">Total: $0.00</span>
+                    </div>
                 </div>
             </div>
 
@@ -2970,8 +3005,8 @@
     </div>
 
     <!-- App Core Scripts -->
-    <script src="js/data.js?v=live-v3.0"></script>
-    <script src="js/sheets-sync.js?v=live-v3.0"></script>
-    <script src="js/app.js?v=live-v3.0"></script>
+    <script src="js/data.js?v=live-v3.1"></script>
+    <script src="js/sheets-sync.js?v=live-v3.1"></script>
+    <script src="js/app.js?v=live-v3.1"></script>
 </body>
 </html>
