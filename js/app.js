@@ -466,31 +466,70 @@ function normalizeOrderDates(order) {
         paymentReceiptType: order.paymentReceiptType || "",
         paymentReceiptAmount: (order.paymentReceiptAmount !== undefined && order.paymentReceiptAmount !== null && order.paymentReceiptAmount !== "") ? Number(order.paymentReceiptAmount) : 0,
         paymentAccountAmount: (order.paymentAccountAmount !== undefined && order.paymentAccountAmount !== null && order.paymentAccountAmount !== "") ? Number(order.paymentAccountAmount) : 0,
-        paymentCashAmount: (order.paymentCashAmount !== undefined && order.paymentCashAmount !== null && order.paymentCashAmount !== "") ? Number(order.paymentCashAmount) : 0
+        paymentCashAmount: (order.paymentCashAmount !== undefined && order.paymentCashAmount !== null && order.paymentCashAmount !== "") ? Number(order.paymentCashAmount) : 0,
+        paymentAccountCurrency: order.paymentAccountCurrency || (order.paymentReceipt && order.paymentReceipt.includes("៛") ? "KHR" : (order.currency || "USD")),
+        paymentCashCurrency: order.paymentCashCurrency || (order.paymentReceipt && order.paymentReceipt.includes("៛") ? "KHR" : (order.currency || "USD")),
+        paymentReceiptCurrency: order.paymentReceiptCurrency || (order.paymentReceipt && order.paymentReceipt.includes("៛") ? "KHR" : (order.currency || "USD"))
     };
 }
 
 // ========================================================
 // PAYMENT RECEIPT HELPERS: FORMAT & BADGE RENDERER
 // ========================================================
+function getPaymentReceiptCurrencies(order) {
+    if (!order) return { accSym: "$", cashSym: "$", accCurr: "USD", cashCurr: "USD" };
+
+    const rawStr = String(order.paymentReceipt || "");
+    const baseCurr = (order.currency === "KHR") ? "KHR" : "USD";
+
+    // 1. Account currency & symbol
+    let accCurr = order.paymentAccountCurrency;
+    if (!accCurr) {
+        if (/Company Account:[^|]*៛/i.test(rawStr) || /Paid to Company Account.*៛/i.test(rawStr)) {
+            accCurr = "KHR";
+        } else if (/Company Account:[^|]*\$/i.test(rawStr) || /Paid to Company Account.*\$/i.test(rawStr)) {
+            accCurr = "USD";
+        } else {
+            accCurr = baseCurr;
+        }
+    }
+    const accSym = (accCurr === "KHR") ? "៛" : "$";
+
+    // 2. Cash currency & symbol
+    let cashCurr = order.paymentCashCurrency;
+    if (!cashCurr) {
+        if (/Cash:[^|]*៛/i.test(rawStr) || /Cash.*៛/i.test(rawStr)) {
+            cashCurr = "KHR";
+        } else if (/Cash:[^|]*\$/i.test(rawStr) || /Cash.*\$/i.test(rawStr)) {
+            cashCurr = "USD";
+        } else {
+            cashCurr = baseCurr;
+        }
+    }
+    const cashSym = (cashCurr === "KHR") ? "៛" : "$";
+
+    return { accSym, cashSym, accCurr, cashCurr };
+}
+window.getPaymentReceiptCurrencies = getPaymentReceiptCurrencies;
+
 function formatPaymentReceiptDisplay(order) {
     if (!order) return "-";
     const type = order.paymentReceiptType || "";
     const accAmt = Number(order.paymentAccountAmount || 0);
     const cashAmt = Number(order.paymentCashAmount || 0);
     const totalAmt = Number(order.paymentReceiptAmount || 0);
-    const curr = (order.currency === "KHR") ? "៛" : "$";
+    const { accSym, cashSym } = getPaymentReceiptCurrencies(order);
 
     if (type === "Paid to Company Account & Cash" || (accAmt > 0 && cashAmt > 0)) {
-        return `Company Account: ${curr}${accAmt.toLocaleString()} | Cash: ${curr}${cashAmt.toLocaleString()}`;
+        return `Company Account: ${accSym}${accAmt.toLocaleString()} | Cash: ${cashSym}${cashAmt.toLocaleString()}`;
     }
     if (type === "Paid to Company Account" || (accAmt > 0 && cashAmt === 0)) {
         const amt = accAmt > 0 ? accAmt : totalAmt;
-        return amt > 0 ? `Paid to Company Account (${curr}${amt.toLocaleString()})` : "Paid to Company Account";
+        return amt > 0 ? `Paid to Company Account (${accSym}${amt.toLocaleString()})` : "Paid to Company Account";
     }
     if (type === "Cash" || (cashAmt > 0 && accAmt === 0)) {
         const amt = cashAmt > 0 ? cashAmt : totalAmt;
-        return amt > 0 ? `Cash (${curr}${amt.toLocaleString()})` : "Cash";
+        return amt > 0 ? `Cash (${cashSym}${amt.toLocaleString()})` : "Cash";
     }
     if (order.paymentReceipt && String(order.paymentReceipt).trim() && String(order.paymentReceipt).trim() !== "-") {
         return String(order.paymentReceipt).trim();
@@ -505,7 +544,7 @@ function renderPaymentReceiptBadge(order) {
     const accAmt = Number(order.paymentAccountAmount || 0);
     const cashAmt = Number(order.paymentCashAmount || 0);
     const totalAmt = Number(order.paymentReceiptAmount || 0);
-    const curr = (order.currency === "KHR") ? "៛" : "$";
+    const { accSym, cashSym } = getPaymentReceiptCurrencies(order);
 
     // 1. Both Company Account & Cash
     if (type === "Paid to Company Account & Cash" || (accAmt > 0 && cashAmt > 0)) {
@@ -513,11 +552,11 @@ function renderPaymentReceiptBadge(order) {
             <div class="flex flex-col gap-1 items-start">
                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/80 font-bold text-[11px] whitespace-nowrap shadow-2xs">
                     <i data-lucide="building-2" class="w-3 h-3 text-blue-600 shrink-0"></i>
-                    <span>Account: ${curr}${accAmt.toLocaleString()}</span>
+                    <span>Account: ${accSym}${accAmt.toLocaleString()}</span>
                 </span>
                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/80 font-bold text-[11px] whitespace-nowrap shadow-2xs">
                     <i data-lucide="banknote" class="w-3 h-3 text-emerald-600 shrink-0"></i>
-                    <span>Cash: ${curr}${cashAmt.toLocaleString()}</span>
+                    <span>Cash: ${cashSym}${cashAmt.toLocaleString()}</span>
                 </span>
             </div>
         `;
@@ -526,7 +565,7 @@ function renderPaymentReceiptBadge(order) {
     // 2. Company Account only
     if (type === "Paid to Company Account" || (accAmt > 0 && cashAmt === 0)) {
         const amt = accAmt > 0 ? accAmt : totalAmt;
-        const amtText = amt > 0 ? `: ${curr}${amt.toLocaleString()}` : "";
+        const amtText = amt > 0 ? `: ${accSym}${amt.toLocaleString()}` : "";
         return `
             <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200/80 font-bold text-xs whitespace-nowrap shadow-2xs" title="Paid to Company Account">
                 <i data-lucide="building-2" class="w-3.5 h-3.5 text-blue-600 shrink-0"></i>
@@ -538,7 +577,7 @@ function renderPaymentReceiptBadge(order) {
     // 3. Cash only
     if (type === "Cash" || (cashAmt > 0 && accAmt === 0)) {
         const amt = cashAmt > 0 ? cashAmt : totalAmt;
-        const amtText = amt > 0 ? `: ${curr}${amt.toLocaleString()}` : "";
+        const amtText = amt > 0 ? `: ${cashSym}${amt.toLocaleString()}` : "";
         return `
             <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/80 font-bold text-xs whitespace-nowrap shadow-2xs" title="Cash">
                 <i data-lucide="banknote" class="w-3.5 h-3.5 text-emerald-600 shrink-0"></i>
@@ -574,6 +613,25 @@ function renderPaymentReceiptBadge(order) {
 }
 window.renderPaymentReceiptBadge = renderPaymentReceiptBadge;
 
+function onPaymentCurrencyChange(type) {
+    if (type === "account") {
+        const curr = document.getElementById("currencyPaymentAccount")?.value || "USD";
+        const amtInput = document.getElementById("amountPaymentAccount");
+        if (amtInput) {
+            amtInput.placeholder = (curr === "KHR") ? "0" : "0.00";
+            amtInput.step = (curr === "KHR") ? "100" : "any";
+        }
+    } else if (type === "cash") {
+        const curr = document.getElementById("currencyPaymentCash")?.value || "USD";
+        const amtInput = document.getElementById("amountPaymentCash");
+        if (amtInput) {
+            amtInput.placeholder = (curr === "KHR") ? "0" : "0.00";
+            amtInput.step = (curr === "KHR") ? "100" : "any";
+        }
+    }
+}
+window.onPaymentCurrencyChange = onPaymentCurrencyChange;
+
 function togglePaymentOption(type) {
     const chkAccount = document.getElementById("chkPaymentAccount");
     const chkCash = document.getElementById("chkPaymentCash");
@@ -587,16 +645,21 @@ function togglePaymentOption(type) {
     const soNumber = document.getElementById("endDeliverySONumber")?.value;
     const order = AppState.orders.find(o => o.soNumber === soNumber);
     const invoiceAmt = order ? (Number(order.invoiceAmount) || 0) : 0;
+    const invoiceCurr = (order && order.currency === "KHR") ? "KHR" : "USD";
 
     if (type === "account") {
         if (chkAccount && chkAccount.checked) {
             if (grpAccount) grpAccount.classList.remove("hidden");
             if (cardAccount) cardAccount.className = "p-3 rounded-xl border-2 border-blue-500 bg-blue-50/30 transition-all";
+            const selCurr = document.getElementById("currencyPaymentAccount")?.value || invoiceCurr;
             if (amtAccount && (!amtAccount.value || amtAccount.value === "0")) {
-                const remAmt = (chkCash && chkCash.checked && amtCash) 
-                    ? Math.max(0, invoiceAmt - (parseFloat(amtCash.value) || 0))
-                    : invoiceAmt;
-                if (remAmt > 0) amtAccount.value = remAmt;
+                let fillVal = invoiceAmt;
+                if (invoiceCurr === "USD" && selCurr === "KHR") {
+                    fillVal = Math.round(invoiceAmt * 4100);
+                } else if (invoiceCurr === "KHR" && selCurr === "USD") {
+                    fillVal = parseFloat((invoiceAmt / 4100).toFixed(2));
+                }
+                if (fillVal > 0) amtAccount.value = fillVal;
             }
             if (amtAccount) amtAccount.focus();
         } else {
@@ -608,11 +671,15 @@ function togglePaymentOption(type) {
         if (chkCash && chkCash.checked) {
             if (grpCash) grpCash.classList.remove("hidden");
             if (cardCash) cardCash.className = "p-3 rounded-xl border-2 border-emerald-500 bg-emerald-50/30 transition-all";
+            const selCurr = document.getElementById("currencyPaymentCash")?.value || invoiceCurr;
             if (amtCash && (!amtCash.value || amtCash.value === "0")) {
-                const remAmt = (chkAccount && chkAccount.checked && amtAccount)
-                    ? Math.max(0, invoiceAmt - (parseFloat(amtAccount.value) || 0))
-                    : invoiceAmt;
-                if (remAmt > 0) amtCash.value = remAmt;
+                let fillVal = invoiceAmt;
+                if (invoiceCurr === "USD" && selCurr === "KHR") {
+                    fillVal = Math.round(invoiceAmt * 4100);
+                } else if (invoiceCurr === "KHR" && selCurr === "USD") {
+                    fillVal = parseFloat((invoiceAmt / 4100).toFixed(2));
+                }
+                if (fillVal > 0) amtCash.value = fillVal;
             }
             if (amtCash) amtCash.focus();
         } else {
@@ -628,6 +695,7 @@ function quickFillPaymentAmount(type) {
     const soNumber = document.getElementById("endDeliverySONumber")?.value;
     const order = AppState.orders.find(o => o.soNumber === soNumber);
     const invoiceAmt = order ? (Number(order.invoiceAmount) || 0) : 0;
+    const invoiceCurr = (order && order.currency === "KHR") ? "KHR" : "USD";
 
     if (type === "account") {
         const chk = document.getElementById("chkPaymentAccount");
@@ -635,16 +703,34 @@ function quickFillPaymentAmount(type) {
             chk.checked = true;
             togglePaymentOption("account");
         }
+        const selCurr = document.getElementById("currencyPaymentAccount")?.value || invoiceCurr;
         const amtEl = document.getElementById("amountPaymentAccount");
-        if (amtEl) amtEl.value = invoiceAmt > 0 ? invoiceAmt : "";
+        if (amtEl) {
+            let fillVal = invoiceAmt;
+            if (invoiceCurr === "USD" && selCurr === "KHR") {
+                fillVal = Math.round(invoiceAmt * 4100);
+            } else if (invoiceCurr === "KHR" && selCurr === "USD") {
+                fillVal = parseFloat((invoiceAmt / 4100).toFixed(2));
+            }
+            amtEl.value = fillVal > 0 ? fillVal : "";
+        }
     } else if (type === "cash") {
         const chk = document.getElementById("chkPaymentCash");
         if (chk && !chk.checked) {
             chk.checked = true;
             togglePaymentOption("cash");
         }
+        const selCurr = document.getElementById("currencyPaymentCash")?.value || invoiceCurr;
         const amtEl = document.getElementById("amountPaymentCash");
-        if (amtEl) amtEl.value = invoiceAmt > 0 ? invoiceAmt : "";
+        if (amtEl) {
+            let fillVal = invoiceAmt;
+            if (invoiceCurr === "USD" && selCurr === "KHR") {
+                fillVal = Math.round(invoiceAmt * 4100);
+            } else if (invoiceCurr === "KHR" && selCurr === "USD") {
+                fillVal = parseFloat((invoiceAmt / 4100).toFixed(2));
+            }
+            amtEl.value = fillVal > 0 ? fillVal : "";
+        }
     }
 }
 window.quickFillPaymentAmount = quickFillPaymentAmount;
@@ -4475,12 +4561,16 @@ function openEndDeliveryModal(soNumber) {
         successBadgeEl.textContent = attempts > 1 ? successName : "ជោគជ័យ";
     }
 
-    // Setup Payment Receipt UI with order currency and existing values
-    const currSymbol = (order.currency === "KHR") ? "៛" : "$";
-    const symAcc = document.getElementById("symbolPaymentAccount");
-    const symCash = document.getElementById("symbolPaymentCash");
-    if (symAcc) symAcc.textContent = currSymbol;
-    if (symCash) symCash.textContent = currSymbol;
+    // Setup Payment Receipt UI with order currencies and existing values
+    const accCurr = order.paymentAccountCurrency || (order.paymentReceipt && order.paymentReceipt.includes("៛") ? "KHR" : (order.currency || "USD"));
+    const cashCurr = order.paymentCashCurrency || (order.paymentReceipt && order.paymentReceipt.includes("៛") ? "KHR" : (order.currency || "USD"));
+
+    const selAccCurr = document.getElementById("currencyPaymentAccount");
+    const selCashCurr = document.getElementById("currencyPaymentCash");
+    if (selAccCurr) selAccCurr.value = (accCurr === "KHR") ? "KHR" : "USD";
+    if (selCashCurr) selCashCurr.value = (cashCurr === "KHR") ? "KHR" : "USD";
+    onPaymentCurrencyChange("account");
+    onPaymentCurrencyChange("cash");
 
     const chkAcc = document.getElementById("chkPaymentAccount");
     const chkCash = document.getElementById("chkPaymentCash");
@@ -4619,24 +4709,33 @@ async function confirmEndDelivery() {
         return;
     }
 
-    const curr = (order.currency === "KHR") ? "៛" : "$";
+    const selAccCurr = document.getElementById("currencyPaymentAccount");
+    const selCashCurr = document.getElementById("currencyPaymentCash");
+    const accCurr = selAccCurr ? selAccCurr.value : "USD";
+    const cashCurr = selCashCurr ? selCashCurr.value : "USD";
+    const accSym = (accCurr === "KHR") ? "៛" : "$";
+    const cashSym = (cashCurr === "KHR") ? "៛" : "$";
+
     let paymentType = "";
     let paymentReceiptStr = "";
 
     if (isAccChecked && isCashChecked) {
         paymentType = "Paid to Company Account & Cash";
-        paymentReceiptStr = `Company Account: ${curr}${accAmt.toLocaleString()} | Cash: ${curr}${cashAmt.toLocaleString()}`;
+        paymentReceiptStr = `Company Account: ${accSym}${accAmt.toLocaleString()} | Cash: ${cashSym}${cashAmt.toLocaleString()}`;
     } else if (isAccChecked) {
         paymentType = "Paid to Company Account";
-        paymentReceiptStr = `Paid to Company Account (${curr}${accAmt.toLocaleString()})`;
+        paymentReceiptStr = `Paid to Company Account (${accSym}${accAmt.toLocaleString()})`;
     } else if (isCashChecked) {
         paymentType = "Cash";
-        paymentReceiptStr = `Cash (${curr}${cashAmt.toLocaleString()})`;
+        paymentReceiptStr = `Cash (${cashSym}${cashAmt.toLocaleString()})`;
     }
 
     order.paymentReceiptType = paymentType;
     order.paymentAccountAmount = accAmt;
     order.paymentCashAmount = cashAmt;
+    order.paymentAccountCurrency = accCurr;
+    order.paymentCashCurrency = cashCurr;
+    order.paymentReceiptCurrency = (isAccChecked && !isCashChecked) ? accCurr : (isCashChecked && !isAccChecked ? cashCurr : (accCurr === cashCurr ? accCurr : "MIXED"));
     order.paymentReceiptAmount = accAmt + cashAmt;
     order.paymentReceipt = paymentReceiptStr;
 
@@ -4668,7 +4767,9 @@ async function confirmEndDelivery() {
         paymentReceiptType: order.paymentReceiptType,
         paymentReceiptAmount: order.paymentReceiptAmount,
         paymentAccountAmount: order.paymentAccountAmount,
-        paymentCashAmount: order.paymentCashAmount
+        paymentCashAmount: order.paymentCashAmount,
+        paymentAccountCurrency: order.paymentAccountCurrency,
+        paymentCashCurrency: order.paymentCashCurrency
     });
 
     const isSuccess = (statusVal === "Success" || statusVal.endsWith("Success") || statusVal === "Delivered");
@@ -5439,6 +5540,12 @@ function openEditOrderModal(soNumber) {
     const payAmtInput = document.getElementById("editPaymentReceiptAmount");
     if (payAmtInput) payAmtInput.value = (order.paymentReceiptAmount !== undefined && order.paymentReceiptAmount !== null && order.paymentReceiptAmount !== "") ? order.paymentReceiptAmount : "";
 
+    const payCurrSelect = document.getElementById("editPaymentReceiptCurrency");
+    if (payCurrSelect) {
+        const orderCurr = order.paymentReceiptCurrency || order.paymentAccountCurrency || order.paymentCashCurrency || (order.paymentReceipt && order.paymentReceipt.includes("៛") ? "KHR" : (order.currency || "USD"));
+        payCurrSelect.value = (orderCurr === "KHR") ? "KHR" : "USD";
+    }
+
     const editModal = document.getElementById("editOrderModal");
     if (editModal) editModal.classList.remove("hidden");
     lucide.createIcons();
@@ -5526,9 +5633,13 @@ async function handleEditOrderSubmit(e) {
     // Update Payment Receipt fields from edit modal
     const editPayType = document.getElementById("editPaymentReceiptType")?.value || "";
     const editPayAmt = parseFloat(document.getElementById("editPaymentReceiptAmount")?.value) || 0;
+    const editPayCurr = document.getElementById("editPaymentReceiptCurrency")?.value || "USD";
     order.paymentReceiptType = editPayType;
     order.paymentReceiptAmount = editPayAmt;
-    const currSym = (order.currency === "KHR") ? "៛" : "$";
+    order.paymentReceiptCurrency = editPayCurr;
+    order.paymentAccountCurrency = editPayCurr;
+    order.paymentCashCurrency = editPayCurr;
+    const currSym = (editPayCurr === "KHR") ? "៛" : "$";
     if (editPayType === "Paid to Company Account") {
         order.paymentAccountAmount = editPayAmt;
         order.paymentCashAmount = 0;
