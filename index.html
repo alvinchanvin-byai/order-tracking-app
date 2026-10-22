@@ -5,8 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ប្រព័ន្ធតាមដាន Order (Order Tracking Web App)</title>
     
-    <!-- PWA & Mobile Web App Meta -->
-    <link rel="manifest" href="manifest.json">
+    <!-- PWA & Mobile Web App Meta & Icons -->
+    <link rel="manifest" href="manifest.json?v=live-v4.0">
+    <link rel="icon" type="image/png" href="icon.png?v=live-v4.0">
+    <link rel="apple-touch-icon" href="icon.png?v=live-v4.0">
+    <link rel="shortcut icon" href="icon.png?v=live-v4.0">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -43,7 +46,7 @@
     <link rel="dns-prefetch" href="https://script.google.com">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css?v=live-v3.4">
+    <link rel="stylesheet" href="css/style.css?v=live-v4.0">
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -76,8 +79,8 @@
         <div class="sidebar-header-container p-3 sm:p-4 border-b border-slate-100 flex items-center justify-between shrink-0">
             <!-- Expanded Brand -->
             <div class="sidebar-expanded-only flex items-center gap-2.5 min-w-0">
-                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-blue-500 flex items-center justify-center text-white shadow-md shadow-blue-500/25 ring-2 ring-white/50 shrink-0">
-                    <i data-lucide="boxes" class="w-5 h-5"></i>
+                <div class="w-10 h-10 rounded-2xl bg-white flex items-center justify-center p-1 shadow-md shadow-blue-500/15 border border-slate-200/90 ring-2 ring-white/50 shrink-0 overflow-hidden">
+                    <img src="icon.png?v=live-v4.0" alt="Order Tracking Logo" class="w-full h-full object-contain">
                 </div>
                 <div class="min-w-0">
                     <div class="flex items-center gap-1.5">
@@ -100,8 +103,8 @@
             <!-- Collapsed Brand (Shown when hidden/mini) -->
             <div class="sidebar-collapsed-only hidden w-full flex-col items-center py-0.5">
                 <!-- Centered Logo Only -->
-                <div id="sidebarLogoMini" class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-blue-500 flex items-center justify-center text-white shadow-md shadow-blue-500/25 ring-2 ring-white/50 shrink-0 cursor-pointer hover:scale-105 active:scale-95 transition" title="Order Tracking Web App (Click to Expand)">
-                    <i data-lucide="boxes" class="w-5 h-5"></i>
+                <div id="sidebarLogoMini" class="w-10 h-10 rounded-2xl bg-white flex items-center justify-center p-1 shadow-md shadow-blue-500/15 border border-slate-200/90 ring-2 ring-white/50 shrink-0 cursor-pointer hover:scale-105 active:scale-95 transition overflow-hidden" title="Order Tracking Web App (Click to Expand)">
+                    <img src="icon.png?v=live-v4.0" alt="Order Tracking Logo" class="w-full h-full object-contain">
                 </div>
             </div>
         </div>
@@ -3059,8 +3062,8 @@
     </div>
 
     <!-- App Core Scripts -->
-    <script src="js/data.js?v=live-v3.4"></script>
-    <script src="js/sheets-sync.js?v=live-v3.4"></script>
-    <script src="js/app.js?v=live-v3.4"></script>
+    <script src="js/data.js?v=live-v4.0"></script>
+    <script src="js/sheets-sync.js?v=live-v4.0"></script>
+    <script src="js/app.js?v=live-v4.0"></script>
 </body>
 </html>
