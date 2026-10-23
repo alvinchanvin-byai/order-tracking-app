@@ -346,7 +346,10 @@ const APP_MODULES = [
     { id: "picking", name: "២. Physical Picking (រៀបចំ)", icon: "package" },
     { id: "checking", name: "៣. Physical Checking (ត្រួតពិនិត្យ)", icon: "clipboard-check" },
     { id: "delivery", name: "៤. Delivery (ដឹកជញ្ជូន)", icon: "truck" },
-    { id: "setup", name: "៥. Setup (ទិន្នន័យមេ)", icon: "sliders" }
+    { id: "incompleted-delivery", name: "៥. In Completed Delivery (មិនទាន់ចប់)", icon: "alert-triangle" },
+    { id: "daily-delivery", name: "៦. Daily Delivery (ការដឹកជញ្ជូនប្រចាំថ្ងៃ)", icon: "calendar-check" },
+    { id: "report", name: "៧. Report (របាយការណ៍)", icon: "bar-chart-3" },
+    { id: "setup", name: "៨. Setup (ទិន្នន័យមេ)", icon: "sliders" }
 ];
 
 // Default Setup Users with Roles & Module Access Rights
@@ -357,7 +360,7 @@ const DEFAULT_SETUP_USERS = [
         password: "123",
         displayName: "System Administrator",
         role: "Admin",
-        permissions: ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "report", "setup"],
+        permissions: ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "daily-delivery", "report", "setup"],
         lastUpdated: "08/10/26 15:00"
     },
     {
@@ -366,7 +369,7 @@ const DEFAULT_SETUP_USERS = [
         password: "123",
         displayName: "Sophal Chan",
         role: "Admin",
-        permissions: ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "report", "setup"],
+        permissions: ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "daily-delivery", "report", "setup"],
         lastUpdated: "08/10/26 15:39"
     },
     {
@@ -411,7 +414,7 @@ const DEFAULT_SETUP_USERS = [
         password: "123",
         displayName: "Sok Chanvanna",
         role: "User",
-        permissions: ["dashboard", "delivery", "incompleted-delivery"],
+        permissions: ["dashboard", "delivery", "incompleted-delivery", "daily-delivery"],
         lastUpdated: "13/10/26 13:00"
     }
 ];
