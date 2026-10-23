@@ -38,6 +38,16 @@ const AppState = {
         pageSize: 10,
         sortColumn: "soDate",
         sortDirection: "desc"
+    },
+    dailyDelivery: {
+        searchQuery: "",
+        datePreset: "ALL", // "ALL", "TODAY", "YESTERDAY", "THIS_MONTH"
+        filterDate: "",
+        sortColumn: "soDate",
+        sortDirectionTable1: "desc",
+        sortDirectionTable2: "desc",
+        pageTable2: 1,
+        pageSizeTable2: 15
     }
 };
 
@@ -2579,6 +2589,8 @@ function getNavBadgeTheme(tab) {
             return "bg-sky-50 text-sky-700 border border-sky-200/80";
         case "incompleted-delivery":
             return "bg-orange-50 text-orange-700 border border-orange-200/80";
+        case "daily-delivery":
+            return "bg-emerald-50 text-emerald-700 border border-emerald-200/80";
         case "dashboard":
             return "bg-slate-100 text-slate-700 border border-slate-200/80";
         default:
@@ -2628,7 +2640,7 @@ function showOnlyView(viewName) {
     const repMenu = document.getElementById("reportSoDateDropdownMenu");
     if (repMenu) repMenu.classList.add("hidden");
 
-    const views = ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "report", "setup"];
+    const views = ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "daily-delivery", "report", "setup"];
     views.forEach(v => {
         const viewEl = document.getElementById(`view-${v}`);
         if (viewEl) {
@@ -2759,6 +2771,16 @@ function switchNavbarModule(moduleName) {
         showOnlyView("report");
         updateKpiCardsVisibility();
         renderReportView();
+        lucide.createIcons();
+        return;
+    }
+
+    if (moduleName === "daily-delivery") {
+        AppState.currentTab = "daily-delivery";
+        updateNavbarActiveBtn("daily-delivery");
+        showOnlyView("daily-delivery");
+        updateKpiCardsVisibility();
+        renderDailyDeliveryView();
         lucide.createIcons();
         return;
     }
@@ -2910,6 +2932,7 @@ function renderAll(forceAll = false) {
         renderCheckingView();
         renderDeliveryView();
         renderIncompletedDeliveryView();
+        renderDailyDeliveryView();
         renderReportView();
         renderSetupView();
     } else {
@@ -2931,6 +2954,9 @@ function renderAll(forceAll = false) {
                 break;
             case "incompleted-delivery":
                 renderIncompletedDeliveryView();
+                break;
+            case "daily-delivery":
+                renderDailyDeliveryView();
                 break;
             case "report":
                 renderReportView();
@@ -2993,6 +3019,39 @@ function isOrderCompleted(order) {
     return false;
 }
 
+// Daily Delivery Predicates
+// Table 1: Recent Order (បាន Start Delivery ហើយកំពុងស្ថិតនៅលើផ្លូវ)
+function isDailyDeliveryRecentOrder(order) {
+    if (!order) return false;
+    const s = (order.status || "").toLowerCase().trim();
+
+    // បើ order បានបញ្ចប់ការដឹក (មាន deliveryEndTime ឬ status Success/Incomplete/Return) គឺមិនស្ថិតក្នុង Recent Order (តារាងទី១) ទេ
+    if (order.deliveryEndTime && String(order.deliveryEndTime).trim() !== "" && String(order.deliveryEndTime).trim() !== "-") return false;
+    if (s === "success" || s.endsWith("success") || s === "delivered" || s === "incomplete" || s === "return" || 
+        s.includes("ជោគជ័យ") || s.includes("មិនបានជោគជ័យ") || s.includes("ត្រឡប់") || s.includes("បង្វែរ")) return false;
+
+    // ត្រូវតែបានចុច Start Delivery (មាន deliveryStartTime) ឬ status ជា In Delivery / Nth Delivery
+    if (order.deliveryStartTime && String(order.deliveryStartTime).trim() !== "" && String(order.deliveryStartTime).trim() !== "-") {
+        return true;
+    }
+    if (s === "in delivery" || s.includes("in delivery") || /^(\d+(?:st|nd|rd|th))\s+delivery$/i.test(s) || s.includes("កំពុងដឹក")) {
+        return true;
+    }
+    return false;
+}
+
+// Table 2: Completed Order (Order ពីតារាងទី១ ដែលបាន Success, Incompleted, ឬ Return)
+function isDailyDeliveryCompletedOrder(order) {
+    if (!order) return false;
+    if (isDailyDeliveryRecentOrder(order)) return false;
+    const s = (order.status || "").toLowerCase().trim();
+    if (s === "success" || s.endsWith("success") || s === "delivered" || s.includes("ជោគជ័យ")) return true;
+    if (s === "incomplete" || s.includes("incomplete") || s.includes("មិនបានជោគជ័យ")) return true;
+    if (s === "return" || s.includes("return") || s.includes("ត្រឡប់") || s.includes("បង្វែរ")) return true;
+    if (order.deliveryEndTime && String(order.deliveryEndTime).trim() !== "" && String(order.deliveryEndTime).trim() !== "-") return true;
+    return false;
+}
+
 // Update Top KPI Cards & Sidebar Navigation Badges
 function renderStatsCounters() {
     const registered = AppState.orders.filter(isOrderRegistered).length;
@@ -3001,6 +3060,7 @@ function renderStatsCounters() {
     const inDelivery = AppState.orders.filter(isOrderDelivery).length;
     const incompletedDelivery = AppState.orders.filter(isOrderIncompletedDelivery).length;
     const completed = AppState.orders.filter(isOrderCompleted).length;
+    const recentDailyDelivery = AppState.orders.filter(isDailyDeliveryRecentOrder).length;
     const totalOrders = AppState.orders.length;
 
     // 1. Top KPI Metric Cards
@@ -3025,6 +3085,7 @@ function renderStatsCounters() {
     const navBadgeChecking = document.getElementById("navBadgeChecking");
     const navBadgeDelivery = document.getElementById("navBadgeDelivery");
     const navBadgeIncomplete = document.getElementById("navBadgeIncomplete");
+    const navBadgeDailyDelivery = document.getElementById("navBadgeDailyDelivery");
 
     if (navBadgeDashboard) navBadgeDashboard.textContent = totalOrders;
     if (navBadgeRegister) navBadgeRegister.textContent = registered;
@@ -3032,6 +3093,7 @@ function renderStatsCounters() {
     if (navBadgeChecking) navBadgeChecking.textContent = inChecking;
     if (navBadgeDelivery) navBadgeDelivery.textContent = inDelivery;
     if (navBadgeIncomplete) navBadgeIncomplete.textContent = incompletedDelivery;
+    if (navBadgeDailyDelivery) navBadgeDailyDelivery.textContent = recentDailyDelivery;
 
     // Refresh active/inactive styles of badges
     if (typeof updateNavbarActiveBtn === "function" && AppState.currentTab) {
@@ -5098,6 +5160,692 @@ async function startSecondDelivery(soNumber) {
         }
     });
 }
+
+// ========================================================
+// DAILY DELIVERY MODULE ENGINE (ការដឹកជញ្ជូនប្រចាំថ្ងៃ)
+// Table 1: Recent Order (កំពុងដឹក) | Table 2: Completed Order (បានបញ្ចប់)
+// ========================================================
+
+function matchesDailyDeliveryFilter(order) {
+    if (!order) return false;
+    const dd = AppState.dailyDelivery || {};
+    const q = (dd.searchQuery || "").toLowerCase().trim();
+
+    // 1. Text Search Filter across multiple fields
+    if (q) {
+        const so = String(order.soNumber || "").toLowerCase();
+        const cust = String(order.customerName || "").toLowerCase();
+        const inv = String(order.invoiceNumber || "").toLowerCase();
+        const pkg = String(order.packingListNumber || "").toLowerCase();
+        const driver = String(order.deliveryBy || "").toLowerCase();
+        const city = String(order.cityProvince || "").toLowerCase();
+        const khan = String(order.khan || "").toLowerCase();
+        const status = String(order.status || "").toLowerCase();
+        const phone = String(order.phone || "").toLowerCase();
+
+        const match = so.includes(q) || cust.includes(q) || inv.includes(q) || pkg.includes(q) || 
+                      driver.includes(q) || city.includes(q) || khan.includes(q) || status.includes(q) || phone.includes(q);
+        if (!match) return false;
+    }
+
+    // 2. Date Filter
+    const preset = dd.datePreset || "ALL";
+    const customDate = dd.filterDate || "";
+
+    if (customDate) {
+        // Custom Date matching (YYYY-MM-DD)
+        const orderDate = order.timestamp || order.soDate || order.so_date || order.date || order.deliveryStartTime || order.deliveryEndTime;
+        const d = parseAppDateTime(orderDate);
+        if (!d || isNaN(d.getTime())) return false;
+        const pad = n => String(n).padStart(2, '0');
+        const orderDateIso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        if (orderDateIso !== customDate) return false;
+    } else if (preset !== "ALL") {
+        const orderDate = order.timestamp || order.soDate || order.so_date || order.date || order.deliveryStartTime || order.deliveryEndTime;
+        const d = parseAppDateTime(orderDate);
+        if (!d || isNaN(d.getTime())) return false;
+
+        const now = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        const todayStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
+        const orderDayStr = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+
+        if (preset === "TODAY") {
+            if (orderDayStr !== todayStr) return false;
+        } else if (preset === "YESTERDAY") {
+            const yesterday = new Date(now);
+            yesterday.setDate(now.getDate() - 1);
+            const yestStr = `${pad(yesterday.getDate())}/${pad(yesterday.getMonth() + 1)}/${yesterday.getFullYear()}`;
+            if (orderDayStr !== yestStr) return false;
+        } else if (preset === "THIS_MONTH") {
+            if (d.getMonth() !== now.getMonth() || d.getFullYear() !== now.getFullYear()) return false;
+        }
+    }
+
+    return true;
+}
+
+function renderDailyDeliveryView() {
+    if (!AppState.dailyDelivery) {
+        AppState.dailyDelivery = {
+            searchQuery: "",
+            datePreset: "ALL",
+            filterDate: "",
+            sortColumn: "soDate",
+            sortDirectionTable1: "desc",
+            sortDirectionTable2: "desc",
+            pageTable2: 1,
+            pageSizeTable2: 15
+        };
+    }
+
+    // Filter orders for both tables
+    const allRecentOrders = AppState.orders.filter(isDailyDeliveryRecentOrder);
+    const allCompletedOrders = AppState.orders.filter(isDailyDeliveryCompletedOrder);
+
+    const filteredRecent = allRecentOrders.filter(matchesDailyDeliveryFilter);
+    const filteredCompleted = allCompletedOrders.filter(matchesDailyDeliveryFilter);
+
+    // 1. Sort Table 1 (Recent Order)
+    const dir1 = AppState.dailyDelivery.sortDirectionTable1 || "desc";
+    filteredRecent.sort((a, b) => {
+        const tA = getOrderSoDateTimestamp(a);
+        const tB = getOrderSoDateTimestamp(b);
+        return dir1 === "asc" ? (tA - tB) : (tB - tA);
+    });
+
+    // 2. Sort Table 2 (Completed Order)
+    const dir2 = AppState.dailyDelivery.sortDirectionTable2 || "desc";
+    filteredCompleted.sort((a, b) => {
+        const tA = getOrderSoDateTimestamp(a);
+        const tB = getOrderSoDateTimestamp(b);
+        return dir2 === "asc" ? (tA - tB) : (tB - tA);
+    });
+
+    // 3. Update KPI Card Metrics
+    const elRecentCount = document.getElementById("dailyKpiRecentCount");
+    const elRecentAmt = document.getElementById("dailyKpiRecentAmount");
+    const elCompletedCount = document.getElementById("dailyKpiCompletedCount");
+    const elCompletedAmt = document.getElementById("dailyKpiCompletedAmount");
+    const elSuccessCount = document.getElementById("dailyKpiSuccessCount");
+    const elIncompleteCount = document.getElementById("dailyKpiIncompleteCount");
+    const elBadge1 = document.getElementById("table1RecentBadgeCount");
+    const elBadge2 = document.getElementById("table2CompletedBadgeCount");
+
+    const recentTotalUsd = filteredRecent.reduce((sum, o) => sum + (parseFloat(o.invoiceAmount) || 0), 0);
+    const completedTotalUsd = filteredCompleted.reduce((sum, o) => sum + (parseFloat(o.invoiceAmount) || 0), 0);
+    const successOrders = filteredCompleted.filter(o => {
+        const s = (o.status || "").toLowerCase();
+        return s === "success" || s.endsWith("success") || s === "delivered" || s.includes("ជោគជ័យ");
+    });
+    const incompleteOrders = filteredCompleted.filter(o => {
+        const s = (o.status || "").toLowerCase();
+        return s === "incomplete" || s.includes("incomplete") || s === "return" || s.includes("return");
+    });
+
+    if (elRecentCount) elRecentCount.textContent = filteredRecent.length;
+    if (elRecentAmt) elRecentAmt.textContent = `$${recentTotalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (elCompletedCount) elCompletedCount.textContent = filteredCompleted.length;
+    if (elCompletedAmt) elCompletedAmt.textContent = `$${completedTotalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (elSuccessCount) elSuccessCount.textContent = successOrders.length;
+    if (elIncompleteCount) elIncompleteCount.textContent = incompleteOrders.length;
+    if (elBadge1) elBadge1.textContent = `${filteredRecent.length} Orders`;
+    if (elBadge2) elBadge2.textContent = `${filteredCompleted.length} Orders`;
+
+    const summaryText = document.getElementById("table2SummaryText");
+    if (summaryText) summaryText.textContent = `សរុប: ${filteredCompleted.length} Orders (ជោគជ័យ: ${successOrders.length}, មិនជោគជ័យ/ត្រឡប់: ${incompleteOrders.length})`;
+
+    // 4. Render Table 1 and Table 2
+    renderDailyDeliveryTable1(filteredRecent);
+    renderDailyDeliveryTable2(filteredCompleted);
+
+    // 5. Sync Clear Search Button state
+    const clearBtn = document.getElementById("dailyDeliveryClearSearchBtn");
+    if (clearBtn) {
+        if (AppState.dailyDelivery.searchQuery) {
+            clearBtn.classList.remove("hidden");
+        } else {
+            clearBtn.classList.add("hidden");
+        }
+    }
+
+    scheduleLucideIcons();
+}
+
+function renderDailyDeliveryTable1(orders) {
+    const thead = document.getElementById("dailyDeliveryTable1Head");
+    const tbody = document.getElementById("dailyDeliveryTable1Body");
+    if (!thead || !tbody) return;
+
+    const dir1 = AppState.dailyDelivery.sortDirectionTable1 || "desc";
+    const sortIcon = dir1 === "asc" ? "arrow-up" : "arrow-down";
+
+    thead.innerHTML = `
+        <tr class="bg-slate-100/90 text-slate-700 font-bold border-b border-slate-200 text-xs tracking-tight">
+            <th class="py-3 px-3 text-center whitespace-nowrap">Status</th>
+            <th class="py-3 px-3 text-center whitespace-nowrap select-none group" title="ចុចដើម្បី Sort SO Date">
+                <div class="inline-flex items-center justify-center gap-1">
+                    <span class="cursor-pointer hover:text-emerald-700 transition" onclick="toggleDailyTable1Sort()">SO Date</span>
+                    <button type="button" onclick="toggleDailyTable1Sort()" class="inline-flex items-center justify-center w-5 h-5 rounded border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 hover:text-emerald-700 shadow-2xs transition active:scale-95 cursor-pointer ml-0.5" title="Sort SO Date">
+                        <i data-lucide="${sortIcon}" class="w-3 h-3"></i>
+                    </button>
+                </div>
+            </th>
+            <th class="py-3.5 px-3 text-left whitespace-nowrap">SO#</th>
+            <th class="py-3.5 px-3 text-left whitespace-nowrap">Customer Name</th>
+            <th class="py-3.5 px-3 text-left whitespace-nowrap">City / Province</th>
+            <th class="py-3.5 px-3 text-left whitespace-nowrap">Khan / District</th>
+            <th class="py-3.5 px-3 text-left whitespace-nowrap">Packing List#</th>
+            <th class="py-3.5 px-3 text-left whitespace-nowrap">Invoice#</th>
+            <th class="py-3.5 px-3 text-right whitespace-nowrap">Invoice Amount</th>
+            <th class="py-3.5 px-3 text-center whitespace-nowrap">Total Packages</th>
+            <th class="py-3.5 px-3 text-left whitespace-nowrap">អ្នកដឹក (Driver)</th>
+            <th class="py-3.5 px-3 text-center whitespace-nowrap">ពេលចេញ (Start)</th>
+            <th class="py-3.5 px-3 text-center whitespace-nowrap">សកម្មភាព (Action)</th>
+        </tr>
+    `;
+
+    if (orders.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="13" class="text-center py-12 text-slate-400 bg-white">
+                    <i data-lucide="truck" class="w-10 h-10 mx-auto stroke-1 mb-2 text-slate-300"></i>
+                    <p class="font-medium text-slate-600">មិនមាន Order កំពុងដឹកជញ្ជូន (In Delivery) ទេ</p>
+                    <p class="text-xs text-slate-400 mt-1">រាល់ពេលចុច Start Delivery លើ Order ណាមួយ វានឹងបង្ហាញក្នុងតារាងទី១ នេះភ្លាមៗ</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = orders.map(order => {
+        const badge = getStatusBadgeInfo(order);
+        const soDateStr = formatSoDateDisplay(order.timestamp || order.soDate || order.so_date || order.date);
+        const amtStr = formatInvoiceAmountWithCurrency(order.invoiceAmount, order.currency);
+        const pkgStr = formatPackageWithUnit(order.totalPackage, order.packageUnit);
+        const startTimeStr = order.deliveryStartTime ? formatDateTimeDisplay(order.deliveryStartTime) : "-";
+
+        return `
+            <tr class="hover:bg-sky-50/40 transition border-b border-slate-100 text-xs">
+                <!-- 1. Status -->
+                <td class="py-3 px-3 text-center whitespace-nowrap">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${badge.class}">
+                        ${badge.text}
+                    </span>
+                </td>
+
+                <!-- 2. SO Date -->
+                <td class="py-3 px-3 font-mono text-slate-600 text-center whitespace-nowrap font-medium">
+                    ${soDateStr}
+                </td>
+
+                <!-- 3. SO# -->
+                <td class="py-3 px-3 font-bold font-mono text-blue-700 whitespace-nowrap">
+                    <span class="cursor-pointer hover:underline" onclick="viewOrderDetails('${escapeHtml(order.soNumber)}')">
+                        ${escapeHtml(order.soNumber || "-")}
+                    </span>
+                </td>
+
+                <!-- 4. Customer Name -->
+                <td class="py-3 px-3 font-bold text-slate-900 whitespace-nowrap max-w-[200px] truncate" title="${escapeHtml(order.customerName || '')}">
+                    ${escapeHtml(order.customerName || "-")}
+                </td>
+
+                <!-- 5. City/Province -->
+                <td class="py-3 px-3 text-slate-600 whitespace-nowrap">
+                    ${escapeHtml(order.cityProvince || "-")}
+                </td>
+
+                <!-- 6. Khan -->
+                <td class="py-3 px-3 text-slate-600 whitespace-nowrap">
+                    ${escapeHtml(order.khan || "-")}
+                </td>
+
+                <!-- 7. Packing List# -->
+                <td class="py-3 px-3 font-mono text-slate-600 whitespace-nowrap">
+                    ${escapeHtml(order.packingListNumber || "-")}
+                </td>
+
+                <!-- 8. Invoice# -->
+                <td class="py-3 px-3 font-mono text-slate-600 whitespace-nowrap">
+                    ${escapeHtml(order.invoiceNumber || "-")}
+                </td>
+
+                <!-- 9. Invoice Amount -->
+                <td class="py-3 px-3 text-right font-mono font-bold text-emerald-700 whitespace-nowrap">
+                    ${amtStr}
+                </td>
+
+                <!-- 10. Total Packages -->
+                <td class="py-3 px-3 text-center whitespace-nowrap">
+                    ${pkgStr !== "-" ? `<span class="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-bold text-xs">${pkgStr}</span>` : '<span class="text-slate-300 font-semibold">-</span>'}
+                </td>
+
+                <!-- 11. Driver -->
+                <td class="py-3 px-3 text-sky-700 font-bold whitespace-nowrap">
+                    <span class="inline-flex items-center gap-1">
+                        <i data-lucide="user-check" class="w-3.5 h-3.5 text-sky-600"></i>
+                        <span>${escapeHtml(order.deliveryBy || "-")}</span>
+                    </span>
+                </td>
+
+                <!-- 12. Start Delivery -->
+                <td class="py-3 px-3 font-mono text-slate-600 text-center whitespace-nowrap text-xs">
+                    ${startTimeStr}
+                </td>
+
+                <!-- 13. Action: End Delivery Button (បញ្ចប់ការដឹក ហើយផ្លាស់ទីទៅតារាងទី២) -->
+                <td class="py-3 px-3 text-center whitespace-nowrap">
+                    <button type="button" 
+                        onclick="openEndDeliveryModal('${escapeHtml(order.soNumber)}')" 
+                        class="py-1 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs transition flex items-center justify-center gap-1 active:scale-95 cursor-pointer whitespace-nowrap mx-auto"
+                        title="បញ្ចប់ការដឹកជញ្ជូន (Success, Incompleted, ឬ Return)">
+                        <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                        <span>End Delivery</span>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join("");
+}
+
+function renderDailyDeliveryTable2(orders) {
+    const thead = document.getElementById("dailyDeliveryTable2Head");
+    const tbody = document.getElementById("dailyDeliveryTable2Body");
+    const paginationEl = document.getElementById("dailyDeliveryTable2Pagination");
+    if (!thead || !tbody) return;
+
+    const dir2 = AppState.dailyDelivery.sortDirectionTable2 || "desc";
+    const sortIcon = dir2 === "asc" ? "arrow-up" : "arrow-down";
+
+    thead.innerHTML = `
+        <tr class="bg-slate-100/90 text-slate-700 font-bold border-b border-slate-200 text-xs tracking-tight">
+            <th class="py-3 px-3 text-center whitespace-nowrap">Status</th>
+            <th class="py-3 px-3 text-center whitespace-nowrap select-none group" title="ចុចដើម្បី Sort SO Date">
+                <div class="inline-flex items-center justify-center gap-1">
+                    <span class="cursor-pointer hover:text-emerald-700 transition" onclick="toggleDailyTable2Sort()">SO Date</span>
+                    <button type="button" onclick="toggleDailyTable2Sort()" class="inline-flex items-center justify-center w-5 h-5 rounded border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 hover:text-emerald-700 shadow-2xs transition active:scale-95 cursor-pointer ml-0.5" title="Sort SO Date">
+                        <i data-lucide="${sortIcon}" class="w-3 h-3"></i>
+                    </button>
+                </div>
+            </th>
+            <th class="py-3.5 px-3 text-left whitespace-nowrap">SO#</th>
+            <th class="py-3.5 px-3 text-left whitespace-nowrap">Customer Name</th>
+            <th class="py-3.5 px-3 text-left whitespace-nowrap">City / Province</th>
+            <th class="py-3.5 px-3 text-left whitespace-nowrap">Khan / District</th>
+            <th class="py-3.5 px-3 text-left whitespace-nowrap">Packing List#</th>
+            <th class="py-3.5 px-3 text-left whitespace-nowrap">Invoice#</th>
+            <th class="py-3.5 px-3 text-right whitespace-nowrap">Invoice Amount</th>
+            <th class="py-3.5 px-3 text-left whitespace-nowrap">អ្នកដឹក (Driver)</th>
+            <th class="py-3.5 px-3 text-center whitespace-nowrap">ពេលចេញ (Start)</th>
+            <th class="py-3.5 px-3 text-center whitespace-nowrap">ពេលដល់ (End)</th>
+            <th class="py-3.5 px-3 text-center whitespace-nowrap">រយៈពេល (Duration)</th>
+            <th class="py-3.5 px-3 text-left whitespace-nowrap">Payment Receipt</th>
+            <th class="py-3.5 px-3 text-center whitespace-nowrap">សកម្មភាព (Action)</th>
+        </tr>
+    `;
+
+    if (orders.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="15" class="text-center py-12 text-slate-400 bg-white">
+                    <i data-lucide="check-check" class="w-10 h-10 mx-auto stroke-1 mb-2 text-slate-300"></i>
+                    <p class="font-medium text-slate-600">មិនមាន Order ដែលបានបញ្ចប់ការដឹកជញ្ជូនទេ</p>
+                    <p class="text-xs text-slate-400 mt-1">ពេល Order ក្នុងតារាងទី១ បញ្ចប់ការដឹកជញ្ជូន វានឹងត្រូវផ្លាស់ទីមកកាន់តារាងទី២ នេះ</p>
+                </td>
+            </tr>
+        `;
+        if (paginationEl) paginationEl.innerHTML = "";
+        return;
+    }
+
+    // Pagination Calculation
+    const pageSize = AppState.dailyDelivery.pageSizeTable2 || 15;
+    const totalOrders = orders.length;
+    const totalPages = Math.ceil(totalOrders / pageSize);
+    let currentPage = AppState.dailyDelivery.pageTable2 || 1;
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+    AppState.dailyDelivery.pageTable2 = currentPage;
+
+    const startIndex = (currentPage - 1) * pageSize;
+    const endIndex = Math.min(startIndex + pageSize, totalOrders);
+    const pageOrders = orders.slice(startIndex, endIndex);
+
+    tbody.innerHTML = pageOrders.map(order => {
+        const badge = getStatusBadgeInfo(order);
+        const soDateStr = formatSoDateDisplay(order.timestamp || order.soDate || order.so_date || order.date);
+        const amtStr = formatInvoiceAmountWithCurrency(order.invoiceAmount, order.currency);
+        const startTimeStr = order.deliveryStartTime ? formatDateTimeDisplay(order.deliveryStartTime) : "-";
+        const endTimeStr = order.deliveryEndTime ? formatDateTimeDisplay(order.deliveryEndTime) : "-";
+        const durationStr = order.deliveryDuration || calculateDurationHhMm(order.deliveryStartTime, order.deliveryEndTime);
+        const isIncomplete = isOrderIncompletedDelivery(order) || (order.status || "").toLowerCase().includes("incomplete");
+
+        return `
+            <tr class="hover:bg-emerald-50/40 transition border-b border-slate-100 text-xs">
+                <!-- 1. Status -->
+                <td class="py-3 px-3 text-center whitespace-nowrap">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${badge.class}">
+                        ${badge.text}
+                    </span>
+                </td>
+
+                <!-- 2. SO Date -->
+                <td class="py-3 px-3 font-mono text-slate-600 text-center whitespace-nowrap font-medium">
+                    ${soDateStr}
+                </td>
+
+                <!-- 3. SO# -->
+                <td class="py-3 px-3 font-bold font-mono text-blue-700 whitespace-nowrap">
+                    <span class="cursor-pointer hover:underline" onclick="viewOrderDetails('${escapeHtml(order.soNumber)}')">
+                        ${escapeHtml(order.soNumber || "-")}
+                    </span>
+                </td>
+
+                <!-- 4. Customer Name -->
+                <td class="py-3 px-3 font-bold text-slate-900 whitespace-nowrap max-w-[200px] truncate" title="${escapeHtml(order.customerName || '')}">
+                    ${escapeHtml(order.customerName || "-")}
+                </td>
+
+                <!-- 5. City/Province -->
+                <td class="py-3 px-3 text-slate-600 whitespace-nowrap">
+                    ${escapeHtml(order.cityProvince || "-")}
+                </td>
+
+                <!-- 6. Khan -->
+                <td class="py-3 px-3 text-slate-600 whitespace-nowrap">
+                    ${escapeHtml(order.khan || "-")}
+                </td>
+
+                <!-- 7. Packing List# -->
+                <td class="py-3 px-3 font-mono text-slate-600 whitespace-nowrap">
+                    ${escapeHtml(order.packingListNumber || "-")}
+                </td>
+
+                <!-- 8. Invoice# -->
+                <td class="py-3 px-3 font-mono text-slate-600 whitespace-nowrap">
+                    ${escapeHtml(order.invoiceNumber || "-")}
+                </td>
+
+                <!-- 9. Invoice Amount -->
+                <td class="py-3 px-3 text-right font-mono font-bold text-emerald-700 whitespace-nowrap">
+                    ${amtStr}
+                </td>
+
+                <!-- 10. Driver -->
+                <td class="py-3 px-3 text-slate-700 font-semibold whitespace-nowrap">
+                    ${escapeHtml(order.deliveryBy || "-")}
+                </td>
+
+                <!-- 11. Start Delivery -->
+                <td class="py-3 px-3 font-mono text-slate-600 text-center whitespace-nowrap text-xs">
+                    ${startTimeStr}
+                </td>
+
+                <!-- 12. End Delivery -->
+                <td class="py-3 px-3 font-mono text-emerald-700 text-center whitespace-nowrap text-xs font-semibold">
+                    ${endTimeStr}
+                </td>
+
+                <!-- 13. Duration -->
+                <td class="py-3 px-3 text-center whitespace-nowrap">
+                    ${durationStr !== "-" ? `<span class="font-mono font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-xs">${durationStr}</span>` : '<span class="text-slate-300">-</span>'}
+                </td>
+
+                <!-- 14. Payment Receipt -->
+                <td class="py-3 px-3 whitespace-nowrap">
+                    ${renderPaymentReceiptBadge(order)}
+                </td>
+
+                <!-- 15. Action -->
+                <td class="py-3 px-3 text-center whitespace-nowrap">
+                    ${isIncomplete ? `
+                        <div class="flex items-center justify-center gap-1.5">
+                            <button type="button" 
+                                onclick="startSecondDelivery('${escapeHtml(order.soNumber)}')" 
+                                class="py-1 px-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold text-xs shadow-2xs transition flex items-center gap-1 cursor-pointer whitespace-nowrap active:scale-95"
+                                title="ដឹកជញ្ជូនម្ដងទៀត (រត់ត្រឡប់ទៅតារាងទី១)">
+                                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                                <span>Start 2nd</span>
+                            </button>
+                            <button type="button" 
+                                onclick="viewOrderDetails('${escapeHtml(order.soNumber)}')" 
+                                class="p-1 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer" 
+                                title="មើលព័ត៌មានលម្អិត">
+                                <i data-lucide="eye" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    ` : `
+                        <button type="button" 
+                            onclick="viewOrderDetails('${escapeHtml(order.soNumber)}')" 
+                            class="py-1 px-2.5 rounded-xl bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-700 font-bold text-xs transition flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap mx-auto"
+                            title="មើលព័ត៌មានលម្អិត">
+                            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+                            <span>Detail</span>
+                        </button>
+                    `}
+                </td>
+            </tr>
+        `;
+    }).join("");
+
+    // Render Table 2 Pagination
+    if (paginationEl) {
+        paginationEl.innerHTML = `
+            <div class="flex items-center gap-2">
+                <span>បង្ហាញ <b>${startIndex + 1} - ${endIndex}</b> នៃ <b>${totalOrders}</b> Orders</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+                <button type="button" 
+                    onclick="changeDailyTable2Page(${currentPage - 1})" 
+                    ${currentPage <= 1 ? 'disabled class="py-1 px-2.5 rounded-lg border border-slate-200 text-slate-300 cursor-not-allowed"' : 'class="py-1 px-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-semibold cursor-pointer shadow-2xs transition"'}>
+                    Prev
+                </button>
+                <span class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 font-bold border border-emerald-200/80">
+                    ${currentPage} / ${totalPages || 1}
+                </span>
+                <button type="button" 
+                    onclick="changeDailyTable2Page(${currentPage + 1})" 
+                    ${currentPage >= totalPages ? 'disabled class="py-1 px-2.5 rounded-lg border border-slate-200 text-slate-300 cursor-not-allowed"' : 'class="py-1 px-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-semibold cursor-pointer shadow-2xs transition"'}>
+                    Next
+                </button>
+            </div>
+        `;
+    }
+}
+
+function changeDailyTable2Page(newPage) {
+    if (!AppState.dailyDelivery) return;
+    AppState.dailyDelivery.pageTable2 = newPage;
+    renderDailyDeliveryView();
+}
+
+function toggleDailyTable1Sort() {
+    if (!AppState.dailyDelivery) return;
+    const cur = AppState.dailyDelivery.sortDirectionTable1 || "desc";
+    AppState.dailyDelivery.sortDirectionTable1 = (cur === "asc") ? "desc" : "asc";
+    renderDailyDeliveryView();
+}
+
+function toggleDailyTable2Sort() {
+    if (!AppState.dailyDelivery) return;
+    const cur = AppState.dailyDelivery.sortDirectionTable2 || "desc";
+    AppState.dailyDelivery.sortDirectionTable2 = (cur === "asc") ? "desc" : "asc";
+    renderDailyDeliveryView();
+}
+
+function onDailyDeliverySearchInput(e) {
+    if (!AppState.dailyDelivery) return;
+    AppState.dailyDelivery.searchQuery = e.target.value;
+    AppState.dailyDelivery.pageTable2 = 1;
+    renderDailyDeliveryView();
+}
+
+function clearDailyDeliverySearch() {
+    const input = document.getElementById("dailyDeliverySearchInput");
+    if (input) input.value = "";
+    if (AppState.dailyDelivery) {
+        AppState.dailyDelivery.searchQuery = "";
+        AppState.dailyDelivery.pageTable2 = 1;
+    }
+    renderDailyDeliveryView();
+}
+
+function setDailyDeliveryDatePreset(preset) {
+    if (!AppState.dailyDelivery) return;
+    AppState.dailyDelivery.datePreset = preset;
+    AppState.dailyDelivery.filterDate = "";
+    AppState.dailyDelivery.pageTable2 = 1;
+
+    // Reset date input UI
+    const dateInput = document.getElementById("dailyDeliveryDateFilter");
+    if (dateInput) dateInput.value = "";
+
+    // Sync button active styles
+    const presets = ["ALL", "TODAY", "YESTERDAY", "THIS_MONTH"];
+    presets.forEach(p => {
+        const btn = document.getElementById(`dailyPresetBtn-${p}`);
+        if (btn) {
+            if (p === preset) {
+                btn.className = "daily-date-preset-btn px-2.5 py-1 text-xs font-bold rounded-lg transition bg-white text-emerald-700 shadow-xs";
+            } else {
+                btn.className = "daily-date-preset-btn px-2.5 py-1 text-xs font-semibold rounded-lg transition text-slate-600 hover:text-emerald-700";
+            }
+        }
+    });
+
+    renderDailyDeliveryView();
+}
+
+function onDailyDeliveryDateFilterChange() {
+    const dateInput = document.getElementById("dailyDeliveryDateFilter");
+    if (!dateInput || !AppState.dailyDelivery) return;
+
+    AppState.dailyDelivery.filterDate = dateInput.value;
+    AppState.dailyDelivery.datePreset = "CUSTOM";
+    AppState.dailyDelivery.pageTable2 = 1;
+
+    // Reset preset buttons styling
+    const presets = ["ALL", "TODAY", "YESTERDAY", "THIS_MONTH"];
+    presets.forEach(p => {
+        const btn = document.getElementById(`dailyPresetBtn-${p}`);
+        if (btn) {
+            btn.className = "daily-date-preset-btn px-2.5 py-1 text-xs font-semibold rounded-lg transition text-slate-600 hover:text-emerald-700";
+        }
+    });
+
+    renderDailyDeliveryView();
+}
+
+function resetDailyDeliveryFilters() {
+    const searchInput = document.getElementById("dailyDeliverySearchInput");
+    if (searchInput) searchInput.value = "";
+
+    const dateInput = document.getElementById("dailyDeliveryDateFilter");
+    if (dateInput) dateInput.value = "";
+
+    if (AppState.dailyDelivery) {
+        AppState.dailyDelivery.searchQuery = "";
+        AppState.dailyDelivery.filterDate = "";
+        AppState.dailyDelivery.datePreset = "ALL";
+        AppState.dailyDelivery.pageTable2 = 1;
+    }
+
+    const presets = ["ALL", "TODAY", "YESTERDAY", "THIS_MONTH"];
+    presets.forEach(p => {
+        const btn = document.getElementById(`dailyPresetBtn-${p}`);
+        if (btn) {
+            if (p === "ALL") {
+                btn.className = "daily-date-preset-btn px-2.5 py-1 text-xs font-bold rounded-lg transition bg-white text-emerald-700 shadow-xs";
+            } else {
+                btn.className = "daily-date-preset-btn px-2.5 py-1 text-xs font-semibold rounded-lg transition text-slate-600 hover:text-emerald-700";
+            }
+        }
+    });
+
+    renderDailyDeliveryView();
+    showToast("បានកំណត់ Filters ឡើងវិញ (Reset Filters) រួចរាល់!", "info");
+}
+
+function exportDailyDeliveryToExcel() {
+    if (!window.XLSX) {
+        showToast("កំពុងទាញយកបណ្ណាល័យ Excel សូមរង់ចាំបន្តិច...", "info");
+        return;
+    }
+
+    const allRecentOrders = AppState.orders.filter(isDailyDeliveryRecentOrder).filter(matchesDailyDeliveryFilter);
+    const allCompletedOrders = AppState.orders.filter(isDailyDeliveryCompletedOrder).filter(matchesDailyDeliveryFilter);
+
+    const wb = XLSX.utils.book_new();
+
+    // 1. Sheet 1: Recent Orders (In Delivery)
+    const headers1 = [
+        "Status", "SO Date", "SO#", "Customer Name", "City / Province", "Khan / District", 
+        "Packing List#", "Invoice#", "Invoice Amount", "Total Packages", "Driver", "Start Delivery Time"
+    ];
+    const rows1 = allRecentOrders.map(o => [
+        getStatusBadgeInfo(o).text,
+        formatSoDateDisplay(o.timestamp || o.soDate || o.so_date || o.date),
+        o.soNumber || "-",
+        o.customerName || "-",
+        o.cityProvince || "-",
+        o.khan || "-",
+        o.packingListNumber || "-",
+        o.invoiceNumber || "-",
+        formatInvoiceAmountWithCurrency(o.invoiceAmount, o.currency),
+        formatPackageWithUnit(o.totalPackage, o.packageUnit),
+        o.deliveryBy || "-",
+        o.deliveryStartTime ? formatDateTimeDisplay(o.deliveryStartTime) : "-"
+    ]);
+    const ws1 = XLSX.utils.aoa_to_sheet([headers1, ...rows1]);
+    XLSX.utils.book_append_sheet(wb, ws1, "1. Recent Orders (In Delivery)");
+
+    // 2. Sheet 2: Completed Orders
+    const headers2 = [
+        "Status", "SO Date", "SO#", "Customer Name", "City / Province", "Khan / District", 
+        "Packing List#", "Invoice#", "Invoice Amount", "Driver", "Start Delivery Time", 
+        "End Delivery Time", "Duration", "Payment Receipt"
+    ];
+    const rows2 = allCompletedOrders.map(o => [
+        getStatusBadgeInfo(o).text,
+        formatSoDateDisplay(o.timestamp || o.soDate || o.so_date || o.date),
+        o.soNumber || "-",
+        o.customerName || "-",
+        o.cityProvince || "-",
+        o.khan || "-",
+        o.packingListNumber || "-",
+        o.invoiceNumber || "-",
+        formatInvoiceAmountWithCurrency(o.invoiceAmount, o.currency),
+        o.deliveryBy || "-",
+        o.deliveryStartTime ? formatDateTimeDisplay(o.deliveryStartTime) : "-",
+        o.deliveryEndTime ? formatDateTimeDisplay(o.deliveryEndTime) : "-",
+        o.deliveryDuration || "-",
+        formatPaymentReceiptDisplay(o)
+    ]);
+    const ws2 = XLSX.utils.aoa_to_sheet([headers2, ...rows2]);
+    XLSX.utils.book_append_sheet(wb, ws2, "2. Completed Orders");
+
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    const dateStr = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
+    XLSX.writeFile(wb, `Daily_Delivery_Report_${dateStr}.xlsx`);
+    showToast("បាន Export ឯកសារ Daily Delivery Excel ជោគជ័យ!", "success");
+}
+
+window.renderDailyDeliveryView = renderDailyDeliveryView;
+window.renderDailyDeliveryTable1 = renderDailyDeliveryTable1;
+window.renderDailyDeliveryTable2 = renderDailyDeliveryTable2;
+window.toggleDailyTable1Sort = toggleDailyTable1Sort;
+window.toggleDailyTable2Sort = toggleDailyTable2Sort;
+window.onDailyDeliverySearchInput = onDailyDeliverySearchInput;
+window.clearDailyDeliverySearch = clearDailyDeliverySearch;
+window.setDailyDeliveryDatePreset = setDailyDeliveryDatePreset;
+window.onDailyDeliveryDateFilterChange = onDailyDeliveryDateFilterChange;
+window.resetDailyDeliveryFilters = resetDailyDeliveryFilters;
+window.changeDailyTable2Page = changeDailyTable2Page;
+window.exportDailyDeliveryToExcel = exportDailyDeliveryToExcel;
+window.isDailyDeliveryRecentOrder = isDailyDeliveryRecentOrder;
+window.isDailyDeliveryCompletedOrder = isDailyDeliveryCompletedOrder;
 
 // View Full Order Details Modal
 function viewOrderDetails(soNumber) {
@@ -8448,7 +9196,7 @@ function getCurrentUser() {
         username: "admin",
         displayName: "Administrator",
         role: "Admin",
-        permissions: ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "report", "setup"]
+        permissions: ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "daily-delivery", "report", "setup"]
     };
 }
 
@@ -8458,8 +9206,9 @@ function hasUserPermission(moduleName) {
     if (!user) return false;
     if (user.role === "Admin") return true;
     if (!Array.isArray(user.permissions)) return false;
-    // Users with delivery permission automatically have access to In Completed Delivery
+    // Users with delivery permission automatically have access to In Completed Delivery & Daily Delivery
     if (moduleName === "incompleted-delivery" && user.permissions.includes("delivery")) return true;
+    if (moduleName === "daily-delivery" && user.permissions.includes("delivery")) return true;
     return user.permissions.includes(moduleName);
 }
 
@@ -8472,6 +9221,7 @@ function getModuleNameKh(moduleName) {
         "checking": "Physical Checking",
         "delivery": "Delivery",
         "incompleted-delivery": "In Completed Delivery",
+        "daily-delivery": "Daily Delivery",
         "report": "Report",
         "setup": "Setup"
     };
@@ -8938,7 +9688,7 @@ function renderNavbarPermissions() {
 
     // Check if current active tab is forbidden for this user, if so redirect to first permitted tab
     if (AppState.currentTab && !hasUserPermission(AppState.currentTab)) {
-        const allModules = ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "report", "setup"];
+        const allModules = ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "daily-delivery", "report", "setup"];
         const firstAllowed = allModules.find(m => hasUserPermission(m));
         if (firstAllowed) {
             switchNavbarModule(firstAllowed);
@@ -9120,7 +9870,7 @@ function loginUser(user) {
 
     // Check if current view is permitted, if not navigate to first permitted
     if (!hasUserPermission(AppState.currentTab)) {
-        const allModules = ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "report", "setup"];
+        const allModules = ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "daily-delivery", "report", "setup"];
         const firstAllowed = allModules.find(m => hasUserPermission(m)) || "dashboard";
         switchNavbarModule(firstAllowed);
     }
@@ -9183,8 +9933,9 @@ function getTabFriendlyName(tab) {
         "checking": "3. Physical Checking",
         "delivery": "4. Delivery",
         "incompleted-delivery": "5. Incomplete Delivery",
-        "report": "6. Report",
-        "setup": "7. Setup (ការកំណត់)"
+        "daily-delivery": "6. Daily Delivery",
+        "report": "7. Report",
+        "setup": "8. Setup (ការកំណត់)"
     };
     return map[tab] || tab || "Dashboard";
 }
@@ -9521,7 +10272,7 @@ function renderUserSetupTable() {
 
         // Permission Badges
         const perms = u.role === "Admin" 
-            ? ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "report", "setup"] 
+            ? ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "daily-delivery", "report", "setup"] 
             : (u.permissions || []);
         
         const permLabels = {
@@ -9531,8 +10282,9 @@ function renderUserSetupTable() {
             "checking": "3.Checking",
             "delivery": "4.Delivery",
             "incompleted-delivery": "5.Incomplete",
-            "report": "6.Report",
-            "setup": "7.Setup"
+            "daily-delivery": "6.Daily",
+            "report": "7.Report",
+            "setup": "8.Setup"
         };
         const permColors = {
             "dashboard": "bg-blue-50 text-blue-700 border-blue-200",
@@ -9541,6 +10293,7 @@ function renderUserSetupTable() {
             "checking": "bg-purple-50 text-purple-700 border-purple-200",
             "delivery": "bg-sky-50 text-sky-700 border-sky-200",
             "incompleted-delivery": "bg-amber-50 text-amber-750 border-amber-300",
+            "daily-delivery": "bg-emerald-50 text-emerald-700 border-emerald-200",
             "report": "bg-indigo-50 text-indigo-700 border-indigo-200",
             "setup": "bg-emerald-50 text-emerald-700 border-emerald-200"
         };
@@ -9648,7 +10401,7 @@ function openEditUserModal(userId) {
     document.getElementById("userModalRole").value = user.role || "User";
 
     const perms = user.role === "Admin" 
-        ? ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "report", "setup"] 
+        ? ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "daily-delivery", "report", "setup"] 
         : (user.permissions || []);
     
     document.querySelectorAll('input[name="userPermCheckbox"]').forEach(cb => {
@@ -9725,7 +10478,7 @@ function handleUserFormSubmit(e) {
                 username,
                 password,
                 role,
-                permissions: role === "Admin" ? ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "report", "setup"] : checkedPerms,
+                permissions: role === "Admin" ? ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "daily-delivery", "report", "setup"] : checkedPerms,
                 lastUpdated: now
             };
             AppState.setup.users[idx] = targetUser;
@@ -9746,7 +10499,7 @@ function handleUserFormSubmit(e) {
             username,
             password,
             role,
-            permissions: role === "Admin" ? ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "report", "setup"] : checkedPerms,
+            permissions: role === "Admin" ? ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "daily-delivery", "report", "setup"] : checkedPerms,
             lastUpdated: now
         };
         AppState.setup.users.push(targetUser);
