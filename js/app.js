@@ -3019,13 +3019,55 @@ function isOrderCompleted(order) {
     return false;
 }
 
+// Daily Delivery Storage & Helper for Tracking Orders Completed from Recent Order
+const STORAGE_DAILY_COMPLETED_ORDERS = "order_tracker_daily_completed_sos_v2";
+
+function getDailyCompletedOrderSos() {
+    try {
+        const raw = localStorage.getItem(STORAGE_DAILY_COMPLETED_ORDERS);
+        if (raw) {
+            const arr = JSON.parse(raw);
+            if (Array.isArray(arr)) return new Set(arr);
+        }
+    } catch (e) {
+        console.warn("Error reading daily completed orders:", e);
+    }
+    return new Set();
+}
+
+function markOrderCompletedFromDaily(soNumber) {
+    if (!soNumber) return;
+    try {
+        const set = getDailyCompletedOrderSos();
+        set.add(soNumber);
+        localStorage.setItem(STORAGE_DAILY_COMPLETED_ORDERS, JSON.stringify(Array.from(set)));
+    } catch (e) {
+        console.warn("Error saving daily completed orders:", e);
+    }
+    const order = AppState.orders.find(o => o.soNumber === soNumber);
+    if (order) order.completedFromDailyDelivery = true;
+}
+
+function unmarkOrderCompletedFromDaily(soNumber) {
+    if (!soNumber) return;
+    try {
+        const set = getDailyCompletedOrderSos();
+        set.delete(soNumber);
+        localStorage.setItem(STORAGE_DAILY_COMPLETED_ORDERS, JSON.stringify(Array.from(set)));
+    } catch (e) {
+        console.warn("Error updating daily completed orders:", e);
+    }
+    const order = AppState.orders.find(o => o.soNumber === soNumber);
+    if (order) order.completedFromDailyDelivery = false;
+}
+
 // Daily Delivery Predicates
 // Table 1: Recent Order (បាន Start Delivery ហើយកំពុងស្ថិតនៅលើផ្លូវ)
 function isDailyDeliveryRecentOrder(order) {
     if (!order) return false;
     const s = (order.status || "").toLowerCase().trim();
 
-    // បើ order បានបញ្ចប់ការដឹក (មាន deliveryEndTime ឬ status Success/Incomplete/Return) គឺមិនស្ថិតក្នុង Recent Order (តារាងទី១) ទេ
+    // បើ order បានបញ្ចប់ការដឹក (មាន deliveryEndTime ឬ status Success/Incomplete/Return) គឺមិនស្ថិតក្នុង Recent Order ទេ
     if (order.deliveryEndTime && String(order.deliveryEndTime).trim() !== "" && String(order.deliveryEndTime).trim() !== "-") return false;
     if (s === "success" || s.endsWith("success") || s === "delivered" || s === "incomplete" || s === "return" || 
         s.includes("ជោគជ័យ") || s.includes("មិនបានជោគជ័យ") || s.includes("ត្រឡប់") || s.includes("បង្វែរ")) return false;
@@ -3040,10 +3082,16 @@ function isDailyDeliveryRecentOrder(order) {
     return false;
 }
 
-// Table 2: Completed Order (Order ពីតារាងទី១ ដែលបាន Success, Incompleted, ឬ Return)
+// Table 2: Completed Order (Order ពីតារាង Recent Order ដែលបានបញ្ចប់ការដឹក Success, Incompleted, ឬ Return)
 function isDailyDeliveryCompletedOrder(order) {
     if (!order) return false;
     if (isDailyDeliveryRecentOrder(order)) return false;
+
+    // សំខាន់បំផុត៖ ត្រូវតែជា Order ដែលបានបញ្ចប់ចេញពី Recent Order ប៉ុណ្ណោះ (ក្រៅពីនេះមិនបង្ហាញក្នុងតារាង Completed ឡើយ)
+    const isCompletedFromDaily = (order.completedFromDailyDelivery === true) || 
+                                 getDailyCompletedOrderSos().has(order.soNumber);
+    if (!isCompletedFromDaily) return false;
+
     const s = (order.status || "").toLowerCase().trim();
     if (s === "success" || s.endsWith("success") || s === "delivered" || s.includes("ជោគជ័យ")) return true;
     if (s === "incomplete" || s.includes("incomplete") || s.includes("មិនបានជោគជ័យ")) return true;
@@ -4689,7 +4737,11 @@ async function startDelivery(soNumber) {
 
     const now = formatAppDateTime();
     order.deliveryStartTime = now;
+    order.deliveryEndTime = "";
+    order.deliveryDuration = "-";
     order.deliveryBy = deliveryName;
+    order.completedFromDailyDelivery = false;
+    unmarkOrderCompletedFromDaily(soNumber);
     const att = Number(order.deliveryAttempts) || 1;
     const deliveryStatus = getDeliveryStatusName(att);
     order.status = deliveryStatus;
@@ -4918,6 +4970,8 @@ async function confirmEndDelivery() {
     order.deliveryDuration = calculateDuration(order.deliveryStartTime, now);
     order.status = statusVal;
     order.deliveryBy = deliveryName;
+    order.completedFromDailyDelivery = true;
+    markOrderCompletedFromDaily(soNumber);
     if (notes) {
         const attNum = Number(order.deliveryAttempts) || 1;
         const attLabel = attNum > 1 ? ` (${getOrdinal(attNum)} Delivery)` : "";
@@ -5130,6 +5184,8 @@ async function startSecondDelivery(soNumber) {
     const nextStatus = getDeliveryStatusName(nextAttempt);
     order.status = nextStatus;
     order.deliveryBy = deliveryName;
+    order.completedFromDailyDelivery = false;
+    unmarkOrderCompletedFromDaily(soNumber);
     order.lastUpdated = now;
 
     const noteAdd = `[Start ${nextAttemptName} Delivery by ${deliveryName} at ${now}]`;
@@ -5163,8 +5219,166 @@ async function startSecondDelivery(soNumber) {
 
 // ========================================================
 // DAILY DELIVERY MODULE ENGINE (ការដឹកជញ្ជូនប្រចាំថ្ងៃ)
-// Table 1: Recent Order (កំពុងដឹក) | Table 2: Completed Order (បានបញ្ចប់)
+// Recent Order (កំពុងដឹក) | Completed Order (បានបញ្ចប់)
 // ========================================================
+
+// Daily Delivery Column Definitions for Personal Display (16 Columns)
+const DAILY_DELIVERY_COLUMNS = [
+    { key: "status", label: "Status" },
+    { key: "soDate", label: "SO Date" },
+    { key: "soNumber", label: "SO#" },
+    { key: "customerName", label: "Customer Name" },
+    { key: "cityProvince", label: "City / Province" },
+    { key: "khan", label: "Khan / District" },
+    { key: "packingList", label: "Packing List#" },
+    { key: "invoiceNumber", label: "Invoice#" },
+    { key: "invoiceAmount", label: "Invoice Amount" },
+    { key: "totalPackage", label: "Total Packages" },
+    { key: "driver", label: "អ្នកដឹក (Driver)" },
+    { key: "startTime", label: "ពេលចេញ (Start)" },
+    { key: "endTime", label: "ពេលដល់ (End)" },
+    { key: "duration", label: "រយៈពេល (Duration)" },
+    { key: "paymentReceipt", label: "Payment Receipt" },
+    { key: "actions", label: "សកម្មភាព (Action)" }
+];
+
+const STORAGE_DAILY_COLUMN_PREFS = "order_tracker_daily_col_prefs_v1";
+
+function getDailyColumnPrefs() {
+    try {
+        const raw = localStorage.getItem(STORAGE_DAILY_COLUMN_PREFS);
+        if (raw) {
+            const prefs = JSON.parse(raw);
+            if (prefs && typeof prefs === "object") return prefs;
+        }
+    } catch (e) {
+        console.warn("Error reading daily column prefs:", e);
+    }
+    const defaults = {};
+    DAILY_DELIVERY_COLUMNS.forEach(c => { defaults[c.key] = true; });
+    return defaults;
+}
+
+function saveDailyColumnPrefs(prefs) {
+    try {
+        localStorage.setItem(STORAGE_DAILY_COLUMN_PREFS, JSON.stringify(prefs));
+    } catch (e) {
+        console.warn("Error saving daily column prefs:", e);
+    }
+    applyDailyColumnVisibility(prefs);
+}
+
+function updateDailyPersonalDisplayBadges(prefs = null) {
+    const curPrefs = prefs || getDailyColumnPrefs();
+    const total = DAILY_DELIVERY_COLUMNS.length; // 16
+    const selectedCount = DAILY_DELIVERY_COLUMNS.filter(c => curPrefs[c.key] !== false).length;
+    const countText = `${selectedCount}/${total}`;
+
+    const btnBadge = document.getElementById("dailyPersonalDisplayCountBadge");
+    if (btnBadge) {
+        btnBadge.textContent = countText;
+        btnBadge.className = selectedCount < total
+            ? "text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-600 text-white font-mono shadow-xs transition"
+            : "text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 font-mono border border-emerald-200 transition";
+    }
+
+    const headerBadge = document.getElementById("dailyPersonalDisplayHeaderBadge");
+    if (headerBadge) {
+        headerBadge.textContent = countText;
+        headerBadge.className = selectedCount < total
+            ? "text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-600 text-white font-mono shadow-xs transition"
+            : "text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 font-mono border border-emerald-200 transition";
+    }
+
+    const footerBadge = document.getElementById("dailyPersonalDisplayFooterCountBadge");
+    if (footerBadge) {
+        footerBadge.textContent = countText;
+        footerBadge.className = selectedCount < total
+            ? "text-[11px] font-bold font-mono text-white bg-emerald-600 px-1.5 py-0.5 rounded shadow-xs transition"
+            : "text-[11px] font-bold font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 transition";
+    }
+}
+
+function applyDailyColumnVisibility(prefs = null) {
+    const curPrefs = prefs || getDailyColumnPrefs();
+    let styleEl = document.getElementById("dailyPersonalDisplayStyles");
+    if (!styleEl) {
+        styleEl = document.createElement("style");
+        styleEl.id = "dailyPersonalDisplayStyles";
+        document.head.appendChild(styleEl);
+    }
+
+    const hiddenKeys = Object.keys(curPrefs).filter(k => curPrefs[k] === false);
+    if (hiddenKeys.length === 0) {
+        styleEl.textContent = "";
+    } else {
+        const rules = hiddenKeys.map(k => `[data-daily-col="${k}"] { display: none !important; }`).join("\n");
+        styleEl.textContent = rules;
+    }
+    updateDailyPersonalDisplayBadges(curPrefs);
+}
+
+function renderDailyPersonalDisplayCheckboxes() {
+    const listEl = document.getElementById("dailyColumnCheckboxesList");
+    if (!listEl) return;
+    const prefs = getDailyColumnPrefs();
+    updateDailyPersonalDisplayBadges(prefs);
+
+    listEl.innerHTML = DAILY_DELIVERY_COLUMNS.map(col => {
+        const isChecked = prefs[col.key] !== false;
+        return `
+            <label class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-emerald-50/70 border ${isChecked ? 'border-slate-200 bg-white text-slate-800' : 'border-slate-100 bg-slate-50/70 text-slate-400 opacity-60'} cursor-pointer select-none transition shadow-2xs">
+                <input type="checkbox" data-daily-col-key="${col.key}" ${isChecked ? "checked" : ""} class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer accent-emerald-600">
+                <span class="font-medium text-xs truncate">${col.label}</span>
+            </label>
+        `;
+    }).join("");
+
+    listEl.querySelectorAll("input[type='checkbox']").forEach(cb => {
+        cb.addEventListener("change", () => {
+            const key = cb.getAttribute("data-daily-col-key");
+            const currentPrefs = getDailyColumnPrefs();
+            currentPrefs[key] = cb.checked;
+            saveDailyColumnPrefs(currentPrefs);
+            renderDailyPersonalDisplayCheckboxes();
+        });
+    });
+}
+
+function toggleDailyPersonalDisplayMenu(e) {
+    if (e) e.stopPropagation();
+    const menu = document.getElementById("dailyPersonalDisplayMenu");
+    if (!menu) return;
+    const isHidden = menu.classList.contains("hidden");
+    if (isHidden) {
+        renderDailyPersonalDisplayCheckboxes();
+        menu.classList.remove("hidden");
+    } else {
+        menu.classList.add("hidden");
+    }
+}
+
+function closeDailyPersonalDisplayMenu() {
+    const menu = document.getElementById("dailyPersonalDisplayMenu");
+    if (menu) menu.classList.add("hidden");
+}
+
+function setDailyPersonalDisplayAll(enabled = true) {
+    const prefs = {};
+    DAILY_DELIVERY_COLUMNS.forEach(c => { prefs[c.key] = Boolean(enabled); });
+    saveDailyColumnPrefs(prefs);
+    renderDailyPersonalDisplayCheckboxes();
+}
+
+function resetDailyPersonalDisplay() {
+    try {
+        localStorage.removeItem(STORAGE_DAILY_COLUMN_PREFS);
+    } catch (e) {}
+    const defaults = {};
+    DAILY_DELIVERY_COLUMNS.forEach(c => { defaults[c.key] = true; });
+    saveDailyColumnPrefs(defaults);
+    renderDailyPersonalDisplayCheckboxes();
+}
 
 function matchesDailyDeliveryFilter(order) {
     if (!order) return false;
@@ -5299,6 +5513,9 @@ function renderDailyDeliveryView() {
     renderDailyDeliveryTable1(filteredRecent);
     renderDailyDeliveryTable2(filteredCompleted);
 
+    // Apply column visibility preferences
+    applyDailyColumnVisibility();
+
     // 5. Sync Clear Search Button state
     const clearBtn = document.getElementById("dailyDeliveryClearSearchBtn");
     if (clearBtn) {
@@ -5322,8 +5539,8 @@ function renderDailyDeliveryTable1(orders) {
 
     thead.innerHTML = `
         <tr class="bg-slate-100/90 text-slate-700 font-bold border-b border-slate-200 text-xs tracking-tight">
-            <th class="py-3 px-3 text-center whitespace-nowrap">Status</th>
-            <th class="py-3 px-3 text-center whitespace-nowrap select-none group" title="ចុចដើម្បី Sort SO Date">
+            <th data-daily-col="status" class="py-3 px-3 text-center whitespace-nowrap">Status</th>
+            <th data-daily-col="soDate" class="py-3 px-3 text-center whitespace-nowrap select-none group" title="ចុចដើម្បី Sort SO Date">
                 <div class="inline-flex items-center justify-center gap-1">
                     <span class="cursor-pointer hover:text-emerald-700 transition" onclick="toggleDailyTable1Sort()">SO Date</span>
                     <button type="button" onclick="toggleDailyTable1Sort()" class="inline-flex items-center justify-center w-5 h-5 rounded border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 hover:text-emerald-700 shadow-2xs transition active:scale-95 cursor-pointer ml-0.5" title="Sort SO Date">
@@ -5331,27 +5548,27 @@ function renderDailyDeliveryTable1(orders) {
                     </button>
                 </div>
             </th>
-            <th class="py-3.5 px-3 text-left whitespace-nowrap">SO#</th>
-            <th class="py-3.5 px-3 text-left whitespace-nowrap">Customer Name</th>
-            <th class="py-3.5 px-3 text-left whitespace-nowrap">City / Province</th>
-            <th class="py-3.5 px-3 text-left whitespace-nowrap">Khan / District</th>
-            <th class="py-3.5 px-3 text-left whitespace-nowrap">Packing List#</th>
-            <th class="py-3.5 px-3 text-left whitespace-nowrap">Invoice#</th>
-            <th class="py-3.5 px-3 text-right whitespace-nowrap">Invoice Amount</th>
-            <th class="py-3.5 px-3 text-center whitespace-nowrap">Total Packages</th>
-            <th class="py-3.5 px-3 text-left whitespace-nowrap">អ្នកដឹក (Driver)</th>
-            <th class="py-3.5 px-3 text-center whitespace-nowrap">ពេលចេញ (Start)</th>
-            <th class="py-3.5 px-3 text-center whitespace-nowrap">សកម្មភាព (Action)</th>
+            <th data-daily-col="soNumber" class="py-3.5 px-3 text-left whitespace-nowrap">SO#</th>
+            <th data-daily-col="customerName" class="py-3.5 px-3 text-left whitespace-nowrap">Customer Name</th>
+            <th data-daily-col="cityProvince" class="py-3.5 px-3 text-left whitespace-nowrap">City / Province</th>
+            <th data-daily-col="khan" class="py-3.5 px-3 text-left whitespace-nowrap">Khan / District</th>
+            <th data-daily-col="packingList" class="py-3.5 px-3 text-left whitespace-nowrap">Packing List#</th>
+            <th data-daily-col="invoiceNumber" class="py-3.5 px-3 text-left whitespace-nowrap">Invoice#</th>
+            <th data-daily-col="invoiceAmount" class="py-3.5 px-3 text-right whitespace-nowrap">Invoice Amount</th>
+            <th data-daily-col="totalPackage" class="py-3.5 px-3 text-center whitespace-nowrap">Total Packages</th>
+            <th data-daily-col="driver" class="py-3.5 px-3 text-left whitespace-nowrap">អ្នកដឹក (Driver)</th>
+            <th data-daily-col="startTime" class="py-3.5 px-3 text-center whitespace-nowrap">ពេលចេញ (Start)</th>
+            <th data-daily-col="actions" class="py-3.5 px-3 text-center whitespace-nowrap">សកម្មភាព (Action)</th>
         </tr>
     `;
 
     if (orders.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="13" class="text-center py-12 text-slate-400 bg-white">
+                <td colspan="100%" class="text-center py-12 text-slate-400 bg-white">
                     <i data-lucide="truck" class="w-10 h-10 mx-auto stroke-1 mb-2 text-slate-300"></i>
                     <p class="font-medium text-slate-600">មិនមាន Order កំពុងដឹកជញ្ជូន (In Delivery) ទេ</p>
-                    <p class="text-xs text-slate-400 mt-1">រាល់ពេលចុច Start Delivery លើ Order ណាមួយ វានឹងបង្ហាញក្នុងតារាងទី១ នេះភ្លាមៗ</p>
+                    <p class="text-xs text-slate-400 mt-1">រាល់ពេលចុច Start Delivery លើ Order ណាមួយ វានឹងបង្ហាញក្នុង Recent Order នេះភ្លាមៗ</p>
                 </td>
             </tr>
         `;
@@ -5368,61 +5585,61 @@ function renderDailyDeliveryTable1(orders) {
         return `
             <tr class="hover:bg-sky-50/40 transition border-b border-slate-100 text-xs">
                 <!-- 1. Status -->
-                <td class="py-3 px-3 text-center whitespace-nowrap">
+                <td data-daily-col="status" class="py-3 px-3 text-center whitespace-nowrap">
                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${badge.class}">
                         ${badge.text}
                     </span>
                 </td>
 
                 <!-- 2. SO Date -->
-                <td class="py-3 px-3 font-mono text-slate-600 text-center whitespace-nowrap font-medium">
+                <td data-daily-col="soDate" class="py-3 px-3 font-mono text-slate-600 text-center whitespace-nowrap font-medium">
                     ${soDateStr}
                 </td>
 
                 <!-- 3. SO# -->
-                <td class="py-3 px-3 font-bold font-mono text-blue-700 whitespace-nowrap">
+                <td data-daily-col="soNumber" class="py-3 px-3 font-bold font-mono text-blue-700 whitespace-nowrap">
                     <span class="cursor-pointer hover:underline" onclick="viewOrderDetails('${escapeHtml(order.soNumber)}')">
                         ${escapeHtml(order.soNumber || "-")}
                     </span>
                 </td>
 
                 <!-- 4. Customer Name -->
-                <td class="py-3 px-3 font-bold text-slate-900 whitespace-nowrap max-w-[200px] truncate" title="${escapeHtml(order.customerName || '')}">
+                <td data-daily-col="customerName" class="py-3 px-3 font-bold text-slate-900 whitespace-nowrap max-w-[200px] truncate" title="${escapeHtml(order.customerName || '')}">
                     ${escapeHtml(order.customerName || "-")}
                 </td>
 
                 <!-- 5. City/Province -->
-                <td class="py-3 px-3 text-slate-600 whitespace-nowrap">
+                <td data-daily-col="cityProvince" class="py-3 px-3 text-slate-600 whitespace-nowrap">
                     ${escapeHtml(order.cityProvince || "-")}
                 </td>
 
                 <!-- 6. Khan -->
-                <td class="py-3 px-3 text-slate-600 whitespace-nowrap">
+                <td data-daily-col="khan" class="py-3 px-3 text-slate-600 whitespace-nowrap">
                     ${escapeHtml(order.khan || "-")}
                 </td>
 
                 <!-- 7. Packing List# -->
-                <td class="py-3 px-3 font-mono text-slate-600 whitespace-nowrap">
+                <td data-daily-col="packingList" class="py-3 px-3 font-mono text-slate-600 whitespace-nowrap">
                     ${escapeHtml(order.packingListNumber || "-")}
                 </td>
 
                 <!-- 8. Invoice# -->
-                <td class="py-3 px-3 font-mono text-slate-600 whitespace-nowrap">
+                <td data-daily-col="invoiceNumber" class="py-3 px-3 font-mono text-slate-600 whitespace-nowrap">
                     ${escapeHtml(order.invoiceNumber || "-")}
                 </td>
 
                 <!-- 9. Invoice Amount -->
-                <td class="py-3 px-3 text-right font-mono font-bold text-emerald-700 whitespace-nowrap">
+                <td data-daily-col="invoiceAmount" class="py-3 px-3 text-right font-mono font-bold text-emerald-700 whitespace-nowrap">
                     ${amtStr}
                 </td>
 
                 <!-- 10. Total Packages -->
-                <td class="py-3 px-3 text-center whitespace-nowrap">
+                <td data-daily-col="totalPackage" class="py-3 px-3 text-center whitespace-nowrap">
                     ${pkgStr !== "-" ? `<span class="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-bold text-xs">${pkgStr}</span>` : '<span class="text-slate-300 font-semibold">-</span>'}
                 </td>
 
                 <!-- 11. Driver -->
-                <td class="py-3 px-3 text-sky-700 font-bold whitespace-nowrap">
+                <td data-daily-col="driver" class="py-3 px-3 text-sky-700 font-bold whitespace-nowrap">
                     <span class="inline-flex items-center gap-1">
                         <i data-lucide="user-check" class="w-3.5 h-3.5 text-sky-600"></i>
                         <span>${escapeHtml(order.deliveryBy || "-")}</span>
@@ -5430,12 +5647,12 @@ function renderDailyDeliveryTable1(orders) {
                 </td>
 
                 <!-- 12. Start Delivery -->
-                <td class="py-3 px-3 font-mono text-slate-600 text-center whitespace-nowrap text-xs">
+                <td data-daily-col="startTime" class="py-3 px-3 font-mono text-slate-600 text-center whitespace-nowrap text-xs">
                     ${startTimeStr}
                 </td>
 
-                <!-- 13. Action: End Delivery Button (បញ្ចប់ការដឹក ហើយផ្លាស់ទីទៅតារាងទី២) -->
-                <td class="py-3 px-3 text-center whitespace-nowrap">
+                <!-- 13. Action: End Delivery Button -->
+                <td data-daily-col="actions" class="py-3 px-3 text-center whitespace-nowrap">
                     <button type="button" 
                         onclick="openEndDeliveryModal('${escapeHtml(order.soNumber)}')" 
                         class="py-1 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs transition flex items-center justify-center gap-1 active:scale-95 cursor-pointer whitespace-nowrap mx-auto"
@@ -5460,8 +5677,8 @@ function renderDailyDeliveryTable2(orders) {
 
     thead.innerHTML = `
         <tr class="bg-slate-100/90 text-slate-700 font-bold border-b border-slate-200 text-xs tracking-tight">
-            <th class="py-3 px-3 text-center whitespace-nowrap">Status</th>
-            <th class="py-3 px-3 text-center whitespace-nowrap select-none group" title="ចុចដើម្បី Sort SO Date">
+            <th data-daily-col="status" class="py-3 px-3 text-center whitespace-nowrap">Status</th>
+            <th data-daily-col="soDate" class="py-3 px-3 text-center whitespace-nowrap select-none group" title="ចុចដើម្បី Sort SO Date">
                 <div class="inline-flex items-center justify-center gap-1">
                     <span class="cursor-pointer hover:text-emerald-700 transition" onclick="toggleDailyTable2Sort()">SO Date</span>
                     <button type="button" onclick="toggleDailyTable2Sort()" class="inline-flex items-center justify-center w-5 h-5 rounded border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 hover:text-emerald-700 shadow-2xs transition active:scale-95 cursor-pointer ml-0.5" title="Sort SO Date">
@@ -5469,29 +5686,29 @@ function renderDailyDeliveryTable2(orders) {
                     </button>
                 </div>
             </th>
-            <th class="py-3.5 px-3 text-left whitespace-nowrap">SO#</th>
-            <th class="py-3.5 px-3 text-left whitespace-nowrap">Customer Name</th>
-            <th class="py-3.5 px-3 text-left whitespace-nowrap">City / Province</th>
-            <th class="py-3.5 px-3 text-left whitespace-nowrap">Khan / District</th>
-            <th class="py-3.5 px-3 text-left whitespace-nowrap">Packing List#</th>
-            <th class="py-3.5 px-3 text-left whitespace-nowrap">Invoice#</th>
-            <th class="py-3.5 px-3 text-right whitespace-nowrap">Invoice Amount</th>
-            <th class="py-3.5 px-3 text-left whitespace-nowrap">អ្នកដឹក (Driver)</th>
-            <th class="py-3.5 px-3 text-center whitespace-nowrap">ពេលចេញ (Start)</th>
-            <th class="py-3.5 px-3 text-center whitespace-nowrap">ពេលដល់ (End)</th>
-            <th class="py-3.5 px-3 text-center whitespace-nowrap">រយៈពេល (Duration)</th>
-            <th class="py-3.5 px-3 text-left whitespace-nowrap">Payment Receipt</th>
-            <th class="py-3.5 px-3 text-center whitespace-nowrap">សកម្មភាព (Action)</th>
+            <th data-daily-col="soNumber" class="py-3.5 px-3 text-left whitespace-nowrap">SO#</th>
+            <th data-daily-col="customerName" class="py-3.5 px-3 text-left whitespace-nowrap">Customer Name</th>
+            <th data-daily-col="cityProvince" class="py-3.5 px-3 text-left whitespace-nowrap">City / Province</th>
+            <th data-daily-col="khan" class="py-3.5 px-3 text-left whitespace-nowrap">Khan / District</th>
+            <th data-daily-col="packingList" class="py-3.5 px-3 text-left whitespace-nowrap">Packing List#</th>
+            <th data-daily-col="invoiceNumber" class="py-3.5 px-3 text-left whitespace-nowrap">Invoice#</th>
+            <th data-daily-col="invoiceAmount" class="py-3.5 px-3 text-right whitespace-nowrap">Invoice Amount</th>
+            <th data-daily-col="driver" class="py-3.5 px-3 text-left whitespace-nowrap">អ្នកដឹក (Driver)</th>
+            <th data-daily-col="startTime" class="py-3.5 px-3 text-center whitespace-nowrap">ពេលចេញ (Start)</th>
+            <th data-daily-col="endTime" class="py-3.5 px-3 text-center whitespace-nowrap">ពេលដល់ (End)</th>
+            <th data-daily-col="duration" class="py-3.5 px-3 text-center whitespace-nowrap">រយៈពេល (Duration)</th>
+            <th data-daily-col="paymentReceipt" class="py-3.5 px-3 text-left whitespace-nowrap">Payment Receipt</th>
+            <th data-daily-col="actions" class="py-3.5 px-3 text-center whitespace-nowrap">សកម្មភាព (Action)</th>
         </tr>
     `;
 
     if (orders.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="15" class="text-center py-12 text-slate-400 bg-white">
+                <td colspan="100%" class="text-center py-12 text-slate-400 bg-white">
                     <i data-lucide="check-check" class="w-10 h-10 mx-auto stroke-1 mb-2 text-slate-300"></i>
                     <p class="font-medium text-slate-600">មិនមាន Order ដែលបានបញ្ចប់ការដឹកជញ្ជូនទេ</p>
-                    <p class="text-xs text-slate-400 mt-1">ពេល Order ក្នុងតារាងទី១ បញ្ចប់ការដឹកជញ្ជូន វានឹងត្រូវផ្លាស់ទីមកកាន់តារាងទី២ នេះ</p>
+                    <p class="text-xs text-slate-400 mt-1">ពេល Order ក្នុង Recent Order បញ្ចប់ការដឹកជញ្ជូន វានឹងត្រូវផ្លាស់ទីមកកាន់ Completed Order នេះ</p>
                 </td>
             </tr>
         `;
@@ -5524,87 +5741,87 @@ function renderDailyDeliveryTable2(orders) {
         return `
             <tr class="hover:bg-emerald-50/40 transition border-b border-slate-100 text-xs">
                 <!-- 1. Status -->
-                <td class="py-3 px-3 text-center whitespace-nowrap">
+                <td data-daily-col="status" class="py-3 px-3 text-center whitespace-nowrap">
                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${badge.class}">
                         ${badge.text}
                     </span>
                 </td>
 
                 <!-- 2. SO Date -->
-                <td class="py-3 px-3 font-mono text-slate-600 text-center whitespace-nowrap font-medium">
+                <td data-daily-col="soDate" class="py-3 px-3 font-mono text-slate-600 text-center whitespace-nowrap font-medium">
                     ${soDateStr}
                 </td>
 
                 <!-- 3. SO# -->
-                <td class="py-3 px-3 font-bold font-mono text-blue-700 whitespace-nowrap">
+                <td data-daily-col="soNumber" class="py-3 px-3 font-bold font-mono text-blue-700 whitespace-nowrap">
                     <span class="cursor-pointer hover:underline" onclick="viewOrderDetails('${escapeHtml(order.soNumber)}')">
                         ${escapeHtml(order.soNumber || "-")}
                     </span>
                 </td>
 
                 <!-- 4. Customer Name -->
-                <td class="py-3 px-3 font-bold text-slate-900 whitespace-nowrap max-w-[200px] truncate" title="${escapeHtml(order.customerName || '')}">
+                <td data-daily-col="customerName" class="py-3 px-3 font-bold text-slate-900 whitespace-nowrap max-w-[200px] truncate" title="${escapeHtml(order.customerName || '')}">
                     ${escapeHtml(order.customerName || "-")}
                 </td>
 
                 <!-- 5. City/Province -->
-                <td class="py-3 px-3 text-slate-600 whitespace-nowrap">
+                <td data-daily-col="cityProvince" class="py-3 px-3 text-slate-600 whitespace-nowrap">
                     ${escapeHtml(order.cityProvince || "-")}
                 </td>
 
                 <!-- 6. Khan -->
-                <td class="py-3 px-3 text-slate-600 whitespace-nowrap">
+                <td data-daily-col="khan" class="py-3 px-3 text-slate-600 whitespace-nowrap">
                     ${escapeHtml(order.khan || "-")}
                 </td>
 
                 <!-- 7. Packing List# -->
-                <td class="py-3 px-3 font-mono text-slate-600 whitespace-nowrap">
+                <td data-daily-col="packingList" class="py-3 px-3 font-mono text-slate-600 whitespace-nowrap">
                     ${escapeHtml(order.packingListNumber || "-")}
                 </td>
 
                 <!-- 8. Invoice# -->
-                <td class="py-3 px-3 font-mono text-slate-600 whitespace-nowrap">
+                <td data-daily-col="invoiceNumber" class="py-3 px-3 font-mono text-slate-600 whitespace-nowrap">
                     ${escapeHtml(order.invoiceNumber || "-")}
                 </td>
 
                 <!-- 9. Invoice Amount -->
-                <td class="py-3 px-3 text-right font-mono font-bold text-emerald-700 whitespace-nowrap">
+                <td data-daily-col="invoiceAmount" class="py-3 px-3 text-right font-mono font-bold text-emerald-700 whitespace-nowrap">
                     ${amtStr}
                 </td>
 
                 <!-- 10. Driver -->
-                <td class="py-3 px-3 text-slate-700 font-semibold whitespace-nowrap">
+                <td data-daily-col="driver" class="py-3 px-3 text-slate-700 font-semibold whitespace-nowrap">
                     ${escapeHtml(order.deliveryBy || "-")}
                 </td>
 
                 <!-- 11. Start Delivery -->
-                <td class="py-3 px-3 font-mono text-slate-600 text-center whitespace-nowrap text-xs">
+                <td data-daily-col="startTime" class="py-3 px-3 font-mono text-slate-600 text-center whitespace-nowrap text-xs">
                     ${startTimeStr}
                 </td>
 
                 <!-- 12. End Delivery -->
-                <td class="py-3 px-3 font-mono text-emerald-700 text-center whitespace-nowrap text-xs font-semibold">
+                <td data-daily-col="endTime" class="py-3 px-3 font-mono text-emerald-700 text-center whitespace-nowrap text-xs font-semibold">
                     ${endTimeStr}
                 </td>
 
                 <!-- 13. Duration -->
-                <td class="py-3 px-3 text-center whitespace-nowrap">
+                <td data-daily-col="duration" class="py-3 px-3 text-center whitespace-nowrap">
                     ${durationStr !== "-" ? `<span class="font-mono font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-xs">${durationStr}</span>` : '<span class="text-slate-300">-</span>'}
                 </td>
 
                 <!-- 14. Payment Receipt -->
-                <td class="py-3 px-3 whitespace-nowrap">
+                <td data-daily-col="paymentReceipt" class="py-3 px-3 whitespace-nowrap">
                     ${renderPaymentReceiptBadge(order)}
                 </td>
 
                 <!-- 15. Action -->
-                <td class="py-3 px-3 text-center whitespace-nowrap">
+                <td data-daily-col="actions" class="py-3 px-3 text-center whitespace-nowrap">
                     ${isIncomplete ? `
                         <div class="flex items-center justify-center gap-1.5">
                             <button type="button" 
                                 onclick="startSecondDelivery('${escapeHtml(order.soNumber)}')" 
                                 class="py-1 px-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold text-xs shadow-2xs transition flex items-center gap-1 cursor-pointer whitespace-nowrap active:scale-95"
-                                title="ដឹកជញ្ជូនម្ដងទៀត (រត់ត្រឡប់ទៅតារាងទី១)">
+                                title="ដឹកជញ្ជូនម្ដងទៀត (រត់ត្រឡប់ទៅ Recent Order)">
                                 <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
                                 <span>Start 2nd</span>
                             </button>
@@ -5798,9 +6015,9 @@ function exportDailyDeliveryToExcel() {
         o.deliveryStartTime ? formatDateTimeDisplay(o.deliveryStartTime) : "-"
     ]);
     const ws1 = XLSX.utils.aoa_to_sheet([headers1, ...rows1]);
-    XLSX.utils.book_append_sheet(wb, ws1, "1. Recent Orders (In Delivery)");
+    XLSX.utils.book_append_sheet(wb, ws1, "Recent Orders (In Delivery)");
 
-    // 2. Sheet 2: Completed Orders
+    // Sheet 2: Completed Orders
     const headers2 = [
         "Status", "SO Date", "SO#", "Customer Name", "City / Province", "Khan / District", 
         "Packing List#", "Invoice#", "Invoice Amount", "Driver", "Start Delivery Time", 
@@ -5823,7 +6040,7 @@ function exportDailyDeliveryToExcel() {
         formatPaymentReceiptDisplay(o)
     ]);
     const ws2 = XLSX.utils.aoa_to_sheet([headers2, ...rows2]);
-    XLSX.utils.book_append_sheet(wb, ws2, "2. Completed Orders");
+    XLSX.utils.book_append_sheet(wb, ws2, "Completed Orders");
 
     const now = new Date();
     const pad = n => String(n).padStart(2, '0');
@@ -5846,6 +6063,14 @@ window.changeDailyTable2Page = changeDailyTable2Page;
 window.exportDailyDeliveryToExcel = exportDailyDeliveryToExcel;
 window.isDailyDeliveryRecentOrder = isDailyDeliveryRecentOrder;
 window.isDailyDeliveryCompletedOrder = isDailyDeliveryCompletedOrder;
+window.toggleDailyPersonalDisplayMenu = toggleDailyPersonalDisplayMenu;
+window.closeDailyPersonalDisplayMenu = closeDailyPersonalDisplayMenu;
+window.setDailyPersonalDisplayAll = setDailyPersonalDisplayAll;
+window.resetDailyPersonalDisplay = resetDailyPersonalDisplay;
+window.renderDailyPersonalDisplayCheckboxes = renderDailyPersonalDisplayCheckboxes;
+window.applyDailyColumnVisibility = applyDailyColumnVisibility;
+window.getDailyColumnPrefs = getDailyColumnPrefs;
+window.saveDailyColumnPrefs = saveDailyColumnPrefs;
 
 // View Full Order Details Modal
 function viewOrderDetails(soNumber) {
@@ -6257,6 +6482,11 @@ function closeTopActiveModal() {
         personalMenu.classList.add("hidden");
         return true;
     }
+    const dailyPersonalMenu = document.getElementById("dailyPersonalDisplayMenu");
+    if (dailyPersonalMenu && !dailyPersonalMenu.classList.contains("hidden")) {
+        dailyPersonalMenu.classList.add("hidden");
+        return true;
+    }
     const highlightMenu = document.getElementById("highlightColorMenu");
     if (highlightMenu && !highlightMenu.classList.contains("hidden")) {
         highlightMenu.classList.add("hidden");
@@ -6616,6 +6846,11 @@ function initPersonalDisplay() {
         if (container && !container.contains(e.target)) {
             menu.classList.add("hidden");
         }
+        const dailyContainer = document.getElementById("dailyPersonalDisplayDropdownContainer");
+        const dailyMenu = document.getElementById("dailyPersonalDisplayMenu");
+        if (dailyContainer && dailyMenu && !dailyContainer.contains(e.target)) {
+            dailyMenu.classList.add("hidden");
+        }
     });
 
     if (btnSelectAll) {
@@ -6906,6 +7141,11 @@ function setupHighlightColorMenu() {
     document.addEventListener("click", (e) => {
         if (container && !container.contains(e.target)) {
             menu.classList.add("hidden");
+        }
+        const dailyContainer = document.getElementById("dailyPersonalDisplayDropdownContainer");
+        const dailyMenu = document.getElementById("dailyPersonalDisplayMenu");
+        if (dailyContainer && dailyMenu && !dailyContainer.contains(e.target)) {
+            dailyMenu.classList.add("hidden");
         }
     });
 }
