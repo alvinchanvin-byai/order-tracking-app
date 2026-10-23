@@ -341,15 +341,15 @@ const DEFAULT_SETUP_DOC_TYPES = [
 
 // Available App Modules & Permission Identifiers
 const APP_MODULES = [
-    { id: "dashboard", name: "ផ្ទាំងគ្រប់គ្រង (Dashboard)", icon: "layout-dashboard" },
-    { id: "register", name: "១. Register Order (ចុះឈ្មោះ)", icon: "file-plus-2" },
-    { id: "picking", name: "២. Physical Picking (រៀបចំ)", icon: "package" },
-    { id: "checking", name: "៣. Physical Checking (ត្រួតពិនិត្យ)", icon: "clipboard-check" },
-    { id: "delivery", name: "៤. Delivery (ដឹកជញ្ជូន)", icon: "truck" },
-    { id: "incompleted-delivery", name: "៥. In Completed Delivery (មិនទាន់ចប់)", icon: "alert-triangle" },
-    { id: "daily-delivery", name: "៦. Daily Delivery (ការដឹកជញ្ជូនប្រចាំថ្ងៃ)", icon: "calendar-check" },
-    { id: "report", name: "៧. Report (របាយការណ៍)", icon: "bar-chart-3" },
-    { id: "setup", name: "៨. Setup (ទិន្នន័យមេ)", icon: "sliders" }
+    { id: "daily-delivery", name: "១. Daily Delivery (ការដឹកជញ្ជូនប្រចាំថ្ងៃ)", icon: "calendar-check" },
+    { id: "register", name: "២. Register Order (ចុះឈ្មោះ)", icon: "file-plus-2" },
+    { id: "picking", name: "៣. Physical Picking (រៀបចំ)", icon: "package" },
+    { id: "checking", name: "៤. Physical Checking (ត្រួតពិនិត្យ)", icon: "clipboard-check" },
+    { id: "delivery", name: "៥. Delivery (ដឹកជញ្ជូន)", icon: "truck" },
+    { id: "incompleted-delivery", name: "៦. In Completed Delivery (មិនទាន់ចប់)", icon: "alert-triangle" },
+    { id: "dashboard", name: "៧. ផ្ទាំងគ្រប់គ្រង (Dashboard)", icon: "layout-dashboard" },
+    { id: "report", name: "៨. Report (របាយការណ៍)", icon: "bar-chart-3" },
+    { id: "setup", name: "៩. Setup (ទិន្នន័យមេ)", icon: "sliders" }
 ];
 
 // Default Setup Users with Roles & Module Access Rights
@@ -360,7 +360,7 @@ const DEFAULT_SETUP_USERS = [
         password: "123",
         displayName: "System Administrator",
         role: "Admin",
-        permissions: ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "daily-delivery", "report", "setup"],
+        permissions: ["daily-delivery", "register", "picking", "checking", "delivery", "incompleted-delivery", "dashboard", "report", "setup"],
         lastUpdated: "08/10/26 15:00"
     },
     {
@@ -369,7 +369,7 @@ const DEFAULT_SETUP_USERS = [
         password: "123",
         displayName: "Sophal Chan",
         role: "Admin",
-        permissions: ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "daily-delivery", "report", "setup"],
+        permissions: ["daily-delivery", "register", "picking", "checking", "delivery", "incompleted-delivery", "dashboard", "report", "setup"],
         lastUpdated: "08/10/26 15:39"
     },
     {
