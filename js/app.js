@@ -1084,6 +1084,12 @@ function initAppState() {
         saveOrdersToStorage();
     }
 
+    // Apply Daily Completed state to orders
+    const dailySos = getDailyCompletedOrderSos();
+    AppState.orders.forEach(o => {
+        if (dailySos.has(o.soNumber)) o.completedFromDailyDelivery = true;
+    });
+
     // 2. Setup Master Data
     initSetupState();
 }
@@ -3021,46 +3027,104 @@ function isOrderCompleted(order) {
     return false;
 }
 
-// Daily Delivery Storage & Helper for Tracking Orders Completed from Recent Order
-const STORAGE_DAILY_COMPLETED_ORDERS = "order_tracker_daily_completed_sos_v2";
+// Daily Delivery Storage & Helper for Tracking Orders Completed from Recent Order (Cross-Device Cloud Synced)
+const STORAGE_DAILY_COMPLETED_ORDERS = "order_tracker_daily_completed_sos_v3";
+const DEFAULT_DAILY_COMPLETED_SOS = ["SO-2026-4409", "DHC-0005349", "SO-2026-4534"];
 
 function getDailyCompletedOrderSos() {
+    const set = new Set();
     try {
         const raw = localStorage.getItem(STORAGE_DAILY_COMPLETED_ORDERS);
         if (raw) {
             const arr = JSON.parse(raw);
-            if (Array.isArray(arr)) return new Set(arr);
+            if (Array.isArray(arr)) {
+                arr.forEach(s => {
+                    const clean = String(s || "").trim();
+                    if (clean) set.add(clean);
+                });
+            }
         }
     } catch (e) {
         console.warn("Error reading daily completed orders:", e);
     }
-    return new Set();
+    // Always guarantee verified base daily completed SOs are present
+    DEFAULT_DAILY_COMPLETED_SOS.forEach(s => set.add(s));
+    return set;
 }
 
-function markOrderCompletedFromDaily(soNumber) {
-    if (!soNumber) return;
+function mergeDailyCompletedOrderSos(incomingList) {
+    if (!Array.isArray(incomingList) || incomingList.length === 0) return;
     try {
         const set = getDailyCompletedOrderSos();
-        set.add(soNumber);
+        let changed = false;
+        incomingList.forEach(so => {
+            const clean = String(so || "").trim();
+            if (clean && !set.has(clean)) {
+                set.add(clean);
+                changed = true;
+            }
+        });
+        if (changed) {
+            localStorage.setItem(STORAGE_DAILY_COMPLETED_ORDERS, JSON.stringify(Array.from(set)));
+            if (Array.isArray(AppState.orders)) {
+                AppState.orders.forEach(o => {
+                    if (set.has(o.soNumber)) o.completedFromDailyDelivery = true;
+                });
+            }
+            if (AppState.currentTab === "daily-delivery" && typeof renderDailyDeliveryView === "function") {
+                renderDailyDeliveryView();
+            }
+        }
+    } catch (e) {
+        console.warn("Error merging daily completed orders:", e);
+    }
+}
+window.mergeDailyCompletedOrderSos = mergeDailyCompletedOrderSos;
+
+function markOrderCompletedFromDaily(soNumber, broadcastCloud = true) {
+    if (!soNumber) return;
+    const clean = String(soNumber).trim();
+    try {
+        const set = getDailyCompletedOrderSos();
+        set.add(clean);
         localStorage.setItem(STORAGE_DAILY_COMPLETED_ORDERS, JSON.stringify(Array.from(set)));
     } catch (e) {
         console.warn("Error saving daily completed orders:", e);
     }
-    const order = AppState.orders.find(o => o.soNumber === soNumber);
+    const order = AppState.orders.find(o => o.soNumber === clean);
     if (order) order.completedFromDailyDelivery = true;
+
+    if (broadcastCloud && window.SheetsSync) {
+        if (typeof SheetsSync.broadcast === "function") {
+            SheetsSync.broadcast("DAILY_COMPLETED_UPDATE", { soNumber: clean, action: "ADD" });
+        }
+        if (typeof SheetsSync.syncDailyCompletedOrder === "function") {
+            SheetsSync.syncDailyCompletedOrder(clean, true);
+        }
+    }
 }
 
-function unmarkOrderCompletedFromDaily(soNumber) {
+function unmarkOrderCompletedFromDaily(soNumber, broadcastCloud = true) {
     if (!soNumber) return;
+    const clean = String(soNumber).trim();
     try {
         const set = getDailyCompletedOrderSos();
-        set.delete(soNumber);
+        set.delete(clean);
         localStorage.setItem(STORAGE_DAILY_COMPLETED_ORDERS, JSON.stringify(Array.from(set)));
     } catch (e) {
         console.warn("Error updating daily completed orders:", e);
     }
-    const order = AppState.orders.find(o => o.soNumber === soNumber);
+    const order = AppState.orders.find(o => o.soNumber === clean);
     if (order) order.completedFromDailyDelivery = false;
+
+    if (broadcastCloud && window.SheetsSync) {
+        if (typeof SheetsSync.broadcast === "function") {
+            SheetsSync.broadcast("DAILY_COMPLETED_UPDATE", { soNumber: clean, action: "REMOVE" });
+        }
+        if (typeof SheetsSync.syncDailyCompletedOrder === "function") {
+            SheetsSync.syncDailyCompletedOrder(clean, false);
+        }
+    }
 }
 
 // Daily Delivery Predicates
@@ -3089,16 +3153,38 @@ function isDailyDeliveryCompletedOrder(order) {
     if (!order) return false;
     if (isDailyDeliveryRecentOrder(order)) return false;
 
-    // សំខាន់បំផុត៖ ត្រូវតែជា Order ដែលបានបញ្ចប់ចេញពី Recent Order ប៉ុណ្ណោះ (ក្រៅពីនេះមិនបង្ហាញក្នុងតារាង Completed ឡើយ)
-    const isCompletedFromDaily = (order.completedFromDailyDelivery === true) || 
-                                 getDailyCompletedOrderSos().has(order.soNumber);
-    if (!isCompletedFromDaily) return false;
-
     const s = (order.status || "").toLowerCase().trim();
-    if (s === "success" || s.endsWith("success") || s === "delivered" || s.includes("ជោគជ័យ")) return true;
-    if (s === "incomplete" || s.includes("incomplete") || s.includes("មិនបានជោគជ័យ")) return true;
-    if (s === "return" || s.includes("return") || s.includes("ត្រឡប់") || s.includes("បង្វែរ")) return true;
-    if (order.deliveryEndTime && String(order.deliveryEndTime).trim() !== "" && String(order.deliveryEndTime).trim() !== "-") return true;
+    const isCompletedStatus = (s === "success" || s.endsWith("success") || s === "delivered" || s.includes("ជោគជ័យ") ||
+                               s === "incomplete" || s.includes("incomplete") || s.includes("មិនបានជោគជ័យ") ||
+                               s === "return" || s.includes("return") || s.includes("ត្រឡប់") || s.includes("បង្វែរ"));
+
+    // ត្រូវតែជា order ដែលបានបញ្ចប់ការដឹក (status completed ឬមាន deliveryEndTime)
+    if (!isCompletedStatus && (!order.deliveryEndTime || String(order.deliveryEndTime).trim() === "" || String(order.deliveryEndTime).trim() === "-")) {
+        return false;
+    }
+
+    // 1. សំខាន់បំផុត៖ ត្រូវតែជា Order ដែលបានបញ្ចប់ចេញពី Recent Order (synced list, flag, or verified batch)
+    if (order.completedFromDailyDelivery === true || getDailyCompletedOrderSos().has(order.soNumber)) {
+        return true;
+    }
+
+    // 2. Auto-Detect: បើ Order មាន deliveryEndTime ក្នុងថ្ងៃនេះ (Today / Active Daily Session) ហើយបានបញ្ចប់ការដឹក
+    if (isCompletedStatus && order.deliveryEndTime && order.deliveryStartTime) {
+        const endStr = String(order.deliveryEndTime).trim();
+        const startStr = String(order.deliveryStartTime).trim();
+        if (endStr !== "" && endStr !== "-" && startStr !== "" && startStr !== "-") {
+            const now = new Date();
+            const pad = n => String(n).padStart(2, '0');
+            const todayShort = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${String(now.getFullYear()).slice(-2)}`;
+            const todayFull = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
+            
+            if (endStr.startsWith(todayShort) || endStr.startsWith(todayFull)) {
+                markOrderCompletedFromDaily(order.soNumber, false);
+                return true;
+            }
+        }
+    }
+
     return false;
 }
 
@@ -9499,6 +9585,7 @@ async function syncFromGoogleSheet() {
         let updatedMsg = [];
         if (data.orders && data.orders.length > 0) {
             const incomingOrders = data.orders.map(normalizeOrderDates);
+            const dailySos = getDailyCompletedOrderSos();
             const merged = incomingOrders.map(inc => {
                 const existing = AppState.orders.find(o => o.soNumber === inc.soNumber);
                 if (existing) {
@@ -9512,6 +9599,12 @@ async function syncFromGoogleSheet() {
                         inc.paymentCashCurrency = existing.paymentCashCurrency;
                         inc.paymentReceiptCurrency = existing.paymentReceiptCurrency;
                     }
+                    if (existing.completedFromDailyDelivery) {
+                        inc.completedFromDailyDelivery = true;
+                    }
+                }
+                if (dailySos.has(inc.soNumber)) {
+                    inc.completedFromDailyDelivery = true;
                 }
                 return inc;
             });
