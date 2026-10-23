@@ -46,7 +46,7 @@
     <link rel="dns-prefetch" href="https://script.google.com">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css?v=live-v4.1">
+    <link rel="stylesheet" href="css/style.css?v=live-v4.2">
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -936,9 +936,60 @@
                         <span>Daily Delivery</span>
                         <span id="dailyDeliveryBadge" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">ការដឹកជញ្ជូនប្រចាំថ្ងៃ</span>
                     </h2>
-                    <p class="text-xs sm:text-sm text-slate-500 mt-1">តាមដានការដឹកជញ្ជូនប្រចាំថ្ងៃ៖ Order ដែលបាន Start Delivery (In Delivery) នឹងចូលក្នុងតារាងទី១ ហើយពេលបញ្ចប់ (Success, Incompleted, Return) នឹងផ្លាស់ទីទៅតារាងទី២</p>
                 </div>
                 <div class="flex items-center gap-2 w-full md:w-auto">
+                    <!-- Personal Display Dropdown for Daily Delivery -->
+                    <div class="relative z-40" id="dailyPersonalDisplayDropdownContainer">
+                        <button type="button" 
+                            id="btnDailyPersonalDisplay" 
+                            onclick="toggleDailyPersonalDisplayMenu(event)"
+                            class="py-2.5 px-3 rounded-xl border border-slate-200/90 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer" 
+                            title="ជ្រើសរើសជួរឈរដើម្បីបង្ហាញ (Customize Columns)">
+                            <i data-lucide="sliders-horizontal" class="w-4 h-4 text-emerald-600"></i>
+                            <span>Personal display</span>
+                            <span id="dailyPersonalDisplayCountBadge" class="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 font-mono border border-emerald-200">16/16</span>
+                            <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
+                        </button>
+
+                        <!-- Popover Menu -->
+                        <div id="dailyPersonalDisplayMenu" class="hidden absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 p-4 z-50 space-y-3 ring-1 ring-slate-900/10">
+                            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                        <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+                                    </div>
+                                    <div>
+                                        <div class="flex items-center gap-1.5">
+                                            <h4 class="text-xs font-bold text-slate-800">Personal display</h4>
+                                            <span id="dailyPersonalDisplayHeaderBadge" class="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 font-mono border border-emerald-200">16/16</span>
+                                        </div>
+                                        <p class="text-[10px] text-slate-400 mt-0.5">កំណត់ជួរឈរ Daily Delivery (Recent & Completed)</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
+                                    <button type="button" onclick="setDailyPersonalDisplayAll(true)" class="text-[11px] font-bold text-emerald-600 hover:text-emerald-700 cursor-pointer">All</button>
+                                    <span class="text-slate-300">|</span>
+                                    <button type="button" onclick="resetDailyPersonalDisplay()" class="text-[11px] font-bold text-slate-500 hover:text-slate-700 cursor-pointer">Reset</button>
+                                </div>
+                            </div>
+                            
+                            <div id="dailyColumnCheckboxesList" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-72 overflow-y-auto pr-1 text-xs custom-scroll">
+                                <!-- Populated dynamically by JS -->
+                            </div>
+
+                            <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+                                <div class="flex items-center gap-1">
+                                    <span>បានជ្រើសរើស:</span>
+                                    <span id="dailyPersonalDisplayFooterCountBadge" class="text-[11px] font-bold font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">16/16</span>
+                                </div>
+                                <button type="button" onclick="closeDailyPersonalDisplayMenu()" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition cursor-pointer">
+                                    រួចរាល់ (Done)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Export to Excel Button -->
                     <button type="button" onclick="exportDailyDeliveryToExcel()" class="w-full md:w-auto py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-sm transition flex items-center justify-center gap-2 cursor-pointer active:scale-95" title="Export Daily Delivery to Excel (.xlsx)">
                         <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-100"></i>
                         <span>Export to Excel (.xlsx)</span>
@@ -951,7 +1002,7 @@
                 <!-- Card 1: Recent Orders (In Delivery) -->
                 <div class="metric-card-modern p-4 rounded-2xl border border-sky-200/90 bg-gradient-to-br from-sky-50/50 to-white shadow-2xs">
                     <div class="flex items-center justify-between text-slate-400 mb-1">
-                        <span class="text-xs font-bold text-sky-800">១. Recent Order (កំពុងដឹក)</span>
+                        <span class="text-xs font-bold text-sky-800">Recent Order (កំពុងដឹក)</span>
                         <div class="w-7 h-7 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center">
                             <i data-lucide="truck" class="w-4 h-4"></i>
                         </div>
@@ -966,7 +1017,7 @@
                 <!-- Card 2: Completed Orders -->
                 <div class="metric-card-modern p-4 rounded-2xl border border-emerald-200/90 bg-gradient-to-br from-emerald-50/50 to-white shadow-2xs">
                     <div class="flex items-center justify-between text-slate-400 mb-1">
-                        <span class="text-xs font-bold text-emerald-800">២. Completed (បានបញ្ចប់)</span>
+                        <span class="text-xs font-bold text-emerald-800">Completed Order (បានបញ្ចប់)</span>
                         <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
                             <i data-lucide="check-circle" class="w-4 h-4"></i>
                         </div>
@@ -1049,7 +1100,7 @@
             </div>
 
             <!-- TABLE 1: RECENT ORDER (កំពុងដឹកជញ្ជូន / In Delivery) -->
-            <!-- Layout: តារាងទី១ នៅខាងលើ -->
+            <!-- Layout: Recent Order នៅខាងលើ -->
             <div class="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
                 <div class="p-3.5 sm:p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-gradient-to-r from-sky-50/40 via-white to-white">
                     <div class="flex items-center gap-2.5">
@@ -1058,14 +1109,14 @@
                         </div>
                         <div>
                             <div class="flex items-center gap-2">
-                                <h3 class="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">តារាងទី១: Recent Order (កំពុងដឹកជញ្ជូន)</h3>
+                                <h3 class="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">Recent Order (កំពុងដឹកជញ្ជូន)</h3>
                                 <span id="table1RecentBadgeCount" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-sky-100 text-sky-800 border border-sky-300">0</span>
                             </div>
                             <p class="text-[11px] text-slate-500">Order ដែលបានចុច Start Delivery (In Delivery) កំពុងស្ថិតនៅលើផ្លូវឆ្ពោះទៅកាន់អតិថិជន</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <span class="text-xs text-slate-400">Order ក្នុងតារាងនេះ ពេល End Delivery នឹងផ្លាស់ទីទៅកាន់តារាងទី២</span>
+                        <span class="text-xs text-slate-400">Order ពេល End Delivery នឹងផ្លាស់ទីទៅកាន់ Completed Order</span>
                     </div>
                 </div>
 
@@ -1083,7 +1134,7 @@
             </div>
 
             <!-- TABLE 2: COMPLETED ORDER (បានបញ្ចប់ការដឹកជញ្ជូន / Completed Delivery) -->
-            <!-- Layout: តារាងទី២ នៅខាងក្រោម -->
+            <!-- Layout: Completed Order នៅខាងក្រោម -->
             <div class="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
                 <div class="p-3.5 sm:p-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-gradient-to-r from-emerald-50/40 via-white to-white">
                     <div class="flex items-center gap-2.5">
@@ -1092,10 +1143,10 @@
                         </div>
                         <div>
                             <div class="flex items-center gap-2">
-                                <h3 class="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">តារាងទី២: Completed Order (ការដឹកជញ្ជូនបានបញ្ចប់)</h3>
+                                <h3 class="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">Completed Order (ការដឹកជញ្ជូនបានបញ្ចប់)</h3>
                                 <span id="table2CompletedBadgeCount" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">0</span>
                             </div>
-                            <p class="text-[11px] text-slate-500">Order ពីតារាងទី១ ដែលបានបញ្ចប់ដោយជោគជ័យ (Success), មិនបានជោគជ័យ (Incompleted), ឬត្រឡប់មកវិញ (Return)</p>
+                            <p class="text-[11px] text-slate-500">Order ដែលបានបញ្ចប់ដោយជោគជ័យ (Success), មិនបានជោគជ័យ (Incompleted), ឬត្រឡប់មកវិញ (Return)</p>
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
@@ -3281,8 +3332,8 @@
     </div>
 
     <!-- App Core Scripts -->
-    <script src="js/data.js?v=live-v4.1"></script>
-    <script src="js/sheets-sync.js?v=live-v4.1"></script>
-    <script src="js/app.js?v=live-v4.1"></script>
+    <script src="js/data.js?v=live-v4.2"></script>
+    <script src="js/sheets-sync.js?v=live-v4.2"></script>
+    <script src="js/app.js?v=live-v4.2"></script>
 </body>
 </html>
