@@ -243,6 +243,11 @@ const SheetsSync = {
                 }
             } catch(e) {}
         }
+        if (msg.type === "DAILY_COMPLETED_UPDATE" && msg.payload && msg.payload.soNumber) {
+            if (typeof window.mergeDailyCompletedOrderSos === "function") {
+                window.mergeDailyCompletedOrderSos([msg.payload.soNumber]);
+            }
+        }
         if (typeof this.onBroadcastReceived === "function") {
             this.onBroadcastReceived(msg);
         }
@@ -302,6 +307,9 @@ const SheetsSync = {
                 if (result.onlineUsers) {
                     this.handleOnlineUsers(result.onlineUsers);
                 }
+                if (result.dailyCompletedSos && typeof window.mergeDailyCompletedOrderSos === "function") {
+                    window.mergeDailyCompletedOrderSos(result.dailyCompletedSos);
+                }
                 if (result.serverTimestamp) {
                     this.setServerTimestamp(result.serverTimestamp);
                 }
@@ -357,6 +365,9 @@ const SheetsSync = {
                 // Update online users presence
                 if (result.onlineUsers) {
                     this.handleOnlineUsers(result.onlineUsers);
+                }
+                if (result.dailyCompletedSos && typeof window.mergeDailyCompletedOrderSos === "function") {
+                    window.mergeDailyCompletedOrderSos(result.dailyCompletedSos);
                 }
 
                 // If hasChanges is true, or fallback if server returned full data directly
@@ -454,6 +465,15 @@ const SheetsSync = {
             payload.specialNotes = specialNotes;
         }
         return this.sendPayload(payload);
+    },
+
+    // Sync Daily Completed Order SO to Google Apps Script
+    async syncDailyCompletedOrder(soNumber, isCompleted = true) {
+        if (!this.isConfigured() || !soNumber) return null;
+        return this.sendPayload({
+            action: isCompleted ? "MARK_DAILY_COMPLETED" : "UNMARK_DAILY_COMPLETED",
+            soNumber: String(soNumber).trim()
+        });
     },
 
     // ----------------------------------------
