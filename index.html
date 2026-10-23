@@ -116,14 +116,16 @@
             </div>
             <div class="sidebar-collapsed-only hidden w-8 h-px bg-slate-200 mx-auto my-1"></div>
 
-            <button class="nav-tab-btn w-full text-left px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-between gap-2 transition whitespace-nowrap bg-blue-600 text-white shadow-sm" data-tab="dashboard" title="Dashboard">
+            <!-- 1. Daily Delivery (Module ទី១ នៅខាងលើបង្អស់) -->
+            <button class="nav-tab-btn w-full text-left px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-between gap-2 transition whitespace-nowrap bg-blue-600 text-white shadow-sm" data-tab="daily-delivery" title="Daily Delivery">
                 <div class="flex items-center gap-3 min-w-0">
-                    <i data-lucide="layout-dashboard" class="w-5 h-5 shrink-0"></i>
-                    <span class="nav-tab-text sidebar-expanded-only truncate">Dashboard</span>
+                    <i data-lucide="calendar-check" class="w-5 h-5 text-emerald-400 shrink-0"></i>
+                    <span class="nav-tab-text sidebar-expanded-only truncate">Daily Delivery</span>
                 </div>
-                <span id="navBadgeDashboard" class="nav-tab-badge sidebar-expanded-only text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-white border border-white/25 shrink-0">0</span>
+                <span id="navBadgeDailyDelivery" class="nav-tab-badge sidebar-expanded-only text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-white border border-white/25 shrink-0">0</span>
             </button>
 
+            <!-- 2. Register Order -->
             <button class="nav-tab-btn w-full text-left px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 flex items-center justify-between gap-2 transition whitespace-nowrap" data-tab="register" title="Register Order">
                 <div class="flex items-center gap-3 min-w-0">
                     <i data-lucide="file-plus-2" class="w-5 h-5 text-blue-600 shrink-0"></i>
@@ -132,6 +134,7 @@
                 <span id="navBadgeRegister" class="nav-tab-badge sidebar-expanded-only text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/80 shrink-0">0</span>
             </button>
 
+            <!-- 3. Physical Picking -->
             <button class="nav-tab-btn w-full text-left px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 flex items-center justify-between gap-2 transition whitespace-nowrap" data-tab="picking" title="Physical Picking">
                 <div class="flex items-center gap-3 min-w-0">
                     <i data-lucide="package" class="w-5 h-5 text-amber-500 shrink-0"></i>
@@ -140,6 +143,7 @@
                 <span id="navBadgePicking" class="nav-tab-badge sidebar-expanded-only text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200/80 shrink-0">0</span>
             </button>
 
+            <!-- 4. Physical Checking -->
             <button class="nav-tab-btn w-full text-left px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 flex items-center justify-between gap-2 transition whitespace-nowrap" data-tab="checking" title="Physical Checking">
                 <div class="flex items-center gap-3 min-w-0">
                     <i data-lucide="clipboard-check" class="w-5 h-5 text-purple-600 shrink-0"></i>
@@ -148,6 +152,7 @@
                 <span id="navBadgeChecking" class="nav-tab-badge sidebar-expanded-only text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200/80 shrink-0">0</span>
             </button>
 
+            <!-- 5. Delivery -->
             <button class="nav-tab-btn w-full text-left px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 flex items-center justify-between gap-2 transition whitespace-nowrap" data-tab="delivery" title="Delivery">
                 <div class="flex items-center gap-3 min-w-0">
                     <i data-lucide="truck" class="w-5 h-5 text-sky-600 shrink-0"></i>
@@ -156,6 +161,7 @@
                 <span id="navBadgeDelivery" class="nav-tab-badge sidebar-expanded-only text-[11px] font-bold px-2 py-0.5 rounded-full bg-sky-50 text-sky-700 border border-sky-200/80 shrink-0">0</span>
             </button>
 
+            <!-- 6. In Completed Delivery -->
             <button class="nav-tab-btn w-full text-left px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 flex items-center justify-between gap-2 transition whitespace-nowrap" data-tab="incompleted-delivery" title="In Completed Delivery">
                 <div class="flex items-center gap-3 min-w-0">
                     <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-500 shrink-0"></i>
@@ -164,15 +170,16 @@
                 <span id="navBadgeIncomplete" class="nav-tab-badge sidebar-expanded-only text-[11px] font-bold px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200/80 shrink-0">0</span>
             </button>
 
-            <!-- 6. Daily Delivery (Module ថ្មី ដាក់នៅក្រោម In Completed Delivery) -->
-            <button class="nav-tab-btn w-full text-left px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 flex items-center justify-between gap-2 transition whitespace-nowrap" data-tab="daily-delivery" title="Daily Delivery">
+            <!-- 7. Dashboard (Move ទៅក្រោម In Completed Delivery) -->
+            <button class="nav-tab-btn w-full text-left px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 flex items-center justify-between gap-2 transition whitespace-nowrap" data-tab="dashboard" title="Dashboard">
                 <div class="flex items-center gap-3 min-w-0">
-                    <i data-lucide="calendar-check" class="w-5 h-5 text-emerald-600 shrink-0"></i>
-                    <span class="nav-tab-text sidebar-expanded-only truncate">Daily Delivery</span>
+                    <i data-lucide="layout-dashboard" class="w-5 h-5 text-indigo-500 shrink-0"></i>
+                    <span class="nav-tab-text sidebar-expanded-only truncate">Dashboard</span>
                 </div>
-                <span id="navBadgeDailyDelivery" class="nav-tab-badge sidebar-expanded-only text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 shrink-0">0</span>
+                <span id="navBadgeDashboard" class="nav-tab-badge sidebar-expanded-only text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 shrink-0">0</span>
             </button>
 
+            <!-- 8. Report -->
             <button class="nav-tab-btn w-full text-left px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 flex items-center justify-between gap-2 transition whitespace-nowrap" data-tab="report" title="Report">
                 <div class="flex items-center gap-3 min-w-0">
                     <i data-lucide="bar-chart-3" class="w-5 h-5 text-indigo-600 shrink-0"></i>
@@ -180,6 +187,7 @@
                 </div>
             </button>
 
+            <!-- 9. Setup -->
             <button class="nav-tab-btn w-full text-left px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-100 flex items-center justify-between gap-2 transition whitespace-nowrap" data-tab="setup" title="Setup">
                 <div class="flex items-center gap-3 min-w-0">
                     <i data-lucide="sliders" class="w-5 h-5 text-emerald-600 shrink-0"></i>
@@ -385,7 +393,7 @@
                     <i id="sidebarToggleIcon" data-lucide="menu" class="w-5 h-5"></i>
                 </button>
                 <div class="flex items-center gap-2 sm:gap-2.5 flex-wrap">
-                    <h2 id="headerCurrentPageTitle" class="font-extrabold text-base sm:text-lg text-slate-900 tracking-tight">Dashboard</h2>
+                    <h2 id="headerCurrentPageTitle" class="font-extrabold text-base sm:text-lg text-slate-900 tracking-tight">Daily Delivery</h2>
                     <div id="liveSyncStatusBadge" onclick="forceCheckLiveUpdates()" class="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-2xs hover:bg-emerald-100/80 transition cursor-pointer select-none" title="Live Real-time Auto-Sync ដំណើរការ (ចុចដើម្បី Sync ភ្លាមៗ)">
                         <span id="liveSyncPulseDot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                         <span id="liveSyncStatusText">LIVE SYNC</span>
@@ -423,7 +431,7 @@
         <!-- ======================================================== -->
         <!-- VIEW 1: DASHBOARD & SUMMARY                              -->
         <!-- ======================================================== -->
-        <section id="view-dashboard" class="space-y-6">
+        <section id="view-dashboard" class="hidden space-y-6">
             
             <!-- Quick Stats Metric Cards (Click to Open Order Cards View) -->
             <div id="dashboardMetricCardsContainer" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 transition-all duration-300">
@@ -924,28 +932,8 @@
         <!-- ======================================================== -->
         <!-- VIEW: DAILY DELIVERY (ការដឹកជញ្ជូនប្រចាំថ្ងៃ)               -->
         <!-- ======================================================== -->
-        <section id="view-daily-delivery" class="hidden space-y-6">
+        <section id="view-daily-delivery" class="space-y-6">
             
-            <!-- Daily Delivery Top Header -->
-            <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-2 border-b border-slate-200">
-                <div>
-                    <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
-                        <span class="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm font-bold shadow-xs">
-                            <i data-lucide="calendar-check" class="w-4 h-4"></i>
-                        </span>
-                        <span>Daily Delivery</span>
-                        <span id="dailyDeliveryBadge" class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">ការដឹកជញ្ជូនប្រចាំថ្ងៃ</span>
-                    </h2>
-                </div>
-                <div class="flex items-center gap-2 w-full md:w-auto">
-                    <!-- Export to Excel Button -->
-                    <button type="button" onclick="exportDailyDeliveryToExcel()" class="w-full md:w-auto py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-sm transition flex items-center justify-center gap-2 cursor-pointer active:scale-95" title="Export Daily Delivery to Excel (.xlsx)">
-                        <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-100"></i>
-                        <span>Export to Excel (.xlsx)</span>
-                    </button>
-                </div>
-            </div>
-
             <!-- Daily Delivery KPI Cards Summary -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 <!-- Card 1: Recent Orders (In Delivery) -->
@@ -1041,11 +1029,19 @@
                     </div>
                 </div>
 
-                <!-- Reset Filter Button -->
-                <button type="button" onclick="resetDailyDeliveryFilters()" class="py-2 px-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer shrink-0">
-                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
-                    <span>Reset Filters</span>
-                </button>
+                <div class="flex items-center gap-2 shrink-0">
+                    <!-- Reset Filter Button -->
+                    <button type="button" onclick="resetDailyDeliveryFilters()" class="py-2 px-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer shrink-0">
+                        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                        <span>Reset Filters</span>
+                    </button>
+
+                    <!-- Export to Excel Button -->
+                    <button type="button" onclick="exportDailyDeliveryToExcel()" class="py-2 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shrink-0" title="Export Daily Delivery to Excel (.xlsx)">
+                        <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5 text-emerald-100"></i>
+                        <span>Export Excel (.xlsx)</span>
+                    </button>
+                </div>
             </div>
 
             <!-- TABLE 1: RECENT ORDER (កំពុងដឹកជញ្ជូន / In Delivery) -->
@@ -3360,8 +3356,8 @@
     </div>
 
     <!-- App Core Scripts -->
-    <script src="js/data.js?v=live-v4.3"></script>
-    <script src="js/sheets-sync.js?v=live-v4.3"></script>
-    <script src="js/app.js?v=live-v4.3"></script>
+    <script src="js/data.js?v=live-v4.4"></script>
+    <script src="js/sheets-sync.js?v=live-v4.4"></script>
+    <script src="js/app.js?v=live-v4.4"></script>
 </body>
 </html>
