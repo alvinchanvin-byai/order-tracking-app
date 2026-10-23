@@ -6,7 +6,7 @@
 // Global State
 const AppState = {
     orders: [],
-    currentTab: "dashboard", // dashboard, register, picking, checking, delivery, setup, settings
+    currentTab: "daily-delivery", // daily-delivery, register, picking, checking, delivery, incompleted-delivery, dashboard, report, setup
     filterStatus: "ALL",
     searchQuery: "",
     filterBU: "ALL",
@@ -1043,6 +1043,8 @@ document.addEventListener("DOMContentLoaded", () => {
     applyColumnVisibility();
     renderCurrentUserProfile();
     updateOnlineUsersPresence();
+    showOnlyView(AppState.currentTab || "daily-delivery");
+    updateNavbarActiveBtn(AppState.currentTab || "daily-delivery");
     updateKpiCardsVisibility();
     renderAll(true);
     startLiveTimers();
@@ -2640,7 +2642,7 @@ function showOnlyView(viewName) {
     const repMenu = document.getElementById("reportSoDateDropdownMenu");
     if (repMenu) repMenu.classList.add("hidden");
 
-    const views = ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "daily-delivery", "report", "setup"];
+    const views = ["daily-delivery", "register", "picking", "checking", "delivery", "incompleted-delivery", "dashboard", "report", "setup"];
     views.forEach(v => {
         const viewEl = document.getElementById(`view-${v}`);
         if (viewEl) {
@@ -10116,7 +10118,7 @@ function renderNavbarPermissions() {
 
     // Check if current active tab is forbidden for this user, if so redirect to first permitted tab
     if (AppState.currentTab && !hasUserPermission(AppState.currentTab)) {
-        const allModules = ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "daily-delivery", "report", "setup"];
+        const allModules = ["daily-delivery", "register", "picking", "checking", "delivery", "incompleted-delivery", "dashboard", "report", "setup"];
         const firstAllowed = allModules.find(m => hasUserPermission(m));
         if (firstAllowed) {
             switchNavbarModule(firstAllowed);
@@ -10298,8 +10300,8 @@ function loginUser(user) {
 
     // Check if current view is permitted, if not navigate to first permitted
     if (!hasUserPermission(AppState.currentTab)) {
-        const allModules = ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "daily-delivery", "report", "setup"];
-        const firstAllowed = allModules.find(m => hasUserPermission(m)) || "dashboard";
+        const allModules = ["daily-delivery", "register", "picking", "checking", "delivery", "incompleted-delivery", "dashboard", "report", "setup"];
+        const firstAllowed = allModules.find(m => hasUserPermission(m)) || "daily-delivery";
         switchNavbarModule(firstAllowed);
     }
 
