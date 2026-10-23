@@ -1046,8 +1046,8 @@
 
             <!-- TABLE 1: RECENT ORDER (កំពុងដឹកជញ្ជូន / In Delivery) -->
             <!-- Layout: Recent Order នៅខាងលើ -->
-            <div class="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
-                <div class="p-3.5 sm:p-4 border-b border-slate-100 flex flex-row items-center justify-between gap-2 bg-gradient-to-r from-sky-50/40 via-white to-white">
+            <div class="bg-white rounded-2xl border border-slate-200/90 shadow-2xs relative z-20">
+                <div class="p-3.5 sm:p-4 border-b border-slate-100 flex flex-row items-center justify-between gap-2 bg-gradient-to-r from-sky-50/40 via-white to-white rounded-t-2xl relative z-30">
                     <div class="flex items-center gap-2.5">
                         <div class="w-8 h-8 rounded-xl bg-sky-500 text-white flex items-center justify-center shadow-xs shrink-0">
                             <i data-lucide="truck" class="w-4 h-4"></i>
@@ -1059,7 +1059,7 @@
                     </div>
                     <div class="flex items-center gap-2">
                         <!-- Personal Display Dropdown for Recent Order (Table 1) -->
-                        <div class="relative z-30" id="dailyT1PersonalDisplayDropdownContainer">
+                        <div class="relative z-40" id="dailyT1PersonalDisplayDropdownContainer">
                             <button type="button" 
                                 id="btnDailyT1PersonalDisplay" 
                                 onclick="toggleDailyT1PersonalDisplayMenu(event)"
@@ -1072,7 +1072,7 @@
                             </button>
 
                             <!-- Popover Menu for Table 1 -->
-                            <div id="dailyT1PersonalDisplayMenu" class="hidden absolute right-0 top-full mt-2 w-72 sm:w-80 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 p-3.5 z-50 space-y-3 ring-1 ring-slate-900/10">
+                            <div id="dailyT1PersonalDisplayMenu" class="hidden absolute right-0 top-full mt-2 w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 p-3.5 z-50 space-y-3 ring-1 ring-slate-900/10">
                                 <div class="flex items-center justify-between pb-2 border-b border-slate-100">
                                     <div class="flex items-center gap-1.5">
                                         <i data-lucide="sliders-horizontal" class="w-4 h-4 text-sky-600"></i>
@@ -1086,7 +1086,7 @@
                                     </div>
                                 </div>
                                 
-                                <div id="dailyT1ColumnCheckboxesList" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-72 overflow-y-auto pr-1 text-xs custom-scroll">
+                                <div id="dailyT1ColumnCheckboxesList" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-60 sm:max-h-72 overflow-y-auto pr-1 text-xs custom-scroll">
                                     <!-- Populated dynamically by JS -->
                                 </div>
 
@@ -1105,7 +1105,7 @@
                 </div>
 
                 <!-- Table 1 Scroll Container -->
-                <div class="overflow-x-auto custom-scroll">
+                <div class="overflow-x-auto custom-scroll rounded-b-2xl">
                     <table class="w-full text-left border-collapse text-xs">
                         <thead id="dailyDeliveryTable1Head" class="bg-slate-100/90 text-slate-700 font-bold border-b border-slate-200 text-xs tracking-tight">
                             <!-- Populated dynamically with Sort on SO Date -->
@@ -1119,8 +1119,8 @@
 
             <!-- TABLE 2: COMPLETED ORDER (បានបញ្ចប់ការដឹកជញ្ជូន / Completed Delivery) -->
             <!-- Layout: Completed Order នៅខាងក្រោម -->
-            <div class="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden">
-                <div class="p-3.5 sm:p-4 border-b border-slate-100 flex flex-row items-center justify-between gap-2 bg-gradient-to-r from-emerald-50/40 via-white to-white">
+            <div class="bg-white rounded-2xl border border-slate-200/90 shadow-2xs relative z-10">
+                <div class="p-3.5 sm:p-4 border-b border-slate-100 flex flex-row items-center justify-between gap-2 bg-gradient-to-r from-emerald-50/40 via-white to-white rounded-t-2xl relative z-30">
                     <div class="flex items-center gap-2.5">
                         <div class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs shrink-0">
                             <i data-lucide="check-circle-2" class="w-4 h-4"></i>
@@ -1133,7 +1133,7 @@
                     <div class="flex items-center gap-2.5">
                         <span id="table2SummaryText" class="hidden sm:inline-block text-xs font-semibold text-slate-500">សរុប: 0 Orders</span>
                         <!-- Personal Display Dropdown for Completed Order (Table 2) -->
-                        <div class="relative z-30" id="dailyT2PersonalDisplayDropdownContainer">
+                        <div class="relative z-40" id="dailyT2PersonalDisplayDropdownContainer">
                             <button type="button" 
                                 id="btnDailyT2PersonalDisplay" 
                                 onclick="toggleDailyT2PersonalDisplayMenu(event)"
@@ -1146,7 +1146,7 @@
                             </button>
 
                             <!-- Popover Menu for Table 2 -->
-                            <div id="dailyT2PersonalDisplayMenu" class="hidden absolute right-0 top-full mt-2 w-72 sm:w-80 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 p-3.5 z-50 space-y-3 ring-1 ring-slate-900/10">
+                            <div id="dailyT2PersonalDisplayMenu" class="hidden absolute right-0 top-full mt-2 w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 p-3.5 z-50 space-y-3 ring-1 ring-slate-900/10">
                                 <div class="flex items-center justify-between pb-2 border-b border-slate-100">
                                     <div class="flex items-center gap-1.5">
                                         <i data-lucide="sliders-horizontal" class="w-4 h-4 text-emerald-600"></i>
@@ -1160,7 +1160,7 @@
                                     </div>
                                 </div>
                                 
-                                <div id="dailyT2ColumnCheckboxesList" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-72 overflow-y-auto pr-1 text-xs custom-scroll">
+                                <div id="dailyT2ColumnCheckboxesList" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-60 sm:max-h-72 overflow-y-auto pr-1 text-xs custom-scroll">
                                     <!-- Populated dynamically by JS -->
                                 </div>
 
@@ -1191,7 +1191,7 @@
                 </div>
 
                 <!-- Table 2 Pagination Footer -->
-                <div id="dailyDeliveryTable2Pagination" class="p-3 sm:p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+                <div id="dailyDeliveryTable2Pagination" class="p-3 sm:p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 rounded-b-2xl">
                     <!-- Populated dynamically -->
                 </div>
             </div>
@@ -3356,8 +3356,8 @@
     </div>
 
     <!-- App Core Scripts -->
-    <script src="js/data.js?v=live-v4.5"></script>
-    <script src="js/sheets-sync.js?v=live-v4.5"></script>
-    <script src="js/app.js?v=live-v4.5"></script>
+    <script src="js/data.js?v=live-v4.6"></script>
+    <script src="js/sheets-sync.js?v=live-v4.6"></script>
+    <script src="js/app.js?v=live-v4.6"></script>
 </body>
 </html>
