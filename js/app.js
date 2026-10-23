@@ -5222,8 +5222,14 @@ async function startSecondDelivery(soNumber) {
 // Recent Order (កំពុងដឹក) | Completed Order (បានបញ្ចប់)
 // ========================================================
 
-// Daily Delivery Column Definitions for Personal Display (16 Columns)
-const DAILY_DELIVERY_COLUMNS = [
+// ========================================================
+// DAILY DELIVERY PERSONAL DISPLAY (ជួរឈរផ្ទាល់ខ្លួនតាមតារាងនីមួយៗ)
+// Table 1: Recent Order (13 Columns)
+// Table 2: Completed Order (15 Columns)
+// ========================================================
+
+// Table 1: Recent Order Columns (13 Columns)
+const DAILY_T1_COLUMNS = [
     { key: "status", label: "Status" },
     { key: "soDate", label: "SO Date" },
     { key: "soNumber", label: "SO#" },
@@ -5236,45 +5242,201 @@ const DAILY_DELIVERY_COLUMNS = [
     { key: "totalPackage", label: "Total Packages" },
     { key: "driver", label: "អ្នកដឹក (Driver)" },
     { key: "startTime", label: "ពេលចេញ (Start)" },
+    { key: "actions", label: "សកម្មភាព (Action)" }
+];
+
+// Table 2: Completed Order Columns (15 Columns)
+const DAILY_T2_COLUMNS = [
+    { key: "status", label: "Status" },
+    { key: "soDate", label: "SO Date" },
+    { key: "soNumber", label: "SO#" },
+    { key: "customerName", label: "Customer Name" },
+    { key: "cityProvince", label: "City / Province" },
+    { key: "khan", label: "Khan / District" },
+    { key: "packingList", label: "Packing List#" },
+    { key: "invoiceNumber", label: "Invoice#" },
+    { key: "invoiceAmount", label: "Invoice Amount" },
+    { key: "driver", label: "អ្នកដឹក (Driver)" },
+    { key: "startTime", label: "ពេលចេញ (Start)" },
     { key: "endTime", label: "ពេលដល់ (End)" },
     { key: "duration", label: "រយៈពេល (Duration)" },
     { key: "paymentReceipt", label: "Payment Receipt" },
     { key: "actions", label: "សកម្មភាព (Action)" }
 ];
 
-const STORAGE_DAILY_COLUMN_PREFS = "order_tracker_daily_col_prefs_v1";
+const STORAGE_DAILY_T1_COL_PREFS = "order_tracker_daily_t1_col_prefs_v1";
+const STORAGE_DAILY_T2_COL_PREFS = "order_tracker_daily_t2_col_prefs_v1";
 
-function getDailyColumnPrefs() {
+// --- TABLE 1 (Recent Order) PERSONAL DISPLAY FUNCTIONS ---
+function getDailyT1ColumnPrefs() {
     try {
-        const raw = localStorage.getItem(STORAGE_DAILY_COLUMN_PREFS);
+        const raw = localStorage.getItem(STORAGE_DAILY_T1_COL_PREFS);
         if (raw) {
             const prefs = JSON.parse(raw);
             if (prefs && typeof prefs === "object") return prefs;
         }
     } catch (e) {
-        console.warn("Error reading daily column prefs:", e);
+        console.warn("Error reading daily T1 column prefs:", e);
     }
     const defaults = {};
-    DAILY_DELIVERY_COLUMNS.forEach(c => { defaults[c.key] = true; });
+    DAILY_T1_COLUMNS.forEach(c => { defaults[c.key] = true; });
     return defaults;
 }
 
-function saveDailyColumnPrefs(prefs) {
+function saveDailyT1ColumnPrefs(prefs) {
     try {
-        localStorage.setItem(STORAGE_DAILY_COLUMN_PREFS, JSON.stringify(prefs));
+        localStorage.setItem(STORAGE_DAILY_T1_COL_PREFS, JSON.stringify(prefs));
     } catch (e) {
-        console.warn("Error saving daily column prefs:", e);
+        console.warn("Error saving daily T1 column prefs:", e);
     }
-    applyDailyColumnVisibility(prefs);
+    applyDailyT1ColumnVisibility(prefs);
 }
 
-function updateDailyPersonalDisplayBadges(prefs = null) {
-    const curPrefs = prefs || getDailyColumnPrefs();
-    const total = DAILY_DELIVERY_COLUMNS.length; // 16
-    const selectedCount = DAILY_DELIVERY_COLUMNS.filter(c => curPrefs[c.key] !== false).length;
+function updateDailyT1PersonalDisplayBadges(prefs = null) {
+    const curPrefs = prefs || getDailyT1ColumnPrefs();
+    const total = DAILY_T1_COLUMNS.length; // 13
+    const selectedCount = DAILY_T1_COLUMNS.filter(c => curPrefs[c.key] !== false).length;
     const countText = `${selectedCount}/${total}`;
 
-    const btnBadge = document.getElementById("dailyPersonalDisplayCountBadge");
+    const btnBadge = document.getElementById("dailyT1PersonalDisplayCountBadge");
+    if (btnBadge) {
+        btnBadge.textContent = countText;
+        btnBadge.className = selectedCount < total
+            ? "text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-sky-600 text-white font-mono shadow-xs transition"
+            : "text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-sky-50 text-sky-700 font-mono border border-sky-200 transition";
+    }
+
+    const headerBadge = document.getElementById("dailyT1PersonalDisplayHeaderBadge");
+    if (headerBadge) {
+        headerBadge.textContent = countText;
+        headerBadge.className = selectedCount < total
+            ? "text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-sky-600 text-white font-mono shadow-xs transition"
+            : "text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-sky-50 text-sky-700 font-mono border border-sky-200 transition";
+    }
+
+    const footerBadge = document.getElementById("dailyT1PersonalDisplayFooterCountBadge");
+    if (footerBadge) {
+        footerBadge.textContent = countText;
+        footerBadge.className = selectedCount < total
+            ? "text-[11px] font-bold font-mono text-white bg-sky-600 px-1.5 py-0.5 rounded shadow-xs transition"
+            : "text-[11px] font-bold font-mono text-sky-700 bg-sky-50 px-1.5 py-0.5 rounded border border-sky-200 transition";
+    }
+}
+
+function applyDailyT1ColumnVisibility(prefs = null) {
+    const curPrefs = prefs || getDailyT1ColumnPrefs();
+    let styleEl = document.getElementById("dailyT1PersonalDisplayStyles");
+    if (!styleEl) {
+        styleEl = document.createElement("style");
+        styleEl.id = "dailyT1PersonalDisplayStyles";
+        document.head.appendChild(styleEl);
+    }
+
+    const hiddenKeys = Object.keys(curPrefs).filter(k => curPrefs[k] === false);
+    if (hiddenKeys.length === 0) {
+        styleEl.textContent = "";
+    } else {
+        const rules = hiddenKeys.map(k => `[data-daily-t1-col="${k}"] { display: none !important; }`).join("\n");
+        styleEl.textContent = rules;
+    }
+    updateDailyT1PersonalDisplayBadges(curPrefs);
+}
+
+function renderDailyT1PersonalDisplayCheckboxes() {
+    const listEl = document.getElementById("dailyT1ColumnCheckboxesList");
+    if (!listEl) return;
+    const prefs = getDailyT1ColumnPrefs();
+    updateDailyT1PersonalDisplayBadges(prefs);
+
+    listEl.innerHTML = DAILY_T1_COLUMNS.map(col => {
+        const isChecked = prefs[col.key] !== false;
+        return `
+            <label class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-sky-50/70 border ${isChecked ? 'border-slate-200 bg-white text-slate-800' : 'border-slate-100 bg-slate-50/70 text-slate-400 opacity-60'} cursor-pointer select-none transition shadow-2xs">
+                <input type="checkbox" data-daily-t1-col-key="${col.key}" ${isChecked ? "checked" : ""} class="rounded border-slate-300 text-sky-600 focus:ring-sky-500 w-4 h-4 cursor-pointer accent-sky-600">
+                <span class="font-medium text-xs truncate">${col.label}</span>
+            </label>
+        `;
+    }).join("");
+
+    listEl.querySelectorAll("input[type='checkbox']").forEach(cb => {
+        cb.addEventListener("change", () => {
+            const key = cb.getAttribute("data-daily-t1-col-key");
+            const currentPrefs = getDailyT1ColumnPrefs();
+            currentPrefs[key] = cb.checked;
+            saveDailyT1ColumnPrefs(currentPrefs);
+            renderDailyT1PersonalDisplayCheckboxes();
+        });
+    });
+}
+
+function toggleDailyT1PersonalDisplayMenu(e) {
+    if (e) e.stopPropagation();
+    const menu = document.getElementById("dailyT1PersonalDisplayMenu");
+    if (!menu) return;
+    const isHidden = menu.classList.contains("hidden");
+    if (isHidden) {
+        closeDailyT2PersonalDisplayMenu();
+        renderDailyT1PersonalDisplayCheckboxes();
+        menu.classList.remove("hidden");
+    } else {
+        menu.classList.add("hidden");
+    }
+}
+
+function closeDailyT1PersonalDisplayMenu() {
+    const menu = document.getElementById("dailyT1PersonalDisplayMenu");
+    if (menu) menu.classList.add("hidden");
+}
+
+function setDailyT1PersonalDisplayAll(enabled = true) {
+    const prefs = {};
+    DAILY_T1_COLUMNS.forEach(c => { prefs[c.key] = Boolean(enabled); });
+    saveDailyT1ColumnPrefs(prefs);
+    renderDailyT1PersonalDisplayCheckboxes();
+}
+
+function resetDailyT1PersonalDisplay() {
+    try {
+        localStorage.removeItem(STORAGE_DAILY_T1_COL_PREFS);
+    } catch (e) {}
+    const defaults = {};
+    DAILY_T1_COLUMNS.forEach(c => { defaults[c.key] = true; });
+    saveDailyT1ColumnPrefs(defaults);
+    renderDailyT1PersonalDisplayCheckboxes();
+}
+
+// --- TABLE 2 (Completed Order) PERSONAL DISPLAY FUNCTIONS ---
+function getDailyT2ColumnPrefs() {
+    try {
+        const raw = localStorage.getItem(STORAGE_DAILY_T2_COL_PREFS);
+        if (raw) {
+            const prefs = JSON.parse(raw);
+            if (prefs && typeof prefs === "object") return prefs;
+        }
+    } catch (e) {
+        console.warn("Error reading daily T2 column prefs:", e);
+    }
+    const defaults = {};
+    DAILY_T2_COLUMNS.forEach(c => { defaults[c.key] = true; });
+    return defaults;
+}
+
+function saveDailyT2ColumnPrefs(prefs) {
+    try {
+        localStorage.setItem(STORAGE_DAILY_T2_COL_PREFS, JSON.stringify(prefs));
+    } catch (e) {
+        console.warn("Error saving daily T2 column prefs:", e);
+    }
+    applyDailyT2ColumnVisibility(prefs);
+}
+
+function updateDailyT2PersonalDisplayBadges(prefs = null) {
+    const curPrefs = prefs || getDailyT2ColumnPrefs();
+    const total = DAILY_T2_COLUMNS.length; // 15
+    const selectedCount = DAILY_T2_COLUMNS.filter(c => curPrefs[c.key] !== false).length;
+    const countText = `${selectedCount}/${total}`;
+
+    const btnBadge = document.getElementById("dailyT2PersonalDisplayCountBadge");
     if (btnBadge) {
         btnBadge.textContent = countText;
         btnBadge.className = selectedCount < total
@@ -5282,7 +5444,7 @@ function updateDailyPersonalDisplayBadges(prefs = null) {
             : "text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 font-mono border border-emerald-200 transition";
     }
 
-    const headerBadge = document.getElementById("dailyPersonalDisplayHeaderBadge");
+    const headerBadge = document.getElementById("dailyT2PersonalDisplayHeaderBadge");
     if (headerBadge) {
         headerBadge.textContent = countText;
         headerBadge.className = selectedCount < total
@@ -5290,7 +5452,7 @@ function updateDailyPersonalDisplayBadges(prefs = null) {
             : "text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 font-mono border border-emerald-200 transition";
     }
 
-    const footerBadge = document.getElementById("dailyPersonalDisplayFooterCountBadge");
+    const footerBadge = document.getElementById("dailyT2PersonalDisplayFooterCountBadge");
     if (footerBadge) {
         footerBadge.textContent = countText;
         footerBadge.className = selectedCount < total
@@ -5299,12 +5461,12 @@ function updateDailyPersonalDisplayBadges(prefs = null) {
     }
 }
 
-function applyDailyColumnVisibility(prefs = null) {
-    const curPrefs = prefs || getDailyColumnPrefs();
-    let styleEl = document.getElementById("dailyPersonalDisplayStyles");
+function applyDailyT2ColumnVisibility(prefs = null) {
+    const curPrefs = prefs || getDailyT2ColumnPrefs();
+    let styleEl = document.getElementById("dailyT2PersonalDisplayStyles");
     if (!styleEl) {
         styleEl = document.createElement("style");
-        styleEl.id = "dailyPersonalDisplayStyles";
+        styleEl.id = "dailyT2PersonalDisplayStyles";
         document.head.appendChild(styleEl);
     }
 
@@ -5312,23 +5474,23 @@ function applyDailyColumnVisibility(prefs = null) {
     if (hiddenKeys.length === 0) {
         styleEl.textContent = "";
     } else {
-        const rules = hiddenKeys.map(k => `[data-daily-col="${k}"] { display: none !important; }`).join("\n");
+        const rules = hiddenKeys.map(k => `[data-daily-t2-col="${k}"] { display: none !important; }`).join("\n");
         styleEl.textContent = rules;
     }
-    updateDailyPersonalDisplayBadges(curPrefs);
+    updateDailyT2PersonalDisplayBadges(curPrefs);
 }
 
-function renderDailyPersonalDisplayCheckboxes() {
-    const listEl = document.getElementById("dailyColumnCheckboxesList");
+function renderDailyT2PersonalDisplayCheckboxes() {
+    const listEl = document.getElementById("dailyT2ColumnCheckboxesList");
     if (!listEl) return;
-    const prefs = getDailyColumnPrefs();
-    updateDailyPersonalDisplayBadges(prefs);
+    const prefs = getDailyT2ColumnPrefs();
+    updateDailyT2PersonalDisplayBadges(prefs);
 
-    listEl.innerHTML = DAILY_DELIVERY_COLUMNS.map(col => {
+    listEl.innerHTML = DAILY_T2_COLUMNS.map(col => {
         const isChecked = prefs[col.key] !== false;
         return `
             <label class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl hover:bg-emerald-50/70 border ${isChecked ? 'border-slate-200 bg-white text-slate-800' : 'border-slate-100 bg-slate-50/70 text-slate-400 opacity-60'} cursor-pointer select-none transition shadow-2xs">
-                <input type="checkbox" data-daily-col-key="${col.key}" ${isChecked ? "checked" : ""} class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer accent-emerald-600">
+                <input type="checkbox" data-daily-t2-col-key="${col.key}" ${isChecked ? "checked" : ""} class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 w-4 h-4 cursor-pointer accent-emerald-600">
                 <span class="font-medium text-xs truncate">${col.label}</span>
             </label>
         `;
@@ -5336,48 +5498,49 @@ function renderDailyPersonalDisplayCheckboxes() {
 
     listEl.querySelectorAll("input[type='checkbox']").forEach(cb => {
         cb.addEventListener("change", () => {
-            const key = cb.getAttribute("data-daily-col-key");
-            const currentPrefs = getDailyColumnPrefs();
+            const key = cb.getAttribute("data-daily-t2-col-key");
+            const currentPrefs = getDailyT2ColumnPrefs();
             currentPrefs[key] = cb.checked;
-            saveDailyColumnPrefs(currentPrefs);
-            renderDailyPersonalDisplayCheckboxes();
+            saveDailyT2ColumnPrefs(currentPrefs);
+            renderDailyT2PersonalDisplayCheckboxes();
         });
     });
 }
 
-function toggleDailyPersonalDisplayMenu(e) {
+function toggleDailyT2PersonalDisplayMenu(e) {
     if (e) e.stopPropagation();
-    const menu = document.getElementById("dailyPersonalDisplayMenu");
+    const menu = document.getElementById("dailyT2PersonalDisplayMenu");
     if (!menu) return;
     const isHidden = menu.classList.contains("hidden");
     if (isHidden) {
-        renderDailyPersonalDisplayCheckboxes();
+        closeDailyT1PersonalDisplayMenu();
+        renderDailyT2PersonalDisplayCheckboxes();
         menu.classList.remove("hidden");
     } else {
         menu.classList.add("hidden");
     }
 }
 
-function closeDailyPersonalDisplayMenu() {
-    const menu = document.getElementById("dailyPersonalDisplayMenu");
+function closeDailyT2PersonalDisplayMenu() {
+    const menu = document.getElementById("dailyT2PersonalDisplayMenu");
     if (menu) menu.classList.add("hidden");
 }
 
-function setDailyPersonalDisplayAll(enabled = true) {
+function setDailyT2PersonalDisplayAll(enabled = true) {
     const prefs = {};
-    DAILY_DELIVERY_COLUMNS.forEach(c => { prefs[c.key] = Boolean(enabled); });
-    saveDailyColumnPrefs(prefs);
-    renderDailyPersonalDisplayCheckboxes();
+    DAILY_T2_COLUMNS.forEach(c => { prefs[c.key] = Boolean(enabled); });
+    saveDailyT2ColumnPrefs(prefs);
+    renderDailyT2PersonalDisplayCheckboxes();
 }
 
-function resetDailyPersonalDisplay() {
+function resetDailyT2PersonalDisplay() {
     try {
-        localStorage.removeItem(STORAGE_DAILY_COLUMN_PREFS);
+        localStorage.removeItem(STORAGE_DAILY_T2_COL_PREFS);
     } catch (e) {}
     const defaults = {};
-    DAILY_DELIVERY_COLUMNS.forEach(c => { defaults[c.key] = true; });
-    saveDailyColumnPrefs(defaults);
-    renderDailyPersonalDisplayCheckboxes();
+    DAILY_T2_COLUMNS.forEach(c => { defaults[c.key] = true; });
+    saveDailyT2ColumnPrefs(defaults);
+    renderDailyT2PersonalDisplayCheckboxes();
 }
 
 function matchesDailyDeliveryFilter(order) {
@@ -5513,8 +5676,9 @@ function renderDailyDeliveryView() {
     renderDailyDeliveryTable1(filteredRecent);
     renderDailyDeliveryTable2(filteredCompleted);
 
-    // Apply column visibility preferences
-    applyDailyColumnVisibility();
+    // Apply column visibility preferences for each table individually
+    applyDailyT1ColumnVisibility();
+    applyDailyT2ColumnVisibility();
 
     // 5. Sync Clear Search Button state
     const clearBtn = document.getElementById("dailyDeliveryClearSearchBtn");
@@ -5539,8 +5703,8 @@ function renderDailyDeliveryTable1(orders) {
 
     thead.innerHTML = `
         <tr class="bg-slate-100/90 text-slate-700 font-bold border-b border-slate-200 text-xs tracking-tight">
-            <th data-daily-col="status" class="py-3 px-3 text-center whitespace-nowrap">Status</th>
-            <th data-daily-col="soDate" class="py-3 px-3 text-center whitespace-nowrap select-none group" title="ចុចដើម្បី Sort SO Date">
+            <th data-daily-t1-col="status" class="py-3 px-3 text-center whitespace-nowrap">Status</th>
+            <th data-daily-t1-col="soDate" class="py-3 px-3 text-center whitespace-nowrap select-none group" title="ចុចដើម្បី Sort SO Date">
                 <div class="inline-flex items-center justify-center gap-1">
                     <span class="cursor-pointer hover:text-emerald-700 transition" onclick="toggleDailyTable1Sort()">SO Date</span>
                     <button type="button" onclick="toggleDailyTable1Sort()" class="inline-flex items-center justify-center w-5 h-5 rounded border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 hover:text-emerald-700 shadow-2xs transition active:scale-95 cursor-pointer ml-0.5" title="Sort SO Date">
@@ -5548,17 +5712,17 @@ function renderDailyDeliveryTable1(orders) {
                     </button>
                 </div>
             </th>
-            <th data-daily-col="soNumber" class="py-3.5 px-3 text-left whitespace-nowrap">SO#</th>
-            <th data-daily-col="customerName" class="py-3.5 px-3 text-left whitespace-nowrap">Customer Name</th>
-            <th data-daily-col="cityProvince" class="py-3.5 px-3 text-left whitespace-nowrap">City / Province</th>
-            <th data-daily-col="khan" class="py-3.5 px-3 text-left whitespace-nowrap">Khan / District</th>
-            <th data-daily-col="packingList" class="py-3.5 px-3 text-left whitespace-nowrap">Packing List#</th>
-            <th data-daily-col="invoiceNumber" class="py-3.5 px-3 text-left whitespace-nowrap">Invoice#</th>
-            <th data-daily-col="invoiceAmount" class="py-3.5 px-3 text-right whitespace-nowrap">Invoice Amount</th>
-            <th data-daily-col="totalPackage" class="py-3.5 px-3 text-center whitespace-nowrap">Total Packages</th>
-            <th data-daily-col="driver" class="py-3.5 px-3 text-left whitespace-nowrap">អ្នកដឹក (Driver)</th>
-            <th data-daily-col="startTime" class="py-3.5 px-3 text-center whitespace-nowrap">ពេលចេញ (Start)</th>
-            <th data-daily-col="actions" class="py-3.5 px-3 text-center whitespace-nowrap">សកម្មភាព (Action)</th>
+            <th data-daily-t1-col="soNumber" class="py-3.5 px-3 text-left whitespace-nowrap">SO#</th>
+            <th data-daily-t1-col="customerName" class="py-3.5 px-3 text-left whitespace-nowrap">Customer Name</th>
+            <th data-daily-t1-col="cityProvince" class="py-3.5 px-3 text-left whitespace-nowrap">City / Province</th>
+            <th data-daily-t1-col="khan" class="py-3.5 px-3 text-left whitespace-nowrap">Khan / District</th>
+            <th data-daily-t1-col="packingList" class="py-3.5 px-3 text-left whitespace-nowrap">Packing List#</th>
+            <th data-daily-t1-col="invoiceNumber" class="py-3.5 px-3 text-left whitespace-nowrap">Invoice#</th>
+            <th data-daily-t1-col="invoiceAmount" class="py-3.5 px-3 text-right whitespace-nowrap">Invoice Amount</th>
+            <th data-daily-t1-col="totalPackage" class="py-3.5 px-3 text-center whitespace-nowrap">Total Packages</th>
+            <th data-daily-t1-col="driver" class="py-3.5 px-3 text-left whitespace-nowrap">អ្នកដឹក (Driver)</th>
+            <th data-daily-t1-col="startTime" class="py-3.5 px-3 text-center whitespace-nowrap">ពេលចេញ (Start)</th>
+            <th data-daily-t1-col="actions" class="py-3.5 px-3 text-center whitespace-nowrap">សកម្មភាព (Action)</th>
         </tr>
     `;
 
@@ -5585,61 +5749,61 @@ function renderDailyDeliveryTable1(orders) {
         return `
             <tr class="hover:bg-sky-50/40 transition border-b border-slate-100 text-xs">
                 <!-- 1. Status -->
-                <td data-daily-col="status" class="py-3 px-3 text-center whitespace-nowrap">
+                <td data-daily-t1-col="status" class="py-3 px-3 text-center whitespace-nowrap">
                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${badge.class}">
                         ${badge.text}
                     </span>
                 </td>
 
                 <!-- 2. SO Date -->
-                <td data-daily-col="soDate" class="py-3 px-3 font-mono text-slate-600 text-center whitespace-nowrap font-medium">
+                <td data-daily-t1-col="soDate" class="py-3 px-3 font-mono text-slate-600 text-center whitespace-nowrap font-medium">
                     ${soDateStr}
                 </td>
 
                 <!-- 3. SO# -->
-                <td data-daily-col="soNumber" class="py-3 px-3 font-bold font-mono text-blue-700 whitespace-nowrap">
+                <td data-daily-t1-col="soNumber" class="py-3 px-3 font-bold font-mono text-blue-700 whitespace-nowrap">
                     <span class="cursor-pointer hover:underline" onclick="viewOrderDetails('${escapeHtml(order.soNumber)}')">
                         ${escapeHtml(order.soNumber || "-")}
                     </span>
                 </td>
 
                 <!-- 4. Customer Name -->
-                <td data-daily-col="customerName" class="py-3 px-3 font-bold text-slate-900 whitespace-nowrap max-w-[200px] truncate" title="${escapeHtml(order.customerName || '')}">
+                <td data-daily-t1-col="customerName" class="py-3 px-3 font-bold text-slate-900 whitespace-nowrap max-w-[200px] truncate" title="${escapeHtml(order.customerName || '')}">
                     ${escapeHtml(order.customerName || "-")}
                 </td>
 
                 <!-- 5. City/Province -->
-                <td data-daily-col="cityProvince" class="py-3 px-3 text-slate-600 whitespace-nowrap">
+                <td data-daily-t1-col="cityProvince" class="py-3 px-3 text-slate-600 whitespace-nowrap">
                     ${escapeHtml(order.cityProvince || "-")}
                 </td>
 
                 <!-- 6. Khan -->
-                <td data-daily-col="khan" class="py-3 px-3 text-slate-600 whitespace-nowrap">
+                <td data-daily-t1-col="khan" class="py-3 px-3 text-slate-600 whitespace-nowrap">
                     ${escapeHtml(order.khan || "-")}
                 </td>
 
                 <!-- 7. Packing List# -->
-                <td data-daily-col="packingList" class="py-3 px-3 font-mono text-slate-600 whitespace-nowrap">
+                <td data-daily-t1-col="packingList" class="py-3 px-3 font-mono text-slate-600 whitespace-nowrap">
                     ${escapeHtml(order.packingListNumber || "-")}
                 </td>
 
                 <!-- 8. Invoice# -->
-                <td data-daily-col="invoiceNumber" class="py-3 px-3 font-mono text-slate-600 whitespace-nowrap">
+                <td data-daily-t1-col="invoiceNumber" class="py-3 px-3 font-mono text-slate-600 whitespace-nowrap">
                     ${escapeHtml(order.invoiceNumber || "-")}
                 </td>
 
                 <!-- 9. Invoice Amount -->
-                <td data-daily-col="invoiceAmount" class="py-3 px-3 text-right font-mono font-bold text-emerald-700 whitespace-nowrap">
+                <td data-daily-t1-col="invoiceAmount" class="py-3 px-3 text-right font-mono font-bold text-emerald-700 whitespace-nowrap">
                     ${amtStr}
                 </td>
 
                 <!-- 10. Total Packages -->
-                <td data-daily-col="totalPackage" class="py-3 px-3 text-center whitespace-nowrap">
+                <td data-daily-t1-col="totalPackage" class="py-3 px-3 text-center whitespace-nowrap">
                     ${pkgStr !== "-" ? `<span class="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-bold text-xs">${pkgStr}</span>` : '<span class="text-slate-300 font-semibold">-</span>'}
                 </td>
 
                 <!-- 11. Driver -->
-                <td data-daily-col="driver" class="py-3 px-3 text-sky-700 font-bold whitespace-nowrap">
+                <td data-daily-t1-col="driver" class="py-3 px-3 text-sky-700 font-bold whitespace-nowrap">
                     <span class="inline-flex items-center gap-1">
                         <i data-lucide="user-check" class="w-3.5 h-3.5 text-sky-600"></i>
                         <span>${escapeHtml(order.deliveryBy || "-")}</span>
@@ -5647,12 +5811,12 @@ function renderDailyDeliveryTable1(orders) {
                 </td>
 
                 <!-- 12. Start Delivery -->
-                <td data-daily-col="startTime" class="py-3 px-3 font-mono text-slate-600 text-center whitespace-nowrap text-xs">
+                <td data-daily-t1-col="startTime" class="py-3 px-3 font-mono text-slate-600 text-center whitespace-nowrap text-xs">
                     ${startTimeStr}
                 </td>
 
                 <!-- 13. Action: End Delivery Button -->
-                <td data-daily-col="actions" class="py-3 px-3 text-center whitespace-nowrap">
+                <td data-daily-t1-col="actions" class="py-3 px-3 text-center whitespace-nowrap">
                     <button type="button" 
                         onclick="openEndDeliveryModal('${escapeHtml(order.soNumber)}')" 
                         class="py-1 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs transition flex items-center justify-center gap-1 active:scale-95 cursor-pointer whitespace-nowrap mx-auto"
@@ -5677,8 +5841,8 @@ function renderDailyDeliveryTable2(orders) {
 
     thead.innerHTML = `
         <tr class="bg-slate-100/90 text-slate-700 font-bold border-b border-slate-200 text-xs tracking-tight">
-            <th data-daily-col="status" class="py-3 px-3 text-center whitespace-nowrap">Status</th>
-            <th data-daily-col="soDate" class="py-3 px-3 text-center whitespace-nowrap select-none group" title="ចុចដើម្បី Sort SO Date">
+            <th data-daily-t2-col="status" class="py-3 px-3 text-center whitespace-nowrap">Status</th>
+            <th data-daily-t2-col="soDate" class="py-3 px-3 text-center whitespace-nowrap select-none group" title="ចុចដើម្បី Sort SO Date">
                 <div class="inline-flex items-center justify-center gap-1">
                     <span class="cursor-pointer hover:text-emerald-700 transition" onclick="toggleDailyTable2Sort()">SO Date</span>
                     <button type="button" onclick="toggleDailyTable2Sort()" class="inline-flex items-center justify-center w-5 h-5 rounded border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 hover:text-emerald-700 shadow-2xs transition active:scale-95 cursor-pointer ml-0.5" title="Sort SO Date">
@@ -5686,19 +5850,19 @@ function renderDailyDeliveryTable2(orders) {
                     </button>
                 </div>
             </th>
-            <th data-daily-col="soNumber" class="py-3.5 px-3 text-left whitespace-nowrap">SO#</th>
-            <th data-daily-col="customerName" class="py-3.5 px-3 text-left whitespace-nowrap">Customer Name</th>
-            <th data-daily-col="cityProvince" class="py-3.5 px-3 text-left whitespace-nowrap">City / Province</th>
-            <th data-daily-col="khan" class="py-3.5 px-3 text-left whitespace-nowrap">Khan / District</th>
-            <th data-daily-col="packingList" class="py-3.5 px-3 text-left whitespace-nowrap">Packing List#</th>
-            <th data-daily-col="invoiceNumber" class="py-3.5 px-3 text-left whitespace-nowrap">Invoice#</th>
-            <th data-daily-col="invoiceAmount" class="py-3.5 px-3 text-right whitespace-nowrap">Invoice Amount</th>
-            <th data-daily-col="driver" class="py-3.5 px-3 text-left whitespace-nowrap">អ្នកដឹក (Driver)</th>
-            <th data-daily-col="startTime" class="py-3.5 px-3 text-center whitespace-nowrap">ពេលចេញ (Start)</th>
-            <th data-daily-col="endTime" class="py-3.5 px-3 text-center whitespace-nowrap">ពេលដល់ (End)</th>
-            <th data-daily-col="duration" class="py-3.5 px-3 text-center whitespace-nowrap">រយៈពេល (Duration)</th>
-            <th data-daily-col="paymentReceipt" class="py-3.5 px-3 text-left whitespace-nowrap">Payment Receipt</th>
-            <th data-daily-col="actions" class="py-3.5 px-3 text-center whitespace-nowrap">សកម្មភាព (Action)</th>
+            <th data-daily-t2-col="soNumber" class="py-3.5 px-3 text-left whitespace-nowrap">SO#</th>
+            <th data-daily-t2-col="customerName" class="py-3.5 px-3 text-left whitespace-nowrap">Customer Name</th>
+            <th data-daily-t2-col="cityProvince" class="py-3.5 px-3 text-left whitespace-nowrap">City / Province</th>
+            <th data-daily-t2-col="khan" class="py-3.5 px-3 text-left whitespace-nowrap">Khan / District</th>
+            <th data-daily-t2-col="packingList" class="py-3.5 px-3 text-left whitespace-nowrap">Packing List#</th>
+            <th data-daily-t2-col="invoiceNumber" class="py-3.5 px-3 text-left whitespace-nowrap">Invoice#</th>
+            <th data-daily-t2-col="invoiceAmount" class="py-3.5 px-3 text-right whitespace-nowrap">Invoice Amount</th>
+            <th data-daily-t2-col="driver" class="py-3.5 px-3 text-left whitespace-nowrap">អ្នកដឹក (Driver)</th>
+            <th data-daily-t2-col="startTime" class="py-3.5 px-3 text-center whitespace-nowrap">ពេលចេញ (Start)</th>
+            <th data-daily-t2-col="endTime" class="py-3.5 px-3 text-center whitespace-nowrap">ពេលដល់ (End)</th>
+            <th data-daily-t2-col="duration" class="py-3.5 px-3 text-center whitespace-nowrap">រយៈពេល (Duration)</th>
+            <th data-daily-t2-col="paymentReceipt" class="py-3.5 px-3 text-left whitespace-nowrap">Payment Receipt</th>
+            <th data-daily-t2-col="actions" class="py-3.5 px-3 text-center whitespace-nowrap">សកម្មភាព (Action)</th>
         </tr>
     `;
 
@@ -5741,81 +5905,81 @@ function renderDailyDeliveryTable2(orders) {
         return `
             <tr class="hover:bg-emerald-50/40 transition border-b border-slate-100 text-xs">
                 <!-- 1. Status -->
-                <td data-daily-col="status" class="py-3 px-3 text-center whitespace-nowrap">
+                <td data-daily-t2-col="status" class="py-3 px-3 text-center whitespace-nowrap">
                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${badge.class}">
                         ${badge.text}
                     </span>
                 </td>
 
                 <!-- 2. SO Date -->
-                <td data-daily-col="soDate" class="py-3 px-3 font-mono text-slate-600 text-center whitespace-nowrap font-medium">
+                <td data-daily-t2-col="soDate" class="py-3 px-3 font-mono text-slate-600 text-center whitespace-nowrap font-medium">
                     ${soDateStr}
                 </td>
 
                 <!-- 3. SO# -->
-                <td data-daily-col="soNumber" class="py-3 px-3 font-bold font-mono text-blue-700 whitespace-nowrap">
+                <td data-daily-t2-col="soNumber" class="py-3 px-3 font-bold font-mono text-blue-700 whitespace-nowrap">
                     <span class="cursor-pointer hover:underline" onclick="viewOrderDetails('${escapeHtml(order.soNumber)}')">
                         ${escapeHtml(order.soNumber || "-")}
                     </span>
                 </td>
 
                 <!-- 4. Customer Name -->
-                <td data-daily-col="customerName" class="py-3 px-3 font-bold text-slate-900 whitespace-nowrap max-w-[200px] truncate" title="${escapeHtml(order.customerName || '')}">
+                <td data-daily-t2-col="customerName" class="py-3 px-3 font-bold text-slate-900 whitespace-nowrap max-w-[200px] truncate" title="${escapeHtml(order.customerName || '')}">
                     ${escapeHtml(order.customerName || "-")}
                 </td>
 
                 <!-- 5. City/Province -->
-                <td data-daily-col="cityProvince" class="py-3 px-3 text-slate-600 whitespace-nowrap">
+                <td data-daily-t2-col="cityProvince" class="py-3 px-3 text-slate-600 whitespace-nowrap">
                     ${escapeHtml(order.cityProvince || "-")}
                 </td>
 
                 <!-- 6. Khan -->
-                <td data-daily-col="khan" class="py-3 px-3 text-slate-600 whitespace-nowrap">
+                <td data-daily-t2-col="khan" class="py-3 px-3 text-slate-600 whitespace-nowrap">
                     ${escapeHtml(order.khan || "-")}
                 </td>
 
                 <!-- 7. Packing List# -->
-                <td data-daily-col="packingList" class="py-3 px-3 font-mono text-slate-600 whitespace-nowrap">
+                <td data-daily-t2-col="packingList" class="py-3 px-3 font-mono text-slate-600 whitespace-nowrap">
                     ${escapeHtml(order.packingListNumber || "-")}
                 </td>
 
                 <!-- 8. Invoice# -->
-                <td data-daily-col="invoiceNumber" class="py-3 px-3 font-mono text-slate-600 whitespace-nowrap">
+                <td data-daily-t2-col="invoiceNumber" class="py-3 px-3 font-mono text-slate-600 whitespace-nowrap">
                     ${escapeHtml(order.invoiceNumber || "-")}
                 </td>
 
                 <!-- 9. Invoice Amount -->
-                <td data-daily-col="invoiceAmount" class="py-3 px-3 text-right font-mono font-bold text-emerald-700 whitespace-nowrap">
+                <td data-daily-t2-col="invoiceAmount" class="py-3 px-3 text-right font-mono font-bold text-emerald-700 whitespace-nowrap">
                     ${amtStr}
                 </td>
 
                 <!-- 10. Driver -->
-                <td data-daily-col="driver" class="py-3 px-3 text-slate-700 font-semibold whitespace-nowrap">
+                <td data-daily-t2-col="driver" class="py-3 px-3 text-slate-700 font-semibold whitespace-nowrap">
                     ${escapeHtml(order.deliveryBy || "-")}
                 </td>
 
                 <!-- 11. Start Delivery -->
-                <td data-daily-col="startTime" class="py-3 px-3 font-mono text-slate-600 text-center whitespace-nowrap text-xs">
+                <td data-daily-t2-col="startTime" class="py-3 px-3 font-mono text-slate-600 text-center whitespace-nowrap text-xs">
                     ${startTimeStr}
                 </td>
 
                 <!-- 12. End Delivery -->
-                <td data-daily-col="endTime" class="py-3 px-3 font-mono text-emerald-700 text-center whitespace-nowrap text-xs font-semibold">
+                <td data-daily-t2-col="endTime" class="py-3 px-3 font-mono text-emerald-700 text-center whitespace-nowrap text-xs font-semibold">
                     ${endTimeStr}
                 </td>
 
                 <!-- 13. Duration -->
-                <td data-daily-col="duration" class="py-3 px-3 text-center whitespace-nowrap">
+                <td data-daily-t2-col="duration" class="py-3 px-3 text-center whitespace-nowrap">
                     ${durationStr !== "-" ? `<span class="font-mono font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-xs">${durationStr}</span>` : '<span class="text-slate-300">-</span>'}
                 </td>
 
                 <!-- 14. Payment Receipt -->
-                <td data-daily-col="paymentReceipt" class="py-3 px-3 whitespace-nowrap">
+                <td data-daily-t2-col="paymentReceipt" class="py-3 px-3 whitespace-nowrap">
                     ${renderPaymentReceiptBadge(order)}
                 </td>
 
                 <!-- 15. Action -->
-                <td data-daily-col="actions" class="py-3 px-3 text-center whitespace-nowrap">
+                <td data-daily-t2-col="actions" class="py-3 px-3 text-center whitespace-nowrap">
                     ${isIncomplete ? `
                         <div class="flex items-center justify-center gap-1.5">
                             <button type="button" 
@@ -6063,14 +6227,23 @@ window.changeDailyTable2Page = changeDailyTable2Page;
 window.exportDailyDeliveryToExcel = exportDailyDeliveryToExcel;
 window.isDailyDeliveryRecentOrder = isDailyDeliveryRecentOrder;
 window.isDailyDeliveryCompletedOrder = isDailyDeliveryCompletedOrder;
-window.toggleDailyPersonalDisplayMenu = toggleDailyPersonalDisplayMenu;
-window.closeDailyPersonalDisplayMenu = closeDailyPersonalDisplayMenu;
-window.setDailyPersonalDisplayAll = setDailyPersonalDisplayAll;
-window.resetDailyPersonalDisplay = resetDailyPersonalDisplay;
-window.renderDailyPersonalDisplayCheckboxes = renderDailyPersonalDisplayCheckboxes;
-window.applyDailyColumnVisibility = applyDailyColumnVisibility;
-window.getDailyColumnPrefs = getDailyColumnPrefs;
-window.saveDailyColumnPrefs = saveDailyColumnPrefs;
+window.toggleDailyT1PersonalDisplayMenu = toggleDailyT1PersonalDisplayMenu;
+window.closeDailyT1PersonalDisplayMenu = closeDailyT1PersonalDisplayMenu;
+window.setDailyT1PersonalDisplayAll = setDailyT1PersonalDisplayAll;
+window.resetDailyT1PersonalDisplay = resetDailyT1PersonalDisplay;
+window.renderDailyT1PersonalDisplayCheckboxes = renderDailyT1PersonalDisplayCheckboxes;
+window.applyDailyT1ColumnVisibility = applyDailyT1ColumnVisibility;
+window.getDailyT1ColumnPrefs = getDailyT1ColumnPrefs;
+window.saveDailyT1ColumnPrefs = saveDailyT1ColumnPrefs;
+
+window.toggleDailyT2PersonalDisplayMenu = toggleDailyT2PersonalDisplayMenu;
+window.closeDailyT2PersonalDisplayMenu = closeDailyT2PersonalDisplayMenu;
+window.setDailyT2PersonalDisplayAll = setDailyT2PersonalDisplayAll;
+window.resetDailyT2PersonalDisplay = resetDailyT2PersonalDisplay;
+window.renderDailyT2PersonalDisplayCheckboxes = renderDailyT2PersonalDisplayCheckboxes;
+window.applyDailyT2ColumnVisibility = applyDailyT2ColumnVisibility;
+window.getDailyT2ColumnPrefs = getDailyT2ColumnPrefs;
+window.saveDailyT2ColumnPrefs = saveDailyT2ColumnPrefs;
 
 // View Full Order Details Modal
 function viewOrderDetails(soNumber) {
@@ -6482,9 +6655,14 @@ function closeTopActiveModal() {
         personalMenu.classList.add("hidden");
         return true;
     }
-    const dailyPersonalMenu = document.getElementById("dailyPersonalDisplayMenu");
-    if (dailyPersonalMenu && !dailyPersonalMenu.classList.contains("hidden")) {
-        dailyPersonalMenu.classList.add("hidden");
+    const dailyT1PersonalMenu = document.getElementById("dailyT1PersonalDisplayMenu");
+    if (dailyT1PersonalMenu && !dailyT1PersonalMenu.classList.contains("hidden")) {
+        dailyT1PersonalMenu.classList.add("hidden");
+        return true;
+    }
+    const dailyT2PersonalMenu = document.getElementById("dailyT2PersonalDisplayMenu");
+    if (dailyT2PersonalMenu && !dailyT2PersonalMenu.classList.contains("hidden")) {
+        dailyT2PersonalMenu.classList.add("hidden");
         return true;
     }
     const highlightMenu = document.getElementById("highlightColorMenu");
@@ -6846,10 +7024,15 @@ function initPersonalDisplay() {
         if (container && !container.contains(e.target)) {
             menu.classList.add("hidden");
         }
-        const dailyContainer = document.getElementById("dailyPersonalDisplayDropdownContainer");
-        const dailyMenu = document.getElementById("dailyPersonalDisplayMenu");
-        if (dailyContainer && dailyMenu && !dailyContainer.contains(e.target)) {
-            dailyMenu.classList.add("hidden");
+        const dailyT1Container = document.getElementById("dailyT1PersonalDisplayDropdownContainer");
+        const dailyT1Menu = document.getElementById("dailyT1PersonalDisplayMenu");
+        if (dailyT1Container && dailyT1Menu && !dailyT1Container.contains(e.target)) {
+            dailyT1Menu.classList.add("hidden");
+        }
+        const dailyT2Container = document.getElementById("dailyT2PersonalDisplayDropdownContainer");
+        const dailyT2Menu = document.getElementById("dailyT2PersonalDisplayMenu");
+        if (dailyT2Container && dailyT2Menu && !dailyT2Container.contains(e.target)) {
+            dailyT2Menu.classList.add("hidden");
         }
     });
 
@@ -7142,10 +7325,15 @@ function setupHighlightColorMenu() {
         if (container && !container.contains(e.target)) {
             menu.classList.add("hidden");
         }
-        const dailyContainer = document.getElementById("dailyPersonalDisplayDropdownContainer");
-        const dailyMenu = document.getElementById("dailyPersonalDisplayMenu");
-        if (dailyContainer && dailyMenu && !dailyContainer.contains(e.target)) {
-            dailyMenu.classList.add("hidden");
+        const dailyT1Container = document.getElementById("dailyT1PersonalDisplayDropdownContainer");
+        const dailyT1Menu = document.getElementById("dailyT1PersonalDisplayMenu");
+        if (dailyT1Container && dailyT1Menu && !dailyT1Container.contains(e.target)) {
+            dailyT1Menu.classList.add("hidden");
+        }
+        const dailyT2Container = document.getElementById("dailyT2PersonalDisplayDropdownContainer");
+        const dailyT2Menu = document.getElementById("dailyT2PersonalDisplayMenu");
+        if (dailyT2Container && dailyT2Menu && !dailyT2Container.contains(e.target)) {
+            dailyT2Menu.classList.add("hidden");
         }
     });
 }
