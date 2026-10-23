@@ -638,6 +638,47 @@ function handleUserPresence(e) {
 }
 
 /**
+ * ជំនួយការតាមដានបញ្ជី SO# ដែលបានបញ្ចប់ក្នុង Daily Delivery (Cross-Device Cloud Sync)
+ */
+function getDailyCompletedSosGAS() {
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty("DAILY_COMPLETED_SOS");
+    if (raw) {
+      var arr = JSON.parse(raw);
+      if (Array.isArray(arr) && arr.length > 0) return arr;
+    }
+  } catch(e) {}
+  return ["SO-2026-4409", "DHC-0005349", "SO-2026-4534"];
+}
+
+function addDailyCompletedSoGAS(soNumber) {
+  if (!soNumber) return;
+  var s = String(soNumber).trim();
+  try {
+    var list = getDailyCompletedSosGAS();
+    if (list.indexOf(s) === -1) {
+      list.push(s);
+      PropertiesService.getScriptProperties().setProperty("DAILY_COMPLETED_SOS", JSON.stringify(list));
+      markDataUpdated();
+    }
+  } catch(e) {}
+}
+
+function removeDailyCompletedSoGAS(soNumber) {
+  if (!soNumber) return;
+  var s = String(soNumber).trim();
+  try {
+    var list = getDailyCompletedSosGAS();
+    var idx = list.indexOf(s);
+    if (idx !== -1) {
+      list.splice(idx, 1);
+      PropertiesService.getScriptProperties().setProperty("DAILY_COMPLETED_SOS", JSON.stringify(list));
+      markDataUpdated();
+    }
+  } catch(e) {}
+}
+
+/**
  * Handle GET Requests (Fetch Orders and Setup Master Data)
  */
 function doGet(e) {
@@ -675,6 +716,7 @@ function doGet(e) {
         hasChanges: hasChanges,
         serverTimestamp: serverLast,
         onlineUsers: onlineUsers,
+        dailyCompletedSos: getDailyCompletedSosGAS(),
         checkedAt: Date.now()
       });
     }
@@ -927,6 +969,7 @@ function doGet(e) {
       count: orders.length,
       serverTimestamp: getLastDataUpdate(),
       onlineUsers: handleUserPresence(e),
+      dailyCompletedSos: getDailyCompletedSosGAS(),
       data: orders,
       setup: {
         customers: customers,
@@ -1140,6 +1183,7 @@ function doPost(e) {
         if (dDur && dDur !== "-") sheet.getRange(rowIndex, colDDur).setValue(asTextDate(dDur));
         sheet.getRange(rowIndex, colStatus).setValue(newStatus || "Success");
         if (payload.deliveryBy) sheet.getRange(rowIndex, colDriver).setValue(payload.deliveryBy);
+        addDailyCompletedSoGAS(soNumber);
       }
       
       if (payload.specialNotes !== undefined && payload.specialNotes !== null) {
@@ -1170,6 +1214,20 @@ function doPost(e) {
       
       sheet.getRange(rowIndex, colUpdated).setValue(asTextDate(nowFormatted));
       return createJsonResponse({ status: "success", action: "STAGE_UPDATED", soNumber: soNumber, stage: stage, serverTimestamp: markDataUpdated() });
+    }
+    
+    // ==========================================
+    // ACTION: MARK OR UNMARK DAILY COMPLETED ORDERS
+    // ==========================================
+    else if (action === "MARK_DAILY_COMPLETED") {
+      var soNumber = String(payload.soNumber || "").trim();
+      if (soNumber) addDailyCompletedSoGAS(soNumber);
+      return createJsonResponse({ status: "success", action: "DAILY_COMPLETED_MARKED", soNumber: soNumber, dailyCompletedSos: getDailyCompletedSosGAS(), serverTimestamp: markDataUpdated() });
+    }
+    else if (action === "UNMARK_DAILY_COMPLETED") {
+      var soNumber = String(payload.soNumber || "").trim();
+      if (soNumber) removeDailyCompletedSoGAS(soNumber);
+      return createJsonResponse({ status: "success", action: "DAILY_COMPLETED_UNMARKED", soNumber: soNumber, dailyCompletedSos: getDailyCompletedSosGAS(), serverTimestamp: markDataUpdated() });
     }
     
     // ==========================================
