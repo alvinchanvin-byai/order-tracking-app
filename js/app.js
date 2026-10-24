@@ -1944,11 +1944,17 @@ function setupEventListeners() {
         };
     }
 
-    // Keyboard shortcut Ctrl+B or Cmd+B to toggle sidebar
+    // Keyboard shortcuts: Ctrl+B/Cmd+B for sidebar, Ctrl+K/Cmd+K for search
     window.addEventListener("keydown", (e) => {
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
             e.preventDefault();
             toggleSidebar();
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+            e.preventDefault();
+            if (typeof focusActiveSearchInput === "function") {
+                focusActiveSearchInput();
+            }
         }
     });
 
@@ -2885,6 +2891,19 @@ function openModuleCards(moduleName) {
     updateNavbarActiveBtn(targetModule);
     updateKpiCardsVisibility();
     showOnlyView(targetModule);
+
+    // Sync search input value for this module if already filtered
+    const inputMap = {
+        "register": "searchCardsRegisterInput",
+        "picking": "searchCardsPickingInput",
+        "checking": "searchCardsCheckingInput",
+        "delivery": "searchCardsDeliveryInput",
+        "incompleted-delivery": "searchCardsIncompletedInput"
+    };
+    const sInput = document.getElementById(inputMap[targetModule]);
+    if (sInput) {
+        sInput.value = cardsSearchQueries[targetModule] || "";
+    }
 
     if (targetModule === "register") renderRegisterView();
     if (targetModule === "picking") renderPickingView();
@@ -4059,6 +4078,95 @@ async function handleOrderRegistration(e) {
 }
 
 // -------------------------------------------------------------
+// MODULE CARDS SEARCH STATE & HELPERS
+// -------------------------------------------------------------
+const cardsSearchQueries = {
+    "register": "",
+    "picking": "",
+    "checking": "",
+    "delivery": "",
+    "incompleted-delivery": ""
+};
+
+function matchCardsSearch(order, q) {
+    if (!q) return true;
+    const term = q.toLowerCase();
+    const fieldsToSearch = [
+        order.soNumber,
+        order.customerName,
+        order.invoiceNumber,
+        order.packingListNumber,
+        order.khan,
+        order.cityProvince,
+        order.bu,
+        order.documentType,
+        order.specialNotes,
+        order.deliveryNotes,
+        order.createdBy,
+        order.pickerBy,
+        order.checkerBy,
+        order.deliveryBy,
+        order.driverName,
+        order.driverPhone,
+        order.status,
+        order.totalPackage ? String(order.totalPackage) : "",
+        order.invoiceAmount ? String(order.invoiceAmount) : ""
+    ];
+    return fieldsToSearch.some(val => val && String(val).toLowerCase().includes(term));
+}
+
+function onCardsSearchInput(moduleName, value) {
+    cardsSearchQueries[moduleName] = (value || "").trim();
+    if (moduleName === "register") renderRegisterView();
+    else if (moduleName === "picking") renderPickingView();
+    else if (moduleName === "checking") renderCheckingView();
+    else if (moduleName === "delivery") renderDeliveryView();
+    else if (moduleName === "incompleted-delivery") renderIncompletedDeliveryView();
+}
+window.onCardsSearchInput = onCardsSearchInput;
+
+function clearCardsSearch(moduleName) {
+    cardsSearchQueries[moduleName] = "";
+    const inputMap = {
+        "register": "searchCardsRegisterInput",
+        "picking": "searchCardsPickingInput",
+        "checking": "searchCardsCheckingInput",
+        "delivery": "searchCardsDeliveryInput",
+        "incompleted-delivery": "searchCardsIncompletedInput"
+    };
+    const input = document.getElementById(inputMap[moduleName]);
+    if (input) {
+        input.value = "";
+        input.focus();
+    }
+    onCardsSearchInput(moduleName, "");
+}
+window.clearCardsSearch = clearCardsSearch;
+
+function focusActiveSearchInput() {
+    const currentTab = AppState.currentTab;
+    let targetId = "searchOrderInput";
+    if (currentTab === "register") targetId = "searchCardsRegisterInput";
+    else if (currentTab === "picking") targetId = "searchCardsPickingInput";
+    else if (currentTab === "checking") targetId = "searchCardsCheckingInput";
+    else if (currentTab === "delivery") targetId = "searchCardsDeliveryInput";
+    else if (currentTab === "incompleted-delivery") targetId = "searchCardsIncompletedInput";
+    else if (currentTab === "daily-delivery") targetId = "dailyDeliverySearchInput";
+
+    const input = document.getElementById(targetId);
+    if (input) {
+        input.focus();
+        input.select();
+    }
+}
+window.focusActiveSearchInput = focusActiveSearchInput;
+
+function goToDashboard() {
+    switchNavbarModule("dashboard");
+}
+window.goToDashboard = goToDashboard;
+
+// -------------------------------------------------------------
 // MODULE 1: REGISTER ORDER (បញ្ជី ORDER បានចុះឈ្មោះ)
 // -------------------------------------------------------------
 function renderRegisterView() {
@@ -4066,22 +4174,51 @@ function renderRegisterView() {
     if (!container) return;
 
     // Filter orders with status 'Registered' (not yet started picking)
-    const registerOrders = AppState.orders.filter(isOrderRegistered);
+    let registerOrders = AppState.orders.filter(isOrderRegistered);
+    const totalCount = registerOrders.length;
+
+    const q = (cardsSearchQueries["register"] || "").toLowerCase().trim();
+    if (q) {
+        registerOrders = registerOrders.filter(order => matchCardsSearch(order, q));
+    }
+
+    // Update count badge & clear button
+    const badge = document.getElementById("cardsRegisterCountBadge");
+    if (badge) {
+        badge.textContent = q ? `${registerOrders.length} / ${totalCount} Orders` : `${totalCount} Orders`;
+    }
+    const clearBtn = document.getElementById("clearCardsRegisterSearchBtn");
+    if (clearBtn) {
+        clearBtn.classList.toggle("hidden", !q);
+    }
 
     if (registerOrders.length === 0) {
-        container.innerHTML = `
-            <div class="col-span-full text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-2xs">
-                <div class="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-3">
-                    <i data-lucide="file-plus-2" class="w-7 h-7"></i>
+        if (totalCount > 0 && q) {
+            container.innerHTML = `
+                <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-slate-200 shadow-2xs">
+                    <i data-lucide="search-x" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i>
+                    <h4 class="text-slate-700 font-bold text-sm sm:text-base">រកមិនឃើញ Order ដែលត្រូវគ្នានឹង "${escapeHtml(q)}" ឡើយ</h4>
+                    <p class="text-xs text-slate-400 mt-1 mb-3">សូមសាកល្បងស្វែងរកដោយ SO#, ឈ្មោះអតិថិជន, ឬ Invoice# ផ្សេងទៀត</p>
+                    <button type="button" onclick="clearCardsSearch('register')" class="px-3.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs transition cursor-pointer">
+                        សម្អាតការស្វែងរក (Clear Search)
+                    </button>
                 </div>
-                <h4 class="text-slate-800 font-bold text-base">មិនមាន Order ក្នុងបញ្ជីចុះឈ្មោះទេ</h4>
-                <p class="text-xs text-slate-500 mt-1 mb-4">រាល់ Order ថ្មីដែលបាន Register នឹងបង្ហាញនៅទីនេះ រួមជាមួយប៊ូតុង "Start Picking"</p>
-                <button type="button" onclick="openCreateOrderModal()" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition inline-flex items-center gap-1.5 shadow-sm">
-                    <i data-lucide="plus" class="w-4 h-4"></i>
-                    <span>+ ចុះឈ្មោះ Order ថ្មី</span>
-                </button>
-            </div>
-        `;
+            `;
+        } else {
+            container.innerHTML = `
+                <div class="col-span-full text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-2xs">
+                    <div class="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto mb-3">
+                        <i data-lucide="file-plus-2" class="w-7 h-7"></i>
+                    </div>
+                    <h4 class="text-slate-800 font-bold text-base">មិនមាន Order ក្នុងបញ្ជីចុះឈ្មោះទេ</h4>
+                    <p class="text-xs text-slate-500 mt-1 mb-4">រាល់ Order ថ្មីដែលបាន Register នឹងបង្ហាញនៅទីនេះ រួមជាមួយប៊ូតុង "Start Picking"</p>
+                    <button type="button" onclick="openCreateOrderModal()" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition inline-flex items-center gap-1.5 shadow-sm cursor-pointer">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        <span>+ ចុះឈ្មោះ Order ថ្មី</span>
+                    </button>
+                </div>
+            `;
+        }
         lucide.createIcons();
         return;
     }
@@ -4201,16 +4338,45 @@ function renderPickingView() {
     if (!container) return;
 
     // Filter orders currently in picking
-    const pickingOrders = AppState.orders.filter(isOrderPicking);
+    let pickingOrders = AppState.orders.filter(isOrderPicking);
+    const totalCount = pickingOrders.length;
+
+    const q = (cardsSearchQueries["picking"] || "").toLowerCase().trim();
+    if (q) {
+        pickingOrders = pickingOrders.filter(order => matchCardsSearch(order, q));
+    }
+
+    // Update count badge & clear button
+    const badge = document.getElementById("cardsPickingCountBadge");
+    if (badge) {
+        badge.textContent = q ? `${pickingOrders.length} / ${totalCount} Orders` : `${totalCount} Orders`;
+    }
+    const clearBtn = document.getElementById("clearCardsPickingSearchBtn");
+    if (clearBtn) {
+        clearBtn.classList.toggle("hidden", !q);
+    }
 
     if (pickingOrders.length === 0) {
-        container.innerHTML = `
-            <div class="col-span-full text-center py-16 bg-white rounded-2xl border border-slate-200">
-                <i data-lucide="package" class="w-12 h-12 text-slate-300 mx-auto mb-2"></i>
-                <h4 class="text-slate-600 font-semibold">មិនមាន Order កំពុង Picking ទេ</h4>
-                <p class="text-xs text-slate-400 mt-1">Order នឹងមកទីនេះបន្ទាប់ពីចុច "Start Picking" នៅក្នុង Register Order Module</p>
-            </div>
-        `;
+        if (totalCount > 0 && q) {
+            container.innerHTML = `
+                <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-slate-200 shadow-2xs">
+                    <i data-lucide="search-x" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i>
+                    <h4 class="text-slate-700 font-bold text-sm sm:text-base">រកមិនឃើញ Order ដែលត្រូវគ្នានឹង "${escapeHtml(q)}" ឡើយ</h4>
+                    <p class="text-xs text-slate-400 mt-1 mb-3">សូមសាកល្បងស្វែងរកដោយ SO#, ឈ្មោះអតិថិជន, ឬ Invoice# ផ្សេងទៀត</p>
+                    <button type="button" onclick="clearCardsSearch('picking')" class="px-3.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs transition cursor-pointer">
+                        សម្អាតការស្វែងរក (Clear Search)
+                    </button>
+                </div>
+            `;
+        } else {
+            container.innerHTML = `
+                <div class="col-span-full text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-2xs">
+                    <i data-lucide="package" class="w-12 h-12 text-slate-300 mx-auto mb-2"></i>
+                    <h4 class="text-slate-600 font-semibold">មិនមាន Order កំពុង Picking ទេ</h4>
+                    <p class="text-xs text-slate-400 mt-1">Order នឹងមកទីនេះបន្ទាប់ពីចុច "Start Picking" នៅក្នុង Register Order Module</p>
+                </div>
+            `;
+        }
         lucide.createIcons();
         return;
     }
@@ -4377,16 +4543,45 @@ function renderCheckingView() {
     if (!container) return;
 
     // Show orders that have completed picking and are in checking stage
-    const checkingOrders = AppState.orders.filter(isOrderChecking);
+    let checkingOrders = AppState.orders.filter(isOrderChecking);
+    const totalCount = checkingOrders.length;
+
+    const q = (cardsSearchQueries["checking"] || "").toLowerCase().trim();
+    if (q) {
+        checkingOrders = checkingOrders.filter(order => matchCardsSearch(order, q));
+    }
+
+    // Update count badge & clear button
+    const badge = document.getElementById("cardsCheckingCountBadge");
+    if (badge) {
+        badge.textContent = q ? `${checkingOrders.length} / ${totalCount} Orders` : `${totalCount} Orders`;
+    }
+    const clearBtn = document.getElementById("clearCardsCheckingSearchBtn");
+    if (clearBtn) {
+        clearBtn.classList.toggle("hidden", !q);
+    }
 
     if (checkingOrders.length === 0) {
-        container.innerHTML = `
-            <div class="col-span-full text-center py-16 bg-white rounded-2xl border border-slate-200">
-                <i data-lucide="clipboard-check" class="w-12 h-12 text-slate-300 mx-auto mb-2"></i>
-                <h4 class="text-slate-600 font-semibold">មិនមាន Order រង់ចាំ Checking ទេ</h4>
-                <p class="text-xs text-slate-400 mt-1">រាល់ Order ត្រូវបញ្ចប់ Picking ជាមុនសិន</p>
-            </div>
-        `;
+        if (totalCount > 0 && q) {
+            container.innerHTML = `
+                <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-slate-200 shadow-2xs">
+                    <i data-lucide="search-x" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i>
+                    <h4 class="text-slate-700 font-bold text-sm sm:text-base">រកមិនឃើញ Order ដែលត្រូវគ្នានឹង "${escapeHtml(q)}" ឡើយ</h4>
+                    <p class="text-xs text-slate-400 mt-1 mb-3">សូមសាកល្បងស្វែងរកដោយ SO#, ឈ្មោះអតិថិជន, ឬ Invoice# ផ្សេងទៀត</p>
+                    <button type="button" onclick="clearCardsSearch('checking')" class="px-3.5 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs transition cursor-pointer">
+                        សម្អាតការស្វែងរក (Clear Search)
+                    </button>
+                </div>
+            `;
+        } else {
+            container.innerHTML = `
+                <div class="col-span-full text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-2xs">
+                    <i data-lucide="clipboard-check" class="w-12 h-12 text-slate-300 mx-auto mb-2"></i>
+                    <h4 class="text-slate-600 font-semibold">មិនមាន Order រង់ចាំ Checking ទេ</h4>
+                    <p class="text-xs text-slate-400 mt-1">រាល់ Order ត្រូវបញ្ចប់ Picking ជាមុនសិន</p>
+                </div>
+            `;
+        }
         lucide.createIcons();
         return;
     }
@@ -4663,16 +4858,45 @@ function renderDeliveryView() {
     if (!container) return;
 
     // Show orders that completed checking and are currently in active delivery pipeline: Waiting Delivery, In Delivery, 2nd Delivery, 3rd Delivery...
-    const deliveryOrders = AppState.orders.filter(isOrderDelivery);
+    let deliveryOrders = AppState.orders.filter(isOrderDelivery);
+    const totalCount = deliveryOrders.length;
+
+    const q = (cardsSearchQueries["delivery"] || "").toLowerCase().trim();
+    if (q) {
+        deliveryOrders = deliveryOrders.filter(order => matchCardsSearch(order, q));
+    }
+
+    // Update count badge & clear button
+    const badge = document.getElementById("cardsDeliveryCountBadge");
+    if (badge) {
+        badge.textContent = q ? `${deliveryOrders.length} / ${totalCount} Orders` : `${totalCount} Orders`;
+    }
+    const clearBtn = document.getElementById("clearCardsDeliverySearchBtn");
+    if (clearBtn) {
+        clearBtn.classList.toggle("hidden", !q);
+    }
 
     if (deliveryOrders.length === 0) {
-        container.innerHTML = `
-            <div class="col-span-full text-center py-16 bg-white rounded-2xl border border-slate-200">
-                <i data-lucide="truck" class="w-12 h-12 text-slate-300 mx-auto mb-2"></i>
-                <h4 class="text-slate-600 font-semibold">មិនមាន Order កំពុងស្ថិតក្នុងការដឹកជញ្ជូនទេ</h4>
-                <p class="text-xs text-slate-400 mt-1">រាល់ Order ដែល End Delivery (Success/Return) ត្រូវបានផ្លាស់ទីទៅកាន់ "បានប្រគល់រួច (Completed)"</p>
-            </div>
-        `;
+        if (totalCount > 0 && q) {
+            container.innerHTML = `
+                <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-slate-200 shadow-2xs">
+                    <i data-lucide="search-x" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i>
+                    <h4 class="text-slate-700 font-bold text-sm sm:text-base">រកមិនឃើញ Order ដែលត្រូវគ្នានឹង "${escapeHtml(q)}" ឡើយ</h4>
+                    <p class="text-xs text-slate-400 mt-1 mb-3">សូមសាកល្បងស្វែងរកដោយ SO#, ឈ្មោះអតិថិជន, ឬ Invoice# ផ្សេងទៀត</p>
+                    <button type="button" onclick="clearCardsSearch('delivery')" class="px-3.5 py-1.5 rounded-xl bg-sky-50 hover:bg-sky-100 text-sky-700 font-bold text-xs transition cursor-pointer">
+                        សម្អាតការស្វែងរក (Clear Search)
+                    </button>
+                </div>
+            `;
+        } else {
+            container.innerHTML = `
+                <div class="col-span-full text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-2xs">
+                    <i data-lucide="truck" class="w-12 h-12 text-slate-300 mx-auto mb-2"></i>
+                    <h4 class="text-slate-600 font-semibold">មិនមាន Order កំពុងស្ថិតក្នុងការដឹកជញ្ជូនទេ</h4>
+                    <p class="text-xs text-slate-400 mt-1">រាល់ Order ដែល End Delivery (Success/Return) ត្រូវបានផ្លាស់ទីទៅកាន់ "បានប្រគល់រួច (Completed)"</p>
+                </div>
+            `;
+        }
         lucide.createIcons();
         return;
     }
@@ -5133,18 +5357,47 @@ function renderIncompletedDeliveryView() {
     const container = document.getElementById("incompletedDeliveryOrdersContainer");
     if (!container) return;
 
-    const incompletedOrders = AppState.orders.filter(isOrderIncompletedDelivery);
+    let incompletedOrders = AppState.orders.filter(isOrderIncompletedDelivery);
+    const totalCount = incompletedOrders.length;
+
+    const q = (cardsSearchQueries["incompleted-delivery"] || "").toLowerCase().trim();
+    if (q) {
+        incompletedOrders = incompletedOrders.filter(order => matchCardsSearch(order, q));
+    }
+
+    // Update count badge & clear button
+    const badge = document.getElementById("cardsIncompletedCountBadge");
+    if (badge) {
+        badge.textContent = q ? `${incompletedOrders.length} / ${totalCount} Orders` : `${totalCount} Orders`;
+    }
+    const clearBtn = document.getElementById("clearCardsIncompletedSearchBtn");
+    if (clearBtn) {
+        clearBtn.classList.toggle("hidden", !q);
+    }
 
     if (incompletedOrders.length === 0) {
-        container.innerHTML = `
-            <div class="col-span-full text-center py-16 bg-white rounded-2xl border border-slate-200">
-                <div class="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-3 shadow-2xs">
-                    <i data-lucide="truck" class="w-8 h-8"></i>
+        if (totalCount > 0 && q) {
+            container.innerHTML = `
+                <div class="col-span-full text-center py-12 bg-white rounded-2xl border border-slate-200 shadow-2xs">
+                    <i data-lucide="search-x" class="w-10 h-10 text-slate-300 mx-auto mb-2"></i>
+                    <h4 class="text-slate-700 font-bold text-sm sm:text-base">រកមិនឃើញ Order ដែលត្រូវគ្នានឹង "${escapeHtml(q)}" ឡើយ</h4>
+                    <p class="text-xs text-slate-400 mt-1 mb-3">សូមសាកល្បងស្វែងរកដោយ SO#, ឈ្មោះអតិថិជន, ឬ Invoice# ផ្សេងទៀត</p>
+                    <button type="button" onclick="clearCardsSearch('incompleted-delivery')" class="px-3.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs transition cursor-pointer">
+                        សម្អាតការស្វែងរក (Clear Search)
+                    </button>
                 </div>
-                <h4 class="text-slate-700 font-bold text-base">មិនមាន Order ដឹកមិនបានជោគជ័យ (Incomplete) ទេ 🎉</h4>
-                <p class="text-xs text-slate-400 mt-1 max-w-md mx-auto">រាល់ Order ដែលពេល End Delivery ជ្រើសរើសយក "Incomplete (មិនបានជោគជ័យ)" នឹងត្រូវ Move មកទីនេះ ដើម្បីអាចចុច "Start 2nd Delivery" ដឹកម្ដងទៀតបាន</p>
-            </div>
-        `;
+            `;
+        } else {
+            container.innerHTML = `
+                <div class="col-span-full text-center py-16 bg-white rounded-2xl border border-slate-200 shadow-2xs">
+                    <div class="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-3 shadow-2xs">
+                        <i data-lucide="truck" class="w-8 h-8"></i>
+                    </div>
+                    <h4 class="text-slate-700 font-bold text-base">មិនមាន Order ដឹកមិនបានជោគជ័យ (Incomplete) ទេ 🎉</h4>
+                    <p class="text-xs text-slate-400 mt-1 max-w-md mx-auto">រាល់ Order ដែលពេល End Delivery ជ្រើសរើសយក "Incomplete (មិនបានជោគជ័យ)" នឹងត្រូវ Move មកទីនេះ ដើម្បីអាចចុច "Start 2nd Delivery" ដឹកម្ដងទៀតបាន</p>
+                </div>
+            `;
+        }
         lucide.createIcons();
         return;
     }
@@ -11187,7 +11440,11 @@ window.adjustEndCheckingTotalPkg = adjustEndCheckingTotalPkg;
 window.endChecking = endChecking;
 window.restartPicking = restartPicking;
 window.switchNavbarModule = switchNavbarModule;
+window.goToDashboard = goToDashboard;
 window.openModuleCards = openModuleCards;
+window.onCardsSearchInput = onCardsSearchInput;
+window.clearCardsSearch = clearCardsSearch;
+window.focusActiveSearchInput = focusActiveSearchInput;
 window.renderIncompletedDeliveryView = renderIncompletedDeliveryView;
 window.startSecondDelivery = startSecondDelivery;
 window.getOrdinal = getOrdinal;
