@@ -793,24 +793,62 @@
         <!-- ======================================================== -->
         <!-- VIEW 2: REGISTER ORDER MODULE (CARDS VIEW)               -->
         <!-- ======================================================== -->
-        <section id="view-register" class="hidden space-y-6">
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+        <!-- VIEW 2: REGISTER ORDER MODULE (CARDS VIEW)               -->
+        <!-- ======================================================== -->
+        <section id="view-register" class="hidden space-y-5">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
                 <div>
                     <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
                         <span class="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-sm font-bold">1</span>
                         <span>Register Order</span>
                         <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200">Cards View</span>
                     </h2>
-                    <p class="text-xs sm:text-sm text-slate-500">បញ្ជី Order ដែលបានចុះឈ្មោះរួចរាល់ (Registered)។ ចុច "Start Picking" ដើម្បីចាប់ផ្ដើមរៀបចំទំនិញ និងបញ្ជូនទៅកាន់ Physical Picking</p>
                 </div>
-                <div class="flex items-center gap-2">
-                    <button type="button" onclick="switchNavbarModule('register')" class="py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5" title="ត្រឡប់ទៅមើលតារាង Register Order">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button type="button" onclick="switchNavbarModule('dashboard')" class="py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5 cursor-pointer" title="ត្រឡប់ទៅ Dashboard">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4 text-slate-500"></i>
+                        <span>Back to Dashboard</span>
+                    </button>
+                    <button type="button" onclick="switchNavbarModule('register')" class="py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5 cursor-pointer" title="ត្រឡប់ទៅមើលតារាង Register Order">
                         <i data-lucide="table" class="w-4 h-4 text-blue-600"></i>
                         <span>📊 មើលជាតារាង (Table View)</span>
                     </button>
-                    <button type="button" onclick="openCreateOrderModal()" class="py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs sm:text-sm shadow-sm transition flex items-center gap-1.5 whitespace-nowrap">
+                    <button type="button" onclick="openCreateOrderModal()" class="py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs sm:text-sm shadow-sm transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer">
                         <i data-lucide="plus" class="w-4 h-4"></i>
                         <span>+ ចុះឈ្មោះ Order ថ្មី</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Bar (Matching Image 2) -->
+            <div class="glass-panel-elevated p-3 sm:p-3.5 rounded-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 relative z-20">
+                <div class="relative flex-1">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                    <input type="text" 
+                        id="searchCardsRegisterInput" 
+                        oninput="onCardsSearchInput('register', this.value)" 
+                        placeholder="ស្វែងរកតាម SO#, អតិថិជន, ខេត្ត, ខណ្ឌ, Invoice#, Packing List#, BU..." 
+                        class="w-full pl-10 pr-20 py-2.5 text-xs sm:text-sm bg-slate-50/80 hover:bg-slate-50 focus:bg-white border border-slate-200/90 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-medium">
+                    <div class="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                        <button type="button" 
+                            onclick="openQrScannerModal('searchCardsRegisterInput', 'ស្វែងរក Register Order')" 
+                            class="p-1 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition cursor-pointer" 
+                            title="ស្កេន QR / Barcode ស្វែងរក">
+                            <i data-lucide="scan-line" class="w-4 h-4"></i>
+                        </button>
+                        <div class="hidden sm:flex items-center gap-0.5 text-[10px] font-bold text-slate-400 bg-white border border-slate-200 px-1.5 py-0.5 rounded-md shadow-2xs select-none">
+                            <span>⌘</span><span>K</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between sm:justify-end gap-2.5 shrink-0">
+                    <span id="cardsRegisterCountBadge" class="text-xs font-semibold text-slate-500">0 Orders</span>
+                    <button type="button" 
+                        id="clearCardsRegisterSearchBtn" 
+                        onclick="clearCardsSearch('register')" 
+                        class="hidden text-xs text-slate-400 hover:text-rose-600 font-semibold px-2 py-1 rounded-lg hover:bg-slate-100 transition flex items-center gap-1 cursor-pointer">
+                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                        <span>សម្អាត</span>
                     </button>
                 </div>
             </div>
@@ -824,20 +862,56 @@
         <!-- ======================================================== -->
         <!-- VIEW 3: PHYSICAL PICKING                                 -->
         <!-- ======================================================== -->
-        <section id="view-picking" class="hidden space-y-6">
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+        <section id="view-picking" class="hidden space-y-5">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
                 <div>
                     <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
                         <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-sm font-bold">2</span>
                         <span>Physical Picking</span>
                         <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">Cards View</span>
                     </h2>
-                    <p class="text-xs sm:text-sm text-slate-500">ចុច "Start Picking" ពេលចាប់ផ្ដើមរៀបចំ និង "End Picking" ពេលរៀបចំរួចរាល់ (កត់ត្រា Date/Time ស្វ័យប្រវត្តិ)</p>
                 </div>
-                <div class="flex items-center gap-2">
-                    <button type="button" onclick="switchNavbarModule('picking')" class="py-2 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5" title="ត្រឡប់ទៅមើលតារាង Picking">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button type="button" onclick="switchNavbarModule('dashboard')" class="py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5 cursor-pointer" title="ត្រឡប់ទៅ Dashboard">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4 text-slate-500"></i>
+                        <span>Back to Dashboard</span>
+                    </button>
+                    <button type="button" onclick="switchNavbarModule('picking')" class="py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5 cursor-pointer" title="ត្រឡប់ទៅមើលតារាង Picking">
                         <i data-lucide="table" class="w-4 h-4 text-amber-600"></i>
                         <span>📊 មើលជាតារាង (Table View)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Bar (Matching Image 2) -->
+            <div class="glass-panel-elevated p-3 sm:p-3.5 rounded-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 relative z-20">
+                <div class="relative flex-1">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                    <input type="text" 
+                        id="searchCardsPickingInput" 
+                        oninput="onCardsSearchInput('picking', this.value)" 
+                        placeholder="ស្វែងរកតាម SO#, អតិថិជន, ខេត្ត, ខណ្ឌ, Invoice#, Packing List#, BU..." 
+                        class="w-full pl-10 pr-20 py-2.5 text-xs sm:text-sm bg-slate-50/80 hover:bg-slate-50 focus:bg-white border border-slate-200/90 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition font-medium">
+                    <div class="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                        <button type="button" 
+                            onclick="openQrScannerModal('searchCardsPickingInput', 'ស្វែងរក Picking Order')" 
+                            class="p-1 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition cursor-pointer" 
+                            title="ស្កេន QR / Barcode ស្វែងរក">
+                            <i data-lucide="scan-line" class="w-4 h-4"></i>
+                        </button>
+                        <div class="hidden sm:flex items-center gap-0.5 text-[10px] font-bold text-slate-400 bg-white border border-slate-200 px-1.5 py-0.5 rounded-md shadow-2xs select-none">
+                            <span>⌘</span><span>K</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between sm:justify-end gap-2.5 shrink-0">
+                    <span id="cardsPickingCountBadge" class="text-xs font-semibold text-slate-500">0 Orders</span>
+                    <button type="button" 
+                        id="clearCardsPickingSearchBtn" 
+                        onclick="clearCardsSearch('picking')" 
+                        class="hidden text-xs text-slate-400 hover:text-rose-600 font-semibold px-2 py-1 rounded-lg hover:bg-slate-100 transition flex items-center gap-1 cursor-pointer">
+                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                        <span>សម្អាត</span>
                     </button>
                 </div>
             </div>
@@ -851,20 +925,56 @@
         <!-- ======================================================== -->
         <!-- VIEW 4: PHYSICAL CHECKING                                -->
         <!-- ======================================================== -->
-        <section id="view-checking" class="hidden space-y-6">
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+        <section id="view-checking" class="hidden space-y-5">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
                 <div>
                     <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
                         <span class="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center text-sm font-bold">3</span>
                         <span>Physical Checking</span>
                         <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 border border-purple-200">Cards View</span>
                     </h2>
-                    <p class="text-xs sm:text-sm text-slate-500">ចុច "Start Checking" ពេលចាប់ផ្ដើមត្រួតពិនិត្យ និង "End Checking" ពេលផ្ទៀងផ្ទាត់រួចរាល់</p>
                 </div>
-                <div class="flex items-center gap-2">
-                    <button type="button" onclick="switchNavbarModule('checking')" class="py-2 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5" title="ត្រឡប់ទៅមើលតារាង Checking">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button type="button" onclick="switchNavbarModule('dashboard')" class="py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5 cursor-pointer" title="ត្រឡប់ទៅ Dashboard">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4 text-slate-500"></i>
+                        <span>Back to Dashboard</span>
+                    </button>
+                    <button type="button" onclick="switchNavbarModule('checking')" class="py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5 cursor-pointer" title="ត្រឡប់ទៅមើលតារាង Checking">
                         <i data-lucide="table" class="w-4 h-4 text-purple-600"></i>
                         <span>📊 មើលជាតារាង (Table View)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Bar (Matching Image 2) -->
+            <div class="glass-panel-elevated p-3 sm:p-3.5 rounded-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 relative z-20">
+                <div class="relative flex-1">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                    <input type="text" 
+                        id="searchCardsCheckingInput" 
+                        oninput="onCardsSearchInput('checking', this.value)" 
+                        placeholder="ស្វែងរកតាម SO#, អតិថិជន, ខេត្ត, ខណ្ឌ, Invoice#, Packing List#, BU..." 
+                        class="w-full pl-10 pr-20 py-2.5 text-xs sm:text-sm bg-slate-50/80 hover:bg-slate-50 focus:bg-white border border-slate-200/90 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition font-medium">
+                    <div class="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                        <button type="button" 
+                            onclick="openQrScannerModal('searchCardsCheckingInput', 'ស្វែងរក Checking Order')" 
+                            class="p-1 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition cursor-pointer" 
+                            title="ស្កេន QR / Barcode ស្វែងរក">
+                            <i data-lucide="scan-line" class="w-4 h-4"></i>
+                        </button>
+                        <div class="hidden sm:flex items-center gap-0.5 text-[10px] font-bold text-slate-400 bg-white border border-slate-200 px-1.5 py-0.5 rounded-md shadow-2xs select-none">
+                            <span>⌘</span><span>K</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between sm:justify-end gap-2.5 shrink-0">
+                    <span id="cardsCheckingCountBadge" class="text-xs font-semibold text-slate-500">0 Orders</span>
+                    <button type="button" 
+                        id="clearCardsCheckingSearchBtn" 
+                        onclick="clearCardsSearch('checking')" 
+                        class="hidden text-xs text-slate-400 hover:text-rose-600 font-semibold px-2 py-1 rounded-lg hover:bg-slate-100 transition flex items-center gap-1 cursor-pointer">
+                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                        <span>សម្អាត</span>
                     </button>
                 </div>
             </div>
@@ -878,20 +988,56 @@
         <!-- ======================================================== -->
         <!-- VIEW 5: DELIVERY                                         -->
         <!-- ======================================================== -->
-        <section id="view-delivery" class="hidden space-y-6">
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+        <section id="view-delivery" class="hidden space-y-5">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
                 <div>
                     <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
                         <span class="w-8 h-8 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center text-sm font-bold">4</span>
                         <span>Delivery</span>
                         <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-sky-100 text-sky-700 border border-sky-200">Cards View</span>
                     </h2>
-                    <p class="text-xs sm:text-sm text-slate-500">ចុច "Start Delivery" ពេលឡានចេញដំណើរ និង "End Delivery" ពេលទំនិញដល់ដៃអតិថិជនជោគជ័យ</p>
                 </div>
-                <div class="flex items-center gap-2">
-                    <button type="button" onclick="switchNavbarModule('delivery')" class="py-2 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5" title="ត្រឡប់ទៅមើលតារាង Delivery">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button type="button" onclick="switchNavbarModule('dashboard')" class="py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5 cursor-pointer" title="ត្រឡប់ទៅ Dashboard">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4 text-slate-500"></i>
+                        <span>Back to Dashboard</span>
+                    </button>
+                    <button type="button" onclick="switchNavbarModule('delivery')" class="py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5 cursor-pointer" title="ត្រឡប់ទៅមើលតារាង Delivery">
                         <i data-lucide="table" class="w-4 h-4 text-sky-600"></i>
                         <span>📊 មើលជាតារាង (Table View)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Bar (Matching Image 2) -->
+            <div class="glass-panel-elevated p-3 sm:p-3.5 rounded-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 relative z-20">
+                <div class="relative flex-1">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                    <input type="text" 
+                        id="searchCardsDeliveryInput" 
+                        oninput="onCardsSearchInput('delivery', this.value)" 
+                        placeholder="ស្វែងរកតាម SO#, អតិថិជន, ខេត្ត, ខណ្ឌ, Invoice#, Packing List#, BU..." 
+                        class="w-full pl-10 pr-20 py-2.5 text-xs sm:text-sm bg-slate-50/80 hover:bg-slate-50 focus:bg-white border border-slate-200/90 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition font-medium">
+                    <div class="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                        <button type="button" 
+                            onclick="openQrScannerModal('searchCardsDeliveryInput', 'ស្វែងរក Delivery Order')" 
+                            class="p-1 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition cursor-pointer" 
+                            title="ស្កេន QR / Barcode ស្វែងរក">
+                            <i data-lucide="scan-line" class="w-4 h-4"></i>
+                        </button>
+                        <div class="hidden sm:flex items-center gap-0.5 text-[10px] font-bold text-slate-400 bg-white border border-slate-200 px-1.5 py-0.5 rounded-md shadow-2xs select-none">
+                            <span>⌘</span><span>K</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between sm:justify-end gap-2.5 shrink-0">
+                    <span id="cardsDeliveryCountBadge" class="text-xs font-semibold text-slate-500">0 Orders</span>
+                    <button type="button" 
+                        id="clearCardsDeliverySearchBtn" 
+                        onclick="clearCardsSearch('delivery')" 
+                        class="hidden text-xs text-slate-400 hover:text-rose-600 font-semibold px-2 py-1 rounded-lg hover:bg-slate-100 transition flex items-center gap-1 cursor-pointer">
+                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                        <span>សម្អាត</span>
                     </button>
                 </div>
             </div>
@@ -905,20 +1051,56 @@
         <!-- ======================================================== -->
         <!-- VIEW 6: IN COMPLETED DELIVERY                            -->
         <!-- ======================================================== -->
-        <section id="view-incompleted-delivery" class="hidden space-y-6">
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
+        <section id="view-incompleted-delivery" class="hidden space-y-5">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-200">
                 <div>
                     <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900 flex items-center gap-2">
                         <span class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-sm font-bold">5</span>
                         <span>In Completed Delivery</span>
                         <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">Cards View</span>
                     </h2>
-                    <p class="text-xs sm:text-sm text-slate-500">Order ដែលដឹកមិនបានជោគជ័យ (អតិថិជនបិទទ្វារ ឬមិនទទួល) អាចចុច "Start 2nd Delivery" ដើម្បីបញ្ជូនទៅដឹកជញ្ជូនម្តងទៀត</p>
                 </div>
-                <div class="flex items-center gap-2">
-                    <button type="button" onclick="switchNavbarModule('incompleted-delivery')" class="py-2 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5" title="ត្រឡប់ទៅមើលតារាង">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button type="button" onclick="switchNavbarModule('dashboard')" class="py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5 cursor-pointer" title="ត្រឡប់ទៅ Dashboard">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4 text-slate-500"></i>
+                        <span>Back to Dashboard</span>
+                    </button>
+                    <button type="button" onclick="switchNavbarModule('incompleted-delivery')" class="py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5 cursor-pointer" title="ត្រឡប់ទៅមើលតារាង Incompleted Delivery">
                         <i data-lucide="table" class="w-4 h-4 text-amber-600"></i>
                         <span>📊 មើលជាតារាង (Table View)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Bar (Matching Image 2) -->
+            <div class="glass-panel-elevated p-3 sm:p-3.5 rounded-2xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 relative z-20">
+                <div class="relative flex-1">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                    <input type="text" 
+                        id="searchCardsIncompletedInput" 
+                        oninput="onCardsSearchInput('incompleted-delivery', this.value)" 
+                        placeholder="ស្វែងរកតាម SO#, អតិថិជន, ខេត្ត, ខណ្ឌ, Invoice#, Packing List#, BU..." 
+                        class="w-full pl-10 pr-20 py-2.5 text-xs sm:text-sm bg-slate-50/80 hover:bg-slate-50 focus:bg-white border border-slate-200/90 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition font-medium">
+                    <div class="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                        <button type="button" 
+                            onclick="openQrScannerModal('searchCardsIncompletedInput', 'ស្វែងរក Incompleted Order')" 
+                            class="p-1 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition cursor-pointer" 
+                            title="ស្កេន QR / Barcode ស្វែងរក">
+                            <i data-lucide="scan-line" class="w-4 h-4"></i>
+                        </button>
+                        <div class="hidden sm:flex items-center gap-0.5 text-[10px] font-bold text-slate-400 bg-white border border-slate-200 px-1.5 py-0.5 rounded-md shadow-2xs select-none">
+                            <span>⌘</span><span>K</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between sm:justify-end gap-2.5 shrink-0">
+                    <span id="cardsIncompletedCountBadge" class="text-xs font-semibold text-slate-500">0 Orders</span>
+                    <button type="button" 
+                        id="clearCardsIncompletedSearchBtn" 
+                        onclick="clearCardsSearch('incompleted-delivery')" 
+                        class="hidden text-xs text-slate-400 hover:text-rose-600 font-semibold px-2 py-1 rounded-lg hover:bg-slate-100 transition flex items-center gap-1 cursor-pointer">
+                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                        <span>សម្អាត</span>
                     </button>
                 </div>
             </div>
@@ -3356,8 +3538,8 @@
     </div>
 
     <!-- App Core Scripts -->
-    <script src="js/data.js?v=live-v4.6"></script>
-    <script src="js/sheets-sync.js?v=live-v4.6"></script>
-    <script src="js/app.js?v=live-v4.6"></script>
+    <script src="js/data.js?v=live-v4.7"></script>
+    <script src="js/sheets-sync.js?v=live-v4.7"></script>
+    <script src="js/app.js?v=live-v4.7"></script>
 </body>
 </html>
