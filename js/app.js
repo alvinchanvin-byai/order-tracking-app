@@ -266,6 +266,36 @@ function renderDocumentTypeBadge(docType, extraClasses = "") {
     return `<span class="text-xs px-2 py-0.5 rounded-md font-semibold border ${colorClass} ${extraClasses}" title="Document Type: ${escapeHtml(name)}">${escapeHtml(name)}</span>`;
 }
 
+// Generate Next Auto SO Number in format: SO-FSCO-YYMMxxx (e.g. SO-FSCO-2610001, SO-FSCO-2610002)
+function generateNextAutoSONumber() {
+    const now = new Date();
+    const yy = String(now.getFullYear()).slice(-2);
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const prefix = `SO-FSCO-${yy}${mm}`;
+
+    let maxSeq = 0;
+    const orders = (window.AppState && Array.isArray(AppState.orders)) ? AppState.orders : [];
+
+    orders.forEach(o => {
+        if (!o || !o.soNumber) return;
+        const cleanSo = String(o.soNumber).trim().toUpperCase();
+        if (cleanSo.startsWith(prefix.toUpperCase())) {
+            const suffix = cleanSo.slice(prefix.length);
+            const match = suffix.match(/^(\d+)/);
+            if (match) {
+                const num = parseInt(match[1], 10);
+                if (!isNaN(num) && num > maxSeq) {
+                    maxSeq = num;
+                }
+            }
+        }
+    });
+
+    const nextSeq = maxSeq + 1;
+    const seqStr = String(nextSeq).padStart(3, "0");
+    return `${prefix}${seqStr}`;
+}
+
 // Clean English status mapping
 function normalizeOrderStatus(status, attempts = 1) {
     if (!status) return "Registered";
@@ -2044,36 +2074,6 @@ function setupEventListeners() {
     if (btnSyncAllSetup) {
         btnSyncAllSetup.addEventListener("click", syncAllSetupToSheets);
     }
-
-// Generate Next Auto SO Number in format: SO-FSCO-YYMMxxx (e.g. SO-FSCO-2610001, SO-FSCO-2610002)
-function generateNextAutoSONumber() {
-    const now = new Date();
-    const yy = String(now.getFullYear()).slice(-2);
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const prefix = `SO-FSCO-${yy}${mm}`;
-
-    let maxSeq = 0;
-    const orders = (window.AppState && Array.isArray(AppState.orders)) ? AppState.orders : [];
-
-    orders.forEach(o => {
-        if (!o || !o.soNumber) return;
-        const cleanSo = String(o.soNumber).trim().toUpperCase();
-        if (cleanSo.startsWith(prefix.toUpperCase())) {
-            const suffix = cleanSo.slice(prefix.length);
-            const match = suffix.match(/^(\d+)/);
-            if (match) {
-                const num = parseInt(match[1], 10);
-                if (!isNaN(num) && num > maxSeq) {
-                    maxSeq = num;
-                }
-            }
-        }
-    });
-
-    const nextSeq = maxSeq + 1;
-    const seqStr = String(nextSeq).padStart(3, "0");
-    return `${prefix}${seqStr}`;
-}
 
     // Auto Generate SO# Button
     const btnGenSO = document.getElementById("btnGenSO");
@@ -11493,7 +11493,6 @@ window.confirmEndChecking = confirmEndChecking;
 window.adjustEndCheckingTotalPkg = adjustEndCheckingTotalPkg;
 window.endChecking = endChecking;
 window.restartPicking = restartPicking;
-window.generateNextAutoSONumber = generateNextAutoSONumber;
 window.switchNavbarModule = switchNavbarModule;
 window.goToDashboard = goToDashboard;
 window.openModuleCards = openModuleCards;
