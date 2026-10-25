@@ -2481,9 +2481,208 @@ function applyLiveServerUpdate(fullData) {
     }
 }
 
+// ==============================================================================
+// ULTRA-FAST REAL-TIME ACTION APPLIER (PC <-> MOBILE <50ms SYNC)
+// ==============================================================================
+function applyIncomingRealtimeAction(action, payload) {
+    if (!action || !payload) return;
+
+    let hasChanged = false;
+
+    // 1. REGISTER OR SAVE ORDER
+    if (action === "REGISTER_ORDER" || action === "SAVE_ORDER") {
+        const order = payload.order || payload;
+        if (order && order.soNumber) {
+            const cleanSo = String(order.soNumber).trim();
+            const originalSo = String(payload.originalSoNumber || order.originalSoNumber || cleanSo).trim();
+            let idx = AppState.orders.findIndex(o => (o.soNumber || "").toLowerCase() === cleanSo.toLowerCase());
+            if (idx === -1 && originalSo !== cleanSo) {
+                idx = AppState.orders.findIndex(o => (o.soNumber || "").toLowerCase() === originalSo.toLowerCase());
+            }
+
+            const normalized = normalizeOrderDates(order);
+            if (idx > -1) {
+                AppState.orders[idx] = Object.assign({}, AppState.orders[idx], normalized);
+            } else {
+                AppState.orders.unshift(normalized);
+            }
+            hasChanged = true;
+        }
+    }
+    // 2. UPDATE STAGE (PICKING, CHECKING, DELIVERY START / END)
+    else if (action === "UPDATE_STAGE") {
+        const { soNumber, stage, timestamp, duration, status, specialNotes } = payload;
+        if (soNumber) {
+            const order = AppState.orders.find(o => (o.soNumber || "").toLowerCase() === String(soNumber).toLowerCase());
+            if (order) {
+                const nowTime = timestamp || formatAppDateTime();
+                order.lastUpdated = nowTime;
+
+                switch (stage) {
+                    case "PICKING_START":
+                        order.pickingStartTime = nowTime;
+                        order.pickerBy = payload.pickerBy || order.pickerBy || "Picker";
+                        order.status = status || "In Picking";
+                        break;
+                    case "PICKING_END":
+                        order.pickingEndTime = nowTime;
+                        order.pickingDuration = duration || calculateDuration(order.pickingStartTime, nowTime);
+                        order.status = status || "Waiting Checking";
+                        order.pickerBy = payload.pickerBy || order.pickerBy;
+                        break;
+                    case "CHECKING_START":
+                        order.checkingStartTime = nowTime;
+                        order.checkerBy = payload.checkerBy || order.checkerBy || "Checker";
+                        order.status = status || "In Checking";
+                        break;
+                    case "CHECKING_END":
+                        order.checkingEndTime = nowTime;
+                        order.checkingDuration = duration || calculateDuration(order.checkingStartTime, nowTime);
+                        order.status = status || "Waiting Delivery";
+                        order.checkerBy = payload.checkerBy || order.checkerBy;
+                        if (payload.totalPackage !== undefined && payload.totalPackage !== null && payload.totalPackage !== "") {
+                            order.totalPackage = payload.totalPackage;
+                        }
+                        if (payload.packageUnit) order.packageUnit = payload.packageUnit;
+                        if (specialNotes !== undefined && specialNotes !== null) order.specialNotes = specialNotes;
+                        break;
+                    case "DELIVERY_START":
+                        order.deliveryStartTime = nowTime;
+                        order.deliveryBy = payload.deliveryBy || order.deliveryBy || "Driver";
+                        order.status = status || "In Delivery";
+                        if (payload.deliveryAttempts) order.deliveryAttempts = payload.deliveryAttempts;
+                        if (payload.deliveryNotes) order.deliveryNotes = payload.deliveryNotes;
+                        order.completedFromDailyDelivery = false;
+                        unmarkOrderCompletedFromDaily(order.soNumber, false);
+                        break;
+                    case "DELIVERY_END":
+                        order.deliveryEndTime = nowTime;
+                        order.deliveryDuration = duration || calculateDuration(order.deliveryStartTime, nowTime);
+                        order.status = status || order.status;
+                        order.deliveryBy = payload.deliveryBy || order.deliveryBy;
+                        if (payload.deliveryAttempts !== undefined) order.deliveryAttempts = payload.deliveryAttempts;
+                        if (payload.deliveryNotes !== undefined) order.deliveryNotes = payload.deliveryNotes;
+                        if (payload.paymentReceipt !== undefined) order.paymentReceipt = payload.paymentReceipt;
+                        if (payload.paymentReceiptType !== undefined) order.paymentReceiptType = payload.paymentReceiptType;
+                        if (payload.paymentReceiptAmount !== undefined) order.paymentReceiptAmount = payload.paymentReceiptAmount;
+                        if (payload.paymentAccountAmount !== undefined) order.paymentAccountAmount = payload.paymentAccountAmount;
+                        if (payload.paymentCashAmount !== undefined) order.paymentCashAmount = payload.paymentCashAmount;
+                        if (payload.paymentAccountCurrency !== undefined) order.paymentAccountCurrency = payload.paymentAccountCurrency;
+                        if (payload.paymentCashCurrency !== undefined) order.paymentCashCurrency = payload.paymentCashCurrency;
+                        break;
+                    case "RESTART_PICKING":
+                        order.pickingStartTime = "";
+                        order.pickingEndTime = "";
+                        order.pickingDuration = "-";
+                        order.status = "Registered";
+                        break;
+                    case "RESTART_CHECKING":
+                        order.checkingStartTime = "";
+                        order.checkingEndTime = "";
+                        order.checkingDuration = "-";
+                        order.status = "Waiting Checking";
+                        break;
+                    case "RESTART_DELIVERY":
+                        order.deliveryStartTime = "";
+                        order.deliveryEndTime = "";
+                        order.deliveryDuration = "-";
+                        order.status = "Waiting Delivery";
+                        break;
+                }
+                hasChanged = true;
+
+                // Refresh details modal if currently open for this order
+                const detailsModal = document.getElementById("orderDetailsModal");
+                if (detailsModal && !detailsModal.classList.contains("hidden")) {
+                    const curDetailSo = document.getElementById("detailModalSOBadge")?.textContent?.trim();
+                    if (curDetailSo && curDetailSo.toLowerCase() === order.soNumber.toLowerCase()) {
+                        viewOrderDetails(order.soNumber);
+                    }
+                }
+            } else {
+                // Order not found in memory (e.g. registered on phone earlier), pull fresh state
+                if (window.SheetsSync && typeof SheetsSync.checkUpdates === "function") {
+                    SheetsSync.checkUpdates(true);
+                }
+            }
+        }
+    }
+    // 3. DAILY COMPLETED TOGGLES
+    else if (action === "MARK_DAILY_COMPLETED") {
+        if (payload.soNumber) {
+            unmarkOrderCompletedFromDaily(payload.soNumber, false);
+            const order = AppState.orders.find(o => (o.soNumber || "").toLowerCase() === String(payload.soNumber).toLowerCase());
+            if (order) order.completedFromDailyDelivery = true;
+            try {
+                const set = getDailyCompletedOrderSos();
+                set.add(String(payload.soNumber).trim());
+                localStorage.setItem(STORAGE_DAILY_COMPLETED_ORDERS, JSON.stringify(Array.from(set)));
+            } catch (e) {}
+            hasChanged = true;
+        }
+    }
+    else if (action === "UNMARK_DAILY_COMPLETED") {
+        if (payload.soNumber) {
+            unmarkOrderCompletedFromDaily(payload.soNumber, false);
+            const order = AppState.orders.find(o => (o.soNumber || "").toLowerCase() === String(payload.soNumber).toLowerCase());
+            if (order) order.completedFromDailyDelivery = false;
+            hasChanged = true;
+        }
+    }
+    // 4. SETUP MASTER DATA CRUD
+    else if (action === "SAVE_CUSTOMER" && payload.customer) {
+        if (Array.isArray(AppState.setup.customers)) {
+            const cid = payload.customer.id;
+            const idx = AppState.setup.customers.findIndex(c => c.id === cid || c.name === payload.customer.name);
+            if (idx > -1) AppState.setup.customers[idx] = payload.customer;
+            else AppState.setup.customers.push(payload.customer);
+            saveSetupState("customers");
+            setupDropdownOptions();
+            if (AppState.currentTab === "setup") renderSetupCustomers();
+        }
+    }
+    else if (action === "DELETE_CUSTOMER" && payload.id) {
+        if (Array.isArray(AppState.setup.customers)) {
+            AppState.setup.customers = AppState.setup.customers.filter(c => c.id !== payload.id);
+            saveSetupState("customers");
+            setupDropdownOptions();
+            if (AppState.currentTab === "setup") renderSetupCustomers();
+        }
+    }
+    else if (action === "SAVE_BU" && payload.bu) {
+        if (Array.isArray(AppState.setup.bus)) {
+            const idx = AppState.setup.bus.findIndex(b => b.id === payload.bu.id || b.name === payload.bu.name);
+            if (idx > -1) AppState.setup.bus[idx] = payload.bu;
+            else AppState.setup.bus.push(payload.bu);
+            saveSetupState("bus");
+            setupDropdownOptions();
+            if (AppState.currentTab === "setup") renderSetupBU();
+        }
+    }
+    else if (action === "DELETE_BU" && payload.id) {
+        if (Array.isArray(AppState.setup.bus)) {
+            AppState.setup.bus = AppState.setup.bus.filter(b => b.id !== payload.id);
+            saveSetupState("bus");
+            setupDropdownOptions();
+            if (AppState.currentTab === "setup") renderSetupBU();
+        }
+    }
+
+    if (hasChanged) {
+        saveOrdersToStorage(false);
+        renderAll(false);
+        pulseLiveSyncBadge(true);
+    }
+}
+window.applyIncomingRealtimeAction = applyIncomingRealtimeAction;
+
 // Handle real-time updates arriving across browser tabs on the same computer (<5ms)
 function applyBroadcastEvent(msg) {
     if (!msg) return;
+    if (msg.type === "REALTIME_MUTATION" && msg.payload && typeof window.applyIncomingRealtimeAction === "function") {
+        window.applyIncomingRealtimeAction(msg.payload.action, msg.payload);
+        return;
+    }
     if (msg.type === "ORDERS_LOCAL_UPDATE" || msg.type === "LOCAL_MUTATION") {
         const saved = localStorage.getItem(STORAGE_ORDERS_KEY);
         if (saved) {
