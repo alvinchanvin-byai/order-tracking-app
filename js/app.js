@@ -4227,17 +4227,15 @@ function renderRegisterView() {
         return `
             <div class="order-card p-5 rounded-2xl border border-blue-200 bg-white hover:shadow-md transition-all">
                 <div class="flex items-start justify-between gap-3 mb-3">
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-lg font-bold text-slate-900 font-mono">${escapeHtml(order.soNumber)}</span>
-                            ${renderDocumentTypeBadge(order.documentType)}
-                        </div>
-                        <p class="text-sm font-semibold text-blue-700 mt-0.5">${escapeHtml(order.customerName)}</p>
+                    <div class="min-w-0 flex-1">
+                        <span class="text-lg font-bold text-slate-900 font-mono break-all sm:break-normal">${escapeHtml(order.soNumber)}</span>
+                        <p class="text-sm font-semibold text-blue-700 mt-0.5 line-clamp-2">${escapeHtml(order.customerName)}</p>
                     </div>
-                    <div>
+                    <div class="flex flex-col items-end gap-1.5 shrink-0">
                         <span class="px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-full border border-blue-200 flex items-center gap-1">
                             <span class="w-2 h-2 rounded-full bg-blue-500"></span> Registered
                         </span>
+                        ${renderDocumentTypeBadge(order.documentType)}
                     </div>
                 </div>
 
@@ -4385,17 +4383,15 @@ function renderPickingView() {
         return `
             <div class="order-card p-5 rounded-2xl border border-amber-400 bg-amber-50/20 ring-2 ring-amber-400/20 transition-all">
                 <div class="flex items-start justify-between gap-3 mb-3">
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-lg font-bold text-slate-900 font-mono">${escapeHtml(order.soNumber)}</span>
-                            ${renderDocumentTypeBadge(order.documentType)}
-                        </div>
-                        <p class="text-sm font-semibold text-blue-700 mt-0.5">${escapeHtml(order.customerName)}</p>
+                    <div class="min-w-0 flex-1">
+                        <span class="text-lg font-bold text-slate-900 font-mono break-all sm:break-normal">${escapeHtml(order.soNumber)}</span>
+                        <p class="text-sm font-semibold text-blue-700 mt-0.5 line-clamp-2">${escapeHtml(order.customerName)}</p>
                     </div>
-                    <div>
+                    <div class="flex flex-col items-end gap-1.5 shrink-0">
                         <span class="px-2.5 py-1 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full flex items-center gap-1.5">
                             <span class="w-2 h-2 rounded-full bg-amber-500"></span> កំពុងរៀបចំ (In Picking)
                         </span>
+                        ${renderDocumentTypeBadge(order.documentType)}
                     </div>
                 </div>
 
@@ -4593,14 +4589,11 @@ function renderCheckingView() {
         return `
             <div class="order-card p-5 rounded-2xl border ${isStarted ? 'border-purple-400 bg-purple-50/20 ring-2 ring-purple-400/20' : 'border-slate-200 bg-white'} transition-all">
                 <div class="flex items-start justify-between gap-3 mb-3">
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <span class="text-lg font-bold text-slate-900 font-mono">${escapeHtml(order.soNumber)}</span>
-                            ${renderDocumentTypeBadge(order.documentType)}
-                        </div>
-                        <p class="text-sm font-semibold text-blue-700 mt-0.5">${escapeHtml(order.customerName)}</p>
+                    <div class="min-w-0 flex-1">
+                        <span class="text-lg font-bold text-slate-900 font-mono break-all sm:break-normal">${escapeHtml(order.soNumber)}</span>
+                        <p class="text-sm font-semibold text-blue-700 mt-0.5 line-clamp-2">${escapeHtml(order.customerName)}</p>
                     </div>
-                    <div>
+                    <div class="flex flex-col items-end gap-1.5 shrink-0">
                         ${isStarted ? `
                             <span class="px-2.5 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded-full flex items-center gap-1.5 animate-pulse">
                                 <span class="w-2 h-2 rounded-full bg-purple-500"></span> កំពុងត្រួតពិនិត្យ (In Checking)
@@ -4610,6 +4603,7 @@ function renderCheckingView() {
                                 <span class="w-2 h-2 rounded-full bg-indigo-500"></span> រង់ចាំត្រួតពិនិត្យ (Waiting Checking)
                             </span>
                         `}
+                        ${renderDocumentTypeBadge(order.documentType)}
                     </div>
                 </div>
 
@@ -4942,21 +4936,23 @@ function renderDeliveryView() {
         return `
             <div class="order-card p-5 rounded-2xl border ${statusClass} transition-all">
                 <div class="flex items-start justify-between gap-3 mb-3">
-                    <div>
+                    <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-2 flex-wrap">
-                            <span class="text-lg font-bold text-slate-900 font-mono">${escapeHtml(order.soNumber)}</span>
+                            <span class="text-lg font-bold text-slate-900 font-mono break-all sm:break-normal">${escapeHtml(order.soNumber)}</span>
                             <span class="text-xs px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold">
                                 ${order.currency === "USD" ? "$" : "៛"}${Number(order.invoiceAmount || 0).toLocaleString()}
                             </span>
-                            ${renderDocumentTypeBadge(order.documentType)}
                             ${is2nd ? `
                             <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
                                 ${getOrdinal(order.deliveryAttempts)} Delivery (លើកទី ${order.deliveryAttempts})
                             </span>` : ''}
                         </div>
-                        <p class="text-sm font-semibold text-blue-700 mt-0.5">${escapeHtml(order.customerName)}</p>
+                        <p class="text-sm font-semibold text-blue-700 mt-0.5 line-clamp-2">${escapeHtml(order.customerName)}</p>
                     </div>
-                    <div>${statusBadge}</div>
+                    <div class="flex flex-col items-end gap-1.5 shrink-0">
+                        ${statusBadge}
+                        ${renderDocumentTypeBadge(order.documentType)}
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2 text-xs text-slate-600 bg-white/80 p-3 rounded-xl border border-slate-100 mb-4">
@@ -5409,23 +5405,23 @@ function renderIncompletedDeliveryView() {
         return `
             <div class="order-card p-5 rounded-2xl border-2 border-amber-300 bg-amber-50/20 transition-all shadow-xs hover:shadow-md">
                 <div class="flex items-start justify-between gap-3 mb-3">
-                    <div>
+                    <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-2 flex-wrap">
-                            <span class="text-lg font-bold text-slate-900 font-mono">${escapeHtml(order.soNumber)}</span>
+                            <span class="text-lg font-bold text-slate-900 font-mono break-all sm:break-normal">${escapeHtml(order.soNumber)}</span>
                             <span class="text-xs px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold">
                                 ${order.currency === "USD" ? "$" : "៛"}${Number(order.invoiceAmount || 0).toLocaleString()}
                             </span>
-                            ${renderDocumentTypeBadge(order.documentType)}
                             <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300">
                                 ដឹកលើកទី ${attempts}
                             </span>
                         </div>
-                        <p class="text-sm font-semibold text-blue-700 mt-0.5">${escapeHtml(order.customerName)}</p>
+                        <p class="text-sm font-semibold text-blue-700 mt-0.5 line-clamp-2">${escapeHtml(order.customerName)}</p>
                     </div>
-                    <div>
+                    <div class="flex flex-col items-end gap-1.5 shrink-0">
                         <span class="px-2.5 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-full border border-amber-300 flex items-center gap-1 shadow-2xs">
                             <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-600"></i> Incomplete (មិនបានជោគជ័យ)
                         </span>
+                        ${renderDocumentTypeBadge(order.documentType)}
                     </div>
                 </div>
 
@@ -5433,11 +5429,7 @@ function renderIncompletedDeliveryView() {
                     <div><b>ចំនួនកញ្ចប់:</b> ${hasOrderTotalPackage(order) ? `${order.totalPackage} ${escapeHtml(order.packageUnit || "")}` : '<span class="text-slate-400 font-normal">-</span>'}</div>
                     <div><b>Invoice#:</b> ${escapeHtml(order.invoiceNumber || "-")}</div>
                     <div><b>Packing List:</b> ${escapeHtml(order.packingListNumber || "-")}</div>
-                    <div class="flex items-center gap-1"><b>Doc Type:</b> ${renderDocumentTypeBadge(order.documentType)}</div>
-                    <div class="col-span-2 flex items-center gap-1 text-slate-700 pt-1.5 border-t border-amber-100/80">
-                        <i data-lucide="map-pin" class="w-3.5 h-3.5 text-red-500 shrink-0"></i>
-                        <b>ទិសដៅ:</b> <span>${escapeHtml(order.khan || "-")}, ${escapeHtml(order.cityProvince || "-")}</span>
-                    </div>
+                    <div><b>Location:</b> ${escapeHtml(order.khan || order.cityProvince || "-")}</div>
                 </div>
 
                 <!-- Previous Delivery Timestamps & Info -->
