@@ -4389,7 +4389,7 @@ function renderPickingView() {
                     </div>
                     <div class="flex flex-col items-end gap-1.5 shrink-0">
                         <span class="px-2.5 py-1 bg-amber-100 text-amber-800 text-xs font-semibold rounded-full flex items-center gap-1.5">
-                            <span class="w-2 h-2 rounded-full bg-amber-500"></span> កំពុងរៀបចំ (In Picking)
+                            <span class="w-2 h-2 rounded-full bg-amber-500"></span> In Picking
                         </span>
                         ${renderDocumentTypeBadge(order.documentType)}
                     </div>
@@ -4596,11 +4596,11 @@ function renderCheckingView() {
                     <div class="flex flex-col items-end gap-1.5 shrink-0">
                         ${isStarted ? `
                             <span class="px-2.5 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded-full flex items-center gap-1.5 animate-pulse">
-                                <span class="w-2 h-2 rounded-full bg-purple-500"></span> កំពុងត្រួតពិនិត្យ (In Checking)
+                                <span class="w-2 h-2 rounded-full bg-purple-500"></span> In Checking
                             </span>
                         ` : `
                             <span class="px-2.5 py-1 bg-indigo-50 text-indigo-700 text-xs font-semibold rounded-full border border-indigo-200 flex items-center gap-1.5">
-                                <span class="w-2 h-2 rounded-full bg-indigo-500"></span> រង់ចាំត្រួតពិនិត្យ (Waiting Checking)
+                                <span class="w-2 h-2 rounded-full bg-indigo-500"></span> Waiting Checking
                             </span>
                         `}
                         ${renderDocumentTypeBadge(order.documentType)}
@@ -4903,32 +4903,32 @@ function renderDeliveryView() {
 
         let statusClass = "border-sky-200 bg-white";
         let statusBadge = `<span class="px-2.5 py-1 bg-sky-50 text-sky-800 text-xs font-semibold rounded-full border border-sky-200 flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-sky-500"></span> Waiting Delivery (រង់ចាំដឹកជញ្ជូន)
+            <span class="w-2 h-2 rounded-full bg-sky-500"></span> Waiting Delivery
         </span>`;
 
         if (isStarted && !isEnded) {
             statusClass = "border-sky-400 bg-sky-50/20 ring-2 ring-sky-400/20";
             const deliveryStatusTitle = order.status || getDeliveryStatusName(attempts);
             statusBadge = `<span class="px-2.5 py-1 bg-sky-100 text-sky-900 text-xs font-bold rounded-full border border-sky-300 flex items-center gap-1.5 animate-pulse shadow-2xs">
-                <i data-lucide="truck" class="w-3.5 h-3.5 text-sky-700"></i> ${escapeHtml(deliveryStatusTitle)} (កំពុងដឹក)
+                <i data-lucide="truck" class="w-3.5 h-3.5 text-sky-700"></i> ${escapeHtml(deliveryStatusTitle)}
             </span>`;
         } else if (isEnded) {
             const raw = (order.status || "").toLowerCase();
             if (raw === "incomplete" || raw.includes("incomplete") || raw.includes("មិនបានជោគជ័យ")) {
                 statusClass = "border-amber-300 bg-amber-50/20";
                 statusBadge = `<span class="px-2.5 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-full border border-amber-300 flex items-center gap-1">
-                    <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-600"></i> Incomplete (មិនបានជោគជ័យ)
+                    <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-600"></i> Incomplete
                 </span>`;
             } else if (raw === "return" || raw.includes("return") || raw.includes("ត្រឡប់")) {
                 statusClass = "border-rose-300 bg-rose-50/20";
                 statusBadge = `<span class="px-2.5 py-1 bg-rose-100 text-rose-800 text-xs font-bold rounded-full border border-rose-300 flex items-center gap-1">
-                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-rose-600"></i> Return (ត្រឡប់មកវិញ)
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-rose-600"></i> Return
                 </span>`;
             } else {
                 statusClass = "border-emerald-300 bg-emerald-50/20";
                 const displaySuccess = order.status || getSuccessStatusName(attempts);
                 statusBadge = `<span class="px-2.5 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full border border-emerald-300 flex items-center gap-1">
-                    <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-600"></i> ${escapeHtml(displaySuccess)} (បានប្រគល់ជោគជ័យ)
+                    <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-600"></i> ${escapeHtml(displaySuccess)}
                 </span>`;
             }
         }
@@ -5419,7 +5419,7 @@ function renderIncompletedDeliveryView() {
                     </div>
                     <div class="flex flex-col items-end gap-1.5 shrink-0">
                         <span class="px-2.5 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-full border border-amber-300 flex items-center gap-1 shadow-2xs">
-                            <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-600"></i> Incomplete (មិនបានជោគជ័យ)
+                            <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-600"></i> Incomplete
                         </span>
                         ${renderDocumentTypeBadge(order.documentType)}
                     </div>
