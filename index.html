@@ -1178,10 +1178,11 @@
             </div>
 
             <!-- Filter Search Bar -->
-            <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-                <div class="flex flex-1 flex-wrap items-center gap-2.5">
+            <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+                <!-- Row 1: Search Field + Back to Dashboard Button -->
+                <div class="flex items-center gap-2 sm:gap-2.5 w-full">
                     <!-- Text Search -->
-                    <div class="relative flex-1 min-w-[220px]">
+                    <div class="relative flex-1">
                         <input type="text" 
                             id="dailyDeliverySearchInput"
                             oninput="onDailyDeliverySearchInput(event)"
@@ -1196,27 +1197,43 @@
                         </button>
                     </div>
 
-                    <!-- Date Presets -->
-                    <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
-                        <button type="button" onclick="setDailyDeliveryDatePreset('ALL')" id="dailyPresetBtn-ALL" class="daily-date-preset-btn px-2.5 py-1 text-xs font-bold rounded-lg transition bg-white text-emerald-700 shadow-xs">ទាំងអស់ (All)</button>
-                        <button type="button" onclick="setDailyDeliveryDatePreset('TODAY')" id="dailyPresetBtn-TODAY" class="daily-date-preset-btn px-2.5 py-1 text-xs font-semibold rounded-lg transition text-slate-600 hover:text-emerald-700">ថ្ងៃនេះ (Today)</button>
-                        <button type="button" onclick="setDailyDeliveryDatePreset('YESTERDAY')" id="dailyPresetBtn-YESTERDAY" class="daily-date-preset-btn px-2.5 py-1 text-xs font-semibold rounded-lg transition text-slate-600 hover:text-emerald-700">ម្សិលមិញ</button>
-                        <button type="button" onclick="setDailyDeliveryDatePreset('THIS_MONTH')" id="dailyPresetBtn-THIS_MONTH" class="daily-date-preset-btn px-2.5 py-1 text-xs font-semibold rounded-lg transition text-slate-600 hover:text-emerald-700">ខែនេះ</button>
-                    </div>
-
-                    <!-- Custom Date Input -->
-                    <div class="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-2.5 py-1">
-                        <span class="text-xs text-slate-400 font-medium">កាលបរិច្ឆេទ:</span>
-                        <input type="date" id="dailyDeliveryDateFilter" onchange="onDailyDeliveryDateFilterChange()" class="text-xs bg-transparent text-slate-700 font-mono outline-none cursor-pointer">
-                    </div>
+                    <!-- Back to Dashboard Button -->
+                    <button type="button" 
+                        onclick="switchNavbarModule('dashboard')" 
+                        class="py-2 px-3 sm:px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center justify-center gap-1.5 cursor-pointer shrink-0 whitespace-nowrap active:scale-95" 
+                        title="ត្រឡប់ទៅ Dashboard">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4 text-slate-500"></i>
+                        <span>Back to Dashboard</span>
+                    </button>
                 </div>
 
-                <div class="flex items-center gap-2 shrink-0">
-                    <!-- Reset Filter Button -->
-                    <button type="button" onclick="resetDailyDeliveryFilters()" class="py-2 px-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer shrink-0">
-                        <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
-                        <span>Reset Filters</span>
-                    </button>
+                <!-- Row 2: Date Presets & Date Filter + Reset Filter -->
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+                    <!-- Date Presets -->
+                    <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl overflow-x-auto custom-scroll shrink-0">
+                        <button type="button" onclick="setDailyDeliveryDatePreset('ALL')" id="dailyPresetBtn-ALL" class="daily-date-preset-btn px-2.5 py-1 text-xs font-bold rounded-lg transition bg-white text-emerald-700 shadow-xs whitespace-nowrap">ទាំងអស់ (All)</button>
+                        <button type="button" onclick="setDailyDeliveryDatePreset('TODAY')" id="dailyPresetBtn-TODAY" class="daily-date-preset-btn px-2.5 py-1 text-xs font-semibold rounded-lg transition text-slate-600 hover:text-emerald-700 whitespace-nowrap">ថ្ងៃនេះ (Today)</button>
+                        <button type="button" onclick="setDailyDeliveryDatePreset('YESTERDAY')" id="dailyPresetBtn-YESTERDAY" class="daily-date-preset-btn px-2.5 py-1 text-xs font-semibold rounded-lg transition text-slate-600 hover:text-emerald-700 whitespace-nowrap">ម្សិលមិញ</button>
+                        <button type="button" onclick="setDailyDeliveryDatePreset('THIS_MONTH')" id="dailyPresetBtn-THIS_MONTH" class="daily-date-preset-btn px-2.5 py-1 text-xs font-semibold rounded-lg transition text-slate-600 hover:text-emerald-700 whitespace-nowrap">ខែនេះ</button>
+                    </div>
+
+                    <!-- Date Filter + Reset Filter (Side by Side in the same row) -->
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <!-- Custom Date Input -->
+                        <div class="flex-1 sm:flex-initial flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 shadow-2xs">
+                            <span class="text-xs text-slate-400 font-medium whitespace-nowrap">កាលបរិច្ឆេទ:</span>
+                            <input type="date" id="dailyDeliveryDateFilter" onchange="onDailyDeliveryDateFilterChange()" class="text-xs bg-transparent text-slate-700 font-mono outline-none cursor-pointer w-full">
+                        </div>
+
+                        <!-- Reset Filter Button -->
+                        <button type="button" 
+                            onclick="resetDailyDeliveryFilters()" 
+                            class="py-1.5 px-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer shrink-0 shadow-2xs whitespace-nowrap active:scale-95" 
+                            title="កំណត់ការស្វែងរកឡើងវិញ (Reset Filters)">
+                            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                            <span>Reset Filters</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -3532,8 +3549,8 @@
     </div>
 
     <!-- App Core Scripts -->
-    <script src="js/data.js?v=live-v4.7.3"></script>
-    <script src="js/sheets-sync.js?v=live-v4.7.3"></script>
-    <script src="js/app.js?v=live-v4.7.3"></script>
+    <script src="js/data.js?v=live-v4.7.4"></script>
+    <script src="js/sheets-sync.js?v=live-v4.7.4"></script>
+    <script src="js/app.js?v=live-v4.7.4"></script>
 </body>
 </html>
