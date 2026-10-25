@@ -1376,16 +1376,21 @@ function initCustomerSearchField() {
 
     function renderSuggestions(q = "") {
         const query = q.toLowerCase().trim();
-        const customers = AppState.setup.customers || [];
         
-        let filtered = customers;
-        if (query) {
-            filtered = customers.filter(c => 
-                (c.name && c.name.toLowerCase().includes(query)) ||
-                (c.khan && c.khan.toLowerCase().includes(query)) ||
-                (c.cityProvince && c.cityProvince.toLowerCase().includes(query))
-            );
+        // Wait until user searches: do not show dropdown if query is empty
+        if (!query) {
+            list.classList.add("hidden");
+            list.innerHTML = "";
+            selectedIndex = -1;
+            return;
         }
+
+        const customers = AppState.setup.customers || [];
+        const filtered = customers.filter(c => 
+            (c.name && c.name.toLowerCase().includes(query)) ||
+            (c.khan && c.khan.toLowerCase().includes(query)) ||
+            (c.cityProvince && c.cityProvince.toLowerCase().includes(query))
+        );
 
         selectedIndex = -1;
 
@@ -1470,11 +1475,22 @@ function initCustomerSearchField() {
     input.addEventListener("input", (e) => {
         const val = e.target.value;
         if (clearBtn) clearBtn.classList.toggle("hidden", !val);
-        renderSuggestions(val);
+        if (val && val.trim()) {
+            renderSuggestions(val);
+        } else {
+            list.classList.add("hidden");
+            list.innerHTML = "";
+            selectedIndex = -1;
+        }
     });
 
     input.addEventListener("focus", () => {
-        renderSuggestions(input.value);
+        // Do not auto-dropdown if empty; only show when user has searched/typed text
+        if (input.value && input.value.trim()) {
+            renderSuggestions(input.value);
+        } else {
+            list.classList.add("hidden");
+        }
     });
 
     input.addEventListener("keydown", (e) => {
@@ -1483,7 +1499,9 @@ function initCustomerSearchField() {
 
         if (e.key === "ArrowDown") {
             if (!isOpen) {
-                renderSuggestions(input.value);
+                if (input.value && input.value.trim()) {
+                    renderSuggestions(input.value);
+                }
                 return;
             }
             if (items.length === 0) return;
@@ -1532,8 +1550,10 @@ function initCustomerSearchField() {
         clearBtn.addEventListener("click", () => {
             input.value = "";
             clearBtn.classList.add("hidden");
+            list.classList.add("hidden");
+            list.innerHTML = "";
+            selectedIndex = -1;
             input.focus();
-            renderSuggestions("");
         });
     }
 }
@@ -4305,14 +4325,25 @@ function openCreateOrderModal() {
         soInput.value = `SO-${new Date().getFullYear()}-${randomNum}`;
     }
 
+    // Ensure all suggestion dropdowns are closed upon opening modal
+    ["customerSuggestionsList", "provinceSuggestionsList", "khanSuggestionsList"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.classList.add("hidden");
+            el.innerHTML = "";
+        }
+    });
+
     modal.classList.remove("hidden");
     lucide.createIcons();
 
-    // Auto-focus Customer Name field for immediate keyboard typing
+    // Auto-focus Customer Name field for immediate keyboard typing without opening dropdown
     const custInput = document.getElementById("fieldCustomerName");
     if (custInput) {
         setTimeout(() => {
             custInput.focus();
+            const list = document.getElementById("customerSuggestionsList");
+            if (list) list.classList.add("hidden");
         }, 100);
     }
 }
