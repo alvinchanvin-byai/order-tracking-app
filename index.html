@@ -1178,10 +1178,10 @@
             </div>
 
             <!-- Filter Search Bar -->
-            <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-2.5 sm:gap-3">
-                <div class="flex flex-col sm:flex-row flex-1 flex-wrap items-stretch sm:items-center gap-2 sm:gap-2.5">
+            <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+                <div class="flex flex-1 flex-wrap items-center gap-2.5">
                     <!-- Text Search -->
-                    <div class="relative w-full sm:flex-1 sm:min-w-[200px]">
+                    <div class="relative flex-1 min-w-[220px]">
                         <input type="text" 
                             id="dailyDeliverySearchInput"
                             oninput="onDailyDeliverySearchInput(event)"
@@ -1197,37 +1197,28 @@
                     </div>
 
                     <!-- Date Presets -->
-                    <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl overflow-x-auto custom-scroll shrink-0">
-                        <button type="button" onclick="setDailyDeliveryDatePreset('ALL')" id="dailyPresetBtn-ALL" class="daily-date-preset-btn px-2.5 py-1 text-xs font-bold rounded-lg transition bg-white text-emerald-700 shadow-xs whitespace-nowrap">ទាំងអស់ (All)</button>
-                        <button type="button" onclick="setDailyDeliveryDatePreset('TODAY')" id="dailyPresetBtn-TODAY" class="daily-date-preset-btn px-2.5 py-1 text-xs font-semibold rounded-lg transition text-slate-600 hover:text-emerald-700 whitespace-nowrap">ថ្ងៃនេះ (Today)</button>
-                        <button type="button" onclick="setDailyDeliveryDatePreset('YESTERDAY')" id="dailyPresetBtn-YESTERDAY" class="daily-date-preset-btn px-2.5 py-1 text-xs font-semibold rounded-lg transition text-slate-600 hover:text-emerald-700 whitespace-nowrap">ម្សិលមិញ</button>
-                        <button type="button" onclick="setDailyDeliveryDatePreset('THIS_MONTH')" id="dailyPresetBtn-THIS_MONTH" class="daily-date-preset-btn px-2.5 py-1 text-xs font-semibold rounded-lg transition text-slate-600 hover:text-emerald-700 whitespace-nowrap">ខែនេះ</button>
+                    <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                        <button type="button" onclick="setDailyDeliveryDatePreset('ALL')" id="dailyPresetBtn-ALL" class="daily-date-preset-btn px-2.5 py-1 text-xs font-bold rounded-lg transition bg-white text-emerald-700 shadow-xs">ទាំងអស់ (All)</button>
+                        <button type="button" onclick="setDailyDeliveryDatePreset('TODAY')" id="dailyPresetBtn-TODAY" class="daily-date-preset-btn px-2.5 py-1 text-xs font-semibold rounded-lg transition text-slate-600 hover:text-emerald-700">ថ្ងៃនេះ (Today)</button>
+                        <button type="button" onclick="setDailyDeliveryDatePreset('YESTERDAY')" id="dailyPresetBtn-YESTERDAY" class="daily-date-preset-btn px-2.5 py-1 text-xs font-semibold rounded-lg transition text-slate-600 hover:text-emerald-700">ម្សិលមិញ</button>
+                        <button type="button" onclick="setDailyDeliveryDatePreset('THIS_MONTH')" id="dailyPresetBtn-THIS_MONTH" class="daily-date-preset-btn px-2.5 py-1 text-xs font-semibold rounded-lg transition text-slate-600 hover:text-emerald-700">ខែនេះ</button>
                     </div>
 
-                    <!-- Row 3 on mobile: Custom Date Input + Reset Filter Button side-by-side -->
-                    <div class="flex items-center gap-2 w-full sm:w-auto">
-                        <!-- Custom Date Input -->
-                        <div class="flex-1 sm:flex-initial flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-2.5 py-1.5">
-                            <span class="text-xs text-slate-400 font-medium whitespace-nowrap">កាលបរិច្ឆេទ:</span>
-                            <input type="date" id="dailyDeliveryDateFilter" onchange="onDailyDeliveryDateFilterChange()" class="text-xs bg-transparent text-slate-700 font-mono outline-none cursor-pointer w-full">
-                        </div>
-
-                        <!-- Reset Filter Button (Visible on mobile next to date input) -->
-                        <button type="button" onclick="resetDailyDeliveryFilters()" class="sm:hidden py-1.5 px-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer shrink-0" title="Reset Filters">
-                            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
-                            <span>Reset Filters</span>
-                        </button>
+                    <!-- Custom Date Input -->
+                    <div class="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-2.5 py-1">
+                        <span class="text-xs text-slate-400 font-medium">កាលបរិច្ឆេទ:</span>
+                        <input type="date" id="dailyDeliveryDateFilter" onchange="onDailyDeliveryDateFilterChange()" class="text-xs bg-transparent text-slate-700 font-mono outline-none cursor-pointer">
                     </div>
                 </div>
 
-                <div class="hidden sm:flex items-center gap-2 shrink-0">
-                    <!-- Reset Filter Button (Desktop) -->
+                <div class="flex items-center gap-2 shrink-0">
+                    <!-- Reset Filter Button -->
                     <button type="button" onclick="resetDailyDeliveryFilters()" class="py-2 px-3 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer shrink-0">
                         <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
                         <span>Reset Filters</span>
                     </button>
 
-                    <!-- Export to Excel Button (Desktop) -->
+                    <!-- Export to Excel Button -->
                     <button type="button" onclick="exportDailyDeliveryToExcel()" class="py-2 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shrink-0" title="Export Daily Delivery to Excel (.xlsx)">
                         <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5 text-emerald-100"></i>
                         <span>Export Excel (.xlsx)</span>
@@ -1239,16 +1230,16 @@
             <!-- Layout: Recent Order នៅខាងលើ -->
             <div class="bg-white rounded-2xl border border-slate-200/90 shadow-2xs relative z-20">
                 <div class="p-3.5 sm:p-4 border-b border-slate-100 flex flex-row items-center justify-between gap-2 bg-gradient-to-r from-sky-50/40 via-white to-white rounded-t-2xl relative z-30">
-                    <div class="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                    <div class="flex items-center gap-2.5">
                         <div class="w-8 h-8 rounded-xl bg-sky-500 text-white flex items-center justify-center shadow-xs shrink-0">
                             <i data-lucide="truck" class="w-4 h-4"></i>
                         </div>
-                        <div class="flex items-center gap-2 min-w-0">
-                            <h3 class="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight whitespace-nowrap">Recent Order<span class="hidden sm:inline"> (កំពុងដឹកជញ្ជូន)</span></h3>
-                            <span id="table1RecentBadgeCount" class="hidden sm:inline-flex px-2 py-0.5 rounded-full text-[11px] font-bold bg-sky-100 text-sky-800 border border-sky-300">0</span>
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">Recent Order (កំពុងដឹកជញ្ជូន)</h3>
+                            <span id="table1RecentBadgeCount" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-sky-100 text-sky-800 border border-sky-300">0</span>
                         </div>
                     </div>
-                    <div class="flex flex-col sm:flex-row items-center sm:items-center gap-1 sm:gap-2 shrink-0">
+                    <div class="flex items-center gap-2">
                         <!-- Personal Display Dropdown for Recent Order (Table 1) -->
                         <div class="relative z-40" id="dailyT1PersonalDisplayDropdownContainer">
                             <button type="button" 
@@ -1292,9 +1283,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Mobile Badge: Centered under Personal display button on mobile -->
-                        <span id="table1RecentBadgeCountMobile" class="sm:hidden px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-800 border border-sky-300 shadow-2xs text-center whitespace-nowrap">0</span>
                     </div>
                 </div>
 
@@ -1315,67 +1303,46 @@
             <!-- Layout: Completed Order នៅខាងក្រោម -->
             <div class="bg-white rounded-2xl border border-slate-200/90 shadow-2xs relative z-10">
                 <div class="p-3.5 sm:p-4 border-b border-slate-100 flex flex-row items-center justify-between gap-2 bg-gradient-to-r from-emerald-50/40 via-white to-white rounded-t-2xl relative z-30">
-                    <div class="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                    <div class="flex items-center gap-2.5">
                         <div class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs shrink-0">
                             <i data-lucide="check-circle-2" class="w-4 h-4"></i>
                         </div>
-                        <div class="flex items-center gap-2 min-w-0">
-                            <h3 class="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight whitespace-nowrap">Completed Order<span class="hidden sm:inline"> (ការដឹកជញ្ជូនបានបញ្ចប់)</span></h3>
-                            <span id="table2CompletedBadgeCount" class="hidden sm:inline-flex px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">0</span>
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">Completed Order (ការដឹកជញ្ជូនបានបញ្ចប់)</h3>
+                            <span id="table2CompletedBadgeCount" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">0</span>
                         </div>
                     </div>
                     <div class="flex items-center gap-2.5">
                         <span id="table2SummaryText" class="hidden sm:inline-block text-xs font-semibold text-slate-500">សរុប: 0 Orders</span>
-                        <!-- Personal Display Dropdown + Mobile Badge -->
-                        <div class="flex flex-col sm:flex-row items-center sm:items-center gap-1 sm:gap-2 shrink-0">
-                            <div class="relative z-40" id="dailyT2PersonalDisplayDropdownContainer">
-                                <button type="button" 
-                                    id="btnDailyT2PersonalDisplay" 
-                                    onclick="toggleDailyT2PersonalDisplayMenu(event)"
-                                    class="py-1.5 px-3 rounded-xl border border-slate-200/90 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-2xs transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer" 
-                                    title="ជ្រើសរើសជួរឈរដើម្បីបង្ហាញក្នុង Completed Order">
-                                    <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-emerald-600"></i>
-                                    <span>Personal display</span>
-                                    <span id="dailyT2PersonalDisplayCountBadge" class="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 font-mono border border-emerald-200">15/15</span>
-                                    <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
-                                </button>
+                        <!-- Personal Display Dropdown for Completed Order (Table 2) -->
+                        <div class="relative z-40" id="dailyT2PersonalDisplayDropdownContainer">
+                            <button type="button" 
+                                id="btnDailyT2PersonalDisplay" 
+                                onclick="toggleDailyT2PersonalDisplayMenu(event)"
+                                class="py-1.5 px-3 rounded-xl border border-slate-200/90 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs shadow-2xs transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer" 
+                                title="ជ្រើសរើសជួរឈរដើម្បីបង្ហាញក្នុង Completed Order">
+                                <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-emerald-600"></i>
+                                <span>Personal display</span>
+                                <span id="dailyT2PersonalDisplayCountBadge" class="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 font-mono border border-emerald-200">15/15</span>
+                                <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
+                            </button>
 
-                                <!-- Popover Menu for Table 2 -->
-                                <div id="dailyT2PersonalDisplayMenu" class="hidden absolute right-0 top-full mt-2 w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 p-3.5 z-50 space-y-3 ring-1 ring-slate-900/10">
-                                    <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-                                        <div class="flex items-center gap-1.5">
-                                            <i data-lucide="sliders-horizontal" class="w-4 h-4 text-emerald-600"></i>
-                                            <h4 class="text-xs font-bold text-slate-800">Completed Order Columns</h4>
-                                            <span id="dailyT2PersonalDisplayHeaderBadge" class="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 font-mono border border-emerald-200">15/15</span>
-                                        </div>
-                                        <div class="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
-                                            <button type="button" onclick="setDailyT2PersonalDisplayAll(true)" class="text-[11px] font-bold text-emerald-600 hover:text-emerald-700 cursor-pointer">All</button>
-                                            <span class="text-slate-300">|</span>
-                                            <button type="button" onclick="resetDailyT2PersonalDisplay()" class="text-[11px] font-bold text-slate-500 hover:text-slate-700 cursor-pointer">Reset</button>
-                                        </div>
+                            <!-- Popover Menu for Table 2 -->
+                            <div id="dailyT2PersonalDisplayMenu" class="hidden absolute right-0 top-full mt-2 w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 p-3.5 z-50 space-y-3 ring-1 ring-slate-900/10">
+                                <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                                    <div class="flex items-center gap-1.5">
+                                        <i data-lucide="sliders-horizontal" class="w-4 h-4 text-emerald-600"></i>
+                                        <h4 class="text-xs font-bold text-slate-800">Completed Order Columns</h4>
+                                        <span id="dailyT2PersonalDisplayHeaderBadge" class="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 font-mono border border-emerald-200">15/15</span>
                                     </div>
-                                    
-                                    <div id="dailyT2ColumnCheckboxesList" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-60 sm:max-h-72 overflow-y-auto pr-1 text-xs custom-scroll">
-                                        <!-- Populated dynamically by JS -->
-                                    </div>
-
-                                    <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-                                        <div class="flex items-center gap-1">
-                                            <span>បានជ្រើសរើស:</span>
-                                            <span id="dailyT2PersonalDisplayFooterCountBadge" class="text-[11px] font-bold font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">15/15</span>
-                                        </div>
-                                        <button type="button" onclick="closeDailyT2PersonalDisplayMenu()" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition cursor-pointer">
-                                            រួចរាល់ (Done)
-                                        </button>
+                                    <div class="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
+                                        <button type="button" onclick="setDailyT2PersonalDisplayAll(true)" class="text-[11px] font-bold text-emerald-600 hover:text-emerald-700 cursor-pointer">All</button>
+                                        <span class="text-slate-300">|</span>
+                                        <button type="button" onclick="resetDailyT2PersonalDisplay()" class="text-[11px] font-bold text-slate-500 hover:text-slate-700 cursor-pointer">Reset</button>
                                     </div>
                                 </div>
-                            </div>
-
-                            <!-- Mobile Badge: Centered under Personal display button on mobile -->
-                            <span id="table2CompletedBadgeCountMobile" class="sm:hidden px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs text-center whitespace-nowrap">0</span>
-                        </div>
-                    </div>
-                </div>
+                                
+                                <div id="dailyT2ColumnCheckboxesList" class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-60 sm:max-h-72 overflow-y-auto pr-1 text-xs custom-scroll">
                                     <!-- Populated dynamically by JS -->
                                 </div>
 
@@ -3571,8 +3538,8 @@
     </div>
 
     <!-- App Core Scripts -->
-    <script src="js/data.js?v=live-v4.8"></script>
-    <script src="js/sheets-sync.js?v=live-v4.8"></script>
-    <script src="js/app.js?v=live-v4.8"></script>
+    <script src="js/data.js?v=live-v4.7.1"></script>
+    <script src="js/sheets-sync.js?v=live-v4.7.1"></script>
+    <script src="js/app.js?v=live-v4.7.1"></script>
 </body>
 </html>
