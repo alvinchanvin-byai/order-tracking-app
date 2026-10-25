@@ -272,15 +272,36 @@ function generateNextAutoSONumber() {
     const yy = String(now.getFullYear()).slice(-2);
     const mm = String(now.getMonth() + 1).padStart(2, "0");
     const prefix = `SO-FSCO-${yy}${mm}`;
+    const normPrefix = `SOFSCO${yy}${mm}`;
 
     let maxSeq = 0;
-    const orders = (window.AppState && Array.isArray(AppState.orders)) ? AppState.orders : [];
+    let orders = (window.AppState && Array.isArray(AppState.orders)) ? AppState.orders.slice() : [];
+
+    // Also include saved orders from localStorage if any
+    try {
+        const raw = localStorage.getItem("order_tracker_orders_data_v1");
+        if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                const seenSos = new Set(orders.map(o => String(o?.soNumber || o?.orderNumber || o?.so || "").trim().toUpperCase()));
+                parsed.forEach(p => {
+                    const s = String(p?.soNumber || p?.orderNumber || p?.so || "").trim().toUpperCase();
+                    if (s && !seenSos.has(s)) {
+                        orders.push(p);
+                        seenSos.add(s);
+                    }
+                });
+            }
+        }
+    } catch (e) {}
 
     orders.forEach(o => {
-        if (!o || !o.soNumber) return;
-        const cleanSo = String(o.soNumber).trim().toUpperCase();
-        if (cleanSo.startsWith(prefix.toUpperCase())) {
-            const suffix = cleanSo.slice(prefix.length);
+        if (!o) return;
+        const rawSo = String(o.soNumber || o.orderNumber || o.so || "").trim().toUpperCase();
+        if (!rawSo) return;
+        const normSo = rawSo.replace(/[-_\s]+/g, "");
+        if (normSo.startsWith(normPrefix)) {
+            const suffix = normSo.slice(normPrefix.length);
             const match = suffix.match(/^(\d+)/);
             if (match) {
                 const num = parseInt(match[1], 10);
@@ -4349,9 +4370,9 @@ function openCreateOrderModal() {
         userBadge.textContent = curU ? (curU.displayName || curU.username) : "Admin";
     }
 
-    // Auto generate SO# if empty (format: SO-FSCO-YYMMxxx)
+    // Auto generate SO# (format: SO-FSCO-YYMMxxx, consecutive sequence)
     const soInput = document.getElementById("fieldSONumber");
-    if (soInput && !soInput.value) {
+    if (soInput) {
         soInput.value = generateNextAutoSONumber();
     }
 
@@ -4381,6 +4402,10 @@ function openCreateOrderModal() {
 function closeCreateOrderModal() {
     const modal = document.getElementById("createOrderModal");
     if (modal) modal.classList.add("hidden");
+
+    // Reset SO number input so next opening calculates fresh
+    const soInput = document.getElementById("fieldSONumber");
+    if (soInput) soInput.value = "";
 
     // Close any open autocomplete dropdowns
     ["customerSuggestionsList", "provinceSuggestionsList", "khanSuggestionsList"].forEach(id => {
