@@ -1447,7 +1447,8 @@
 
             <!-- Report KPI Summary Metric Cards -->
             <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                <div class="metric-card-modern p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs">
+                <!-- Card 1: ចំនួន Orders សរុប -->
+                <div class="order-1 col-span-1 lg:order-1 lg:col-span-1 metric-card-modern p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs">
                     <div class="flex items-center justify-between text-slate-400 mb-1.5">
                         <span class="text-xs font-semibold text-slate-500">ចំនួន Orders សរុប</span>
                         <i data-lucide="file-text" class="w-4 h-4 text-indigo-500"></i>
@@ -1455,8 +1456,19 @@
                     <div id="reportSummaryTotalOrders" class="text-2xl font-black text-slate-900 font-mono">0</div>
                     <span class="text-[10px] text-slate-400">Total Filtered Records</span>
                 </div>
-                <!-- KPI Card 2: ទឹកប្រាក់វិក្កយបត្រសរុប (Total Invoice Amount - Breakdown by Currency) -->
-                <div class="metric-card-modern p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex flex-col justify-between">
+
+                <!-- Card 3: កញ្ចប់ទំនិញសរុប (paired with Card 1 on mobile Row 1) -->
+                <div class="order-2 col-span-1 lg:order-3 lg:col-span-1 metric-card-modern p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs">
+                    <div class="flex items-center justify-between text-slate-400 mb-1.5">
+                        <span class="text-xs font-semibold text-slate-500">កញ្ចប់ទំនិញសរុប</span>
+                        <i data-lucide="boxes" class="w-4 h-4 text-blue-500"></i>
+                    </div>
+                    <div id="reportSummaryTotalPackages" class="text-2xl font-black text-blue-600 font-mono">0</div>
+                    <span class="text-[10px] text-slate-400">Total Packages</span>
+                </div>
+
+                <!-- Card 2: ទឹកប្រាក់វិក្កយបត្រសរុប (Full width on mobile: col-span-2 lg:col-span-1) -->
+                <div class="order-3 col-span-2 lg:order-2 lg:col-span-1 metric-card-modern p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex flex-col justify-between">
                     <div class="flex items-center justify-between text-slate-400 mb-1">
                         <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                             <span>ទឹកប្រាក់វិក្កយបត្រសរុប</span>
@@ -1474,7 +1486,7 @@
                         <div class="flex items-center justify-between gap-1">
                             <span class="text-[11px] font-semibold text-slate-600 flex items-center gap-1.5 min-w-0">
                                 <span class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
-                                <span class="truncate">Total USD:</span>
+                                <span class="whitespace-nowrap">Total USD:</span>
                             </span>
                             <div id="reportSummaryInvoiceUSD" class="text-xs sm:text-sm font-bold font-mono text-emerald-600 text-right whitespace-nowrap">
                                 <span class="text-slate-400 font-normal">$0.00</span>
@@ -1485,7 +1497,7 @@
                         <div class="flex items-center justify-between gap-1">
                             <span class="text-[11px] font-semibold text-slate-600 flex items-center gap-1.5 min-w-0">
                                 <span class="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
-                                <span class="truncate">Total KHR:</span>
+                                <span class="whitespace-nowrap">Total KHR:</span>
                             </span>
                             <div id="reportSummaryInvoiceKHR" class="text-xs sm:text-sm font-bold font-mono text-amber-600 text-right whitespace-nowrap">
                                 <span class="text-slate-400 font-normal">៛0</span>
@@ -1499,16 +1511,9 @@
                         <div id="reportSummaryTotalAmount" class="hidden">Total: $0.00</div>
                     </div>
                 </div>
-                <div class="metric-card-modern p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs">
-                    <div class="flex items-center justify-between text-slate-400 mb-1.5">
-                        <span class="text-xs font-semibold text-slate-500">កញ្ចប់ទំនិញសរុប</span>
-                        <i data-lucide="boxes" class="w-4 h-4 text-blue-500"></i>
-                    </div>
-                    <div id="reportSummaryTotalPackages" class="text-2xl font-black text-blue-600 font-mono">0</div>
-                    <span class="text-[10px] text-slate-400">Total Packages</span>
-                </div>
-                <!-- KPI Card 4: Payment Receipt (Breakdown: Company Account & Cash with Currency) -->
-                <div class="metric-card-modern p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex flex-col justify-between">
+
+                <!-- Card 4: Payment Receipt (Full width on mobile: col-span-2 lg:col-span-1) -->
+                <div class="order-4 col-span-2 lg:order-4 lg:col-span-1 metric-card-modern p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs flex flex-col justify-between">
                     <div class="flex items-center justify-between text-slate-400 mb-1">
                         <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
                             <span>Payment Receipt</span>
@@ -1523,10 +1528,10 @@
 
                     <div class="space-y-1 my-auto py-0.5">
                         <!-- Company Account Breakdown -->
-                        <div class="flex items-center justify-between gap-1">
+                        <div class="flex items-center justify-between gap-2">
                             <span class="text-[11px] font-semibold text-slate-600 flex items-center gap-1 min-w-0">
                                 <i data-lucide="building-2" class="w-3.5 h-3.5 text-blue-600 shrink-0"></i>
-                                <span class="truncate">Account:</span>
+                                <span class="whitespace-nowrap">Account:</span>
                             </span>
                             <div id="reportSummaryPaymentAccount" class="text-xs sm:text-sm font-bold font-mono text-right whitespace-nowrap">
                                 <span class="text-slate-400 font-normal">$0.00</span>
@@ -1534,10 +1539,10 @@
                         </div>
 
                         <!-- Cash Breakdown -->
-                        <div class="flex items-center justify-between gap-1">
+                        <div class="flex items-center justify-between gap-2">
                             <span class="text-[11px] font-semibold text-slate-600 flex items-center gap-1 min-w-0">
                                 <i data-lucide="banknote" class="w-3.5 h-3.5 text-emerald-600 shrink-0"></i>
-                                <span class="truncate">Cash:</span>
+                                <span class="whitespace-nowrap">Cash:</span>
                             </span>
                             <div id="reportSummaryPaymentCash" class="text-xs sm:text-sm font-bold font-mono text-right whitespace-nowrap">
                                 <span class="text-slate-400 font-normal">$0.00</span>
@@ -1571,54 +1576,59 @@
             </div>
 
             <!-- Report Filter Bar (By Year, By Month, From Date To Date, Search & Reset) -->
-            <div class="glass-panel-elevated p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs space-y-3">
-                <div class="flex flex-wrap items-center justify-between gap-3">
-                    <div class="flex flex-wrap items-center gap-2.5 sm:gap-3 flex-1 min-w-0">
-                        <!-- Filter By Year -->
-                        <div class="flex items-center gap-1.5">
-                            <span class="text-xs font-bold text-slate-600 whitespace-nowrap">ឆ្នាំ (Year):</span>
-                            <select id="reportFilterYear" onchange="onReportFilterChange()" class="px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs">
-                                <option value="ALL">All Years (គ្រប់ឆ្នាំ)</option>
-                            </select>
+            <div class="glass-panel-elevated p-3 sm:p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs space-y-2.5 sm:space-y-3">
+                <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5 sm:gap-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                        <!-- Filter By Year & Month: Side-by-side on mobile and desktop -->
+                        <div class="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-3 w-full sm:w-auto">
+                            <!-- Filter By Year -->
+                            <div class="flex items-center gap-1.5 min-w-0">
+                                <span class="text-xs font-bold text-slate-600 whitespace-nowrap">ឆ្នាំ (Year):</span>
+                                <select id="reportFilterYear" onchange="onReportFilterChange()" class="w-full sm:w-auto px-2.5 sm:px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs">
+                                    <option value="ALL">All Years (គ្រប់ឆ្នាំ)</option>
+                                </select>
+                            </div>
+
+                            <!-- Filter By Month (placed directly to the right of Year on the same line) -->
+                            <div class="flex items-center gap-1.5 min-w-0">
+                                <span class="text-xs font-bold text-slate-600 whitespace-nowrap">ខែ (Month):</span>
+                                <select id="reportFilterMonth" onchange="onReportFilterChange()" class="w-full sm:w-auto px-2.5 sm:px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs">
+                                    <option value="ALL">All Months (គ្រប់ខែ)</option>
+                                    <option value="1">01 - January</option>
+                                    <option value="2">02 - February</option>
+                                    <option value="3">03 - March</option>
+                                    <option value="4">04 - April</option>
+                                    <option value="5">05 - May</option>
+                                    <option value="6">06 - June</option>
+                                    <option value="7">07 - July</option>
+                                    <option value="8">08 - August</option>
+                                    <option value="9">09 - September</option>
+                                    <option value="10">10 - October</option>
+                                    <option value="11">11 - November</option>
+                                    <option value="12">12 - December</option>
+                                </select>
+                            </div>
                         </div>
 
-                        <!-- Filter By Month -->
-                        <div class="flex items-center gap-1.5">
-                            <span class="text-xs font-bold text-slate-600 whitespace-nowrap">ខែ (Month):</span>
-                            <select id="reportFilterMonth" onchange="onReportFilterChange()" class="px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs">
-                                <option value="ALL">All Months (គ្រប់ខែ)</option>
-                                <option value="1">01 - January</option>
-                                <option value="2">02 - February</option>
-                                <option value="3">03 - March</option>
-                                <option value="4">04 - April</option>
-                                <option value="5">05 - May</option>
-                                <option value="6">06 - June</option>
-                                <option value="7">07 - July</option>
-                                <option value="8">08 - August</option>
-                                <option value="9">09 - September</option>
-                                <option value="10">10 - October</option>
-                                <option value="11">11 - November</option>
-                                <option value="12">12 - December</option>
-                            </select>
-                        </div>
-
-                        <!-- Date Range: From Date to Date -->
-                        <div class="flex flex-wrap items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200/80">
-                            <span class="text-xs font-bold text-slate-600 pl-1">ពីថ្ងៃ:</span>
-                            <input type="date" id="reportFilterFromDate" onchange="onReportFilterChange()" class="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-2xs">
-                            <span class="text-xs font-bold text-slate-600">ដល់:</span>
-                            <input type="date" id="reportFilterToDate" onchange="onReportFilterChange()" class="px-2.5 py-1 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-2xs">
-                        </div>
-
-                        <!-- Search SO#, Customer, Invoice, Packing List -->
-                        <div class="relative flex-1 min-w-[200px] max-w-xs">
-                            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-                            <input type="text" id="reportFilterSearch" placeholder="ស្វែងរក SO#, Customer, Invoice..." oninput="onReportFilterChange()" class="w-full pl-8 pr-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs">
+                        <!-- Date Range: From Date to Date (Side-by-side) -->
+                        <div class="flex items-center gap-1.5 bg-slate-50 p-1.5 rounded-xl border border-slate-200/80 w-full sm:w-auto justify-between sm:justify-start">
+                            <span class="text-xs font-bold text-slate-600 pl-1 whitespace-nowrap">ពីថ្ងៃ:</span>
+                            <input type="date" id="reportFilterFromDate" onchange="onReportFilterChange()" class="flex-1 sm:flex-initial px-2 py-1 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-2xs min-w-[115px]">
+                            <span class="text-xs font-bold text-slate-600 whitespace-nowrap">ដល់:</span>
+                            <input type="date" id="reportFilterToDate" onchange="onReportFilterChange()" class="flex-1 sm:flex-initial px-2 py-1 rounded-lg border border-slate-200 bg-white text-xs font-medium text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-2xs min-w-[115px]">
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-2">
-                        <button type="button" onclick="resetReportFilters()" class="py-2 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs font-bold flex items-center gap-1.5 shadow-2xs transition active:scale-95 cursor-pointer" title="Reset all filters">
+                    <!-- Search Field & Reset Filters Button: Side-by-side on the same row -->
+                    <div class="flex items-center gap-2 sm:gap-2.5 w-full lg:w-auto lg:min-w-[320px]">
+                        <!-- Search SO#, Customer, Invoice, Packing List -->
+                        <div class="relative flex-1">
+                            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
+                            <input type="text" id="reportFilterSearch" placeholder="ស្វែងរក SO#, Customer, Invoice..." oninput="onReportFilterChange()" class="w-full pl-8 pr-3 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-2xs">
+                        </div>
+
+                        <!-- Reset Filters Button -->
+                        <button type="button" onclick="resetReportFilters()" class="shrink-0 py-2 px-3 sm:px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-xs font-bold flex items-center gap-1.5 shadow-2xs transition active:scale-95 cursor-pointer whitespace-nowrap" title="Reset all filters">
                             <i data-lucide="rotate-ccw" class="w-3.5 h-3.5 text-slate-500"></i>
                             <span>Reset Filters</span>
                         </button>
@@ -3549,8 +3559,8 @@
     </div>
 
     <!-- App Core Scripts -->
-    <script src="js/data.js?v=live-v4.7.7"></script>
-    <script src="js/sheets-sync.js?v=live-v4.7.7"></script>
-    <script src="js/app.js?v=live-v4.7.7"></script>
+    <script src="js/data.js?v=live-v4.7.8"></script>
+    <script src="js/sheets-sync.js?v=live-v4.7.8"></script>
+    <script src="js/app.js?v=live-v4.7.8"></script>
 </body>
 </html>
