@@ -1218,15 +1218,15 @@
                         <span>Reset Filters</span>
                     </button>
 
-                    <!-- Back to Dashboard Button -->
-                    <button type="button" onclick="switchNavbarModule('dashboard')" class="py-2 px-3.5 rounded-xl border border-slate-200/90 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center justify-center gap-1.5 cursor-pointer shrink-0" title="ត្រឡប់ទៅ Dashboard">
-                        <i data-lucide="layout-dashboard" class="w-4 h-4 text-slate-500"></i>
-                        <span>Back to Dashboard</span>
+                    <!-- Export to Excel Button -->
+                    <button type="button" onclick="exportDailyDeliveryToExcel()" class="py-2 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 shrink-0" title="Export Daily Delivery to Excel (.xlsx)">
+                        <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5 text-emerald-100"></i>
+                        <span>Export Excel (.xlsx)</span>
                     </button>
                 </div>
             </div>
 
-            <!-- TABLE 1: RECENT ORDER (In Delivery) -->
+            <!-- TABLE 1: RECENT ORDER (កំពុងដឹកជញ្ជូន / In Delivery) -->
             <!-- Layout: Recent Order នៅខាងលើ -->
             <div class="bg-white rounded-2xl border border-slate-200/90 shadow-2xs relative z-20">
                 <div class="p-3.5 sm:p-4 border-b border-slate-100 flex flex-row items-center justify-between gap-2 bg-gradient-to-r from-sky-50/40 via-white to-white rounded-t-2xl relative z-30">
@@ -1235,7 +1235,7 @@
                             <i data-lucide="truck" class="w-4 h-4"></i>
                         </div>
                         <div class="flex items-center gap-2">
-                            <h3 class="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">Recent Order</h3>
+                            <h3 class="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">Recent Order (កំពុងដឹកជញ្ជូន)</h3>
                             <span id="table1RecentBadgeCount" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-sky-100 text-sky-800 border border-sky-300">0</span>
                         </div>
                     </div>
@@ -1249,7 +1249,7 @@
                                 title="ជ្រើសរើសជួរឈរដើម្បីបង្ហាញក្នុង Recent Order">
                                 <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-sky-600"></i>
                                 <span>Personal display</span>
-                                <span id="dailyT1PersonalDisplayCountBadge" class="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-sky-50 text-sky-700 font-mono border border-sky-200">14/14</span>
+                                <span id="dailyT1PersonalDisplayCountBadge" class="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-sky-50 text-sky-700 font-mono border border-sky-200">13/13</span>
                                 <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
                             </button>
 
@@ -1259,7 +1259,7 @@
                                     <div class="flex items-center gap-1.5">
                                         <i data-lucide="sliders-horizontal" class="w-4 h-4 text-sky-600"></i>
                                         <h4 class="text-xs font-bold text-slate-800">Recent Order Columns</h4>
-                                        <span id="dailyT1PersonalDisplayHeaderBadge" class="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-sky-50 text-sky-700 font-mono border border-sky-200">14/14</span>
+                                        <span id="dailyT1PersonalDisplayHeaderBadge" class="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-sky-50 text-sky-700 font-mono border border-sky-200">13/13</span>
                                     </div>
                                     <div class="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
                                         <button type="button" onclick="setDailyT1PersonalDisplayAll(true)" class="text-[11px] font-bold text-sky-600 hover:text-sky-700 cursor-pointer">All</button>
@@ -1275,7 +1275,7 @@
                                 <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
                                     <div class="flex items-center gap-1">
                                         <span>បានជ្រើសរើស:</span>
-                                        <span id="dailyT1PersonalDisplayFooterCountBadge" class="text-[11px] font-bold font-mono text-sky-700 bg-sky-50 px-1.5 py-0.5 rounded border border-sky-200">14/14</span>
+                                        <span id="dailyT1PersonalDisplayFooterCountBadge" class="text-[11px] font-bold font-mono text-sky-700 bg-sky-50 px-1.5 py-0.5 rounded border border-sky-200">13/13</span>
                                     </div>
                                     <button type="button" onclick="closeDailyT1PersonalDisplayMenu()" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition cursor-pointer">
                                         រួចរាល់ (Done)
@@ -1299,7 +1299,7 @@
                 </div>
             </div>
 
-            <!-- TABLE 2: COMPLETED ORDER (Completed Delivery) -->
+            <!-- TABLE 2: COMPLETED ORDER (បានបញ្ចប់ការដឹកជញ្ជូន / Completed Delivery) -->
             <!-- Layout: Completed Order នៅខាងក្រោម -->
             <div class="bg-white rounded-2xl border border-slate-200/90 shadow-2xs relative z-10">
                 <div class="p-3.5 sm:p-4 border-b border-slate-100 flex flex-row items-center justify-between gap-2 bg-gradient-to-r from-emerald-50/40 via-white to-white rounded-t-2xl relative z-30">
@@ -1308,7 +1308,7 @@
                             <i data-lucide="check-circle-2" class="w-4 h-4"></i>
                         </div>
                         <div class="flex items-center gap-2">
-                            <h3 class="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">Completed Order</h3>
+                            <h3 class="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">Completed Order (ការដឹកជញ្ជូនបានបញ្ចប់)</h3>
                             <span id="table2CompletedBadgeCount" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">0</span>
                         </div>
                     </div>
@@ -1323,7 +1323,7 @@
                                 title="ជ្រើសរើសជួរឈរដើម្បីបង្ហាញក្នុង Completed Order">
                                 <i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-emerald-600"></i>
                                 <span>Personal display</span>
-                                <span id="dailyT2PersonalDisplayCountBadge" class="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 font-mono border border-emerald-200">17/17</span>
+                                <span id="dailyT2PersonalDisplayCountBadge" class="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 font-mono border border-emerald-200">15/15</span>
                                 <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
                             </button>
 
@@ -1333,7 +1333,7 @@
                                     <div class="flex items-center gap-1.5">
                                         <i data-lucide="sliders-horizontal" class="w-4 h-4 text-emerald-600"></i>
                                         <h4 class="text-xs font-bold text-slate-800">Completed Order Columns</h4>
-                                        <span id="dailyT2PersonalDisplayHeaderBadge" class="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 font-mono border border-emerald-200">17/17</span>
+                                        <span id="dailyT2PersonalDisplayHeaderBadge" class="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 font-mono border border-emerald-200">15/15</span>
                                     </div>
                                     <div class="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
                                         <button type="button" onclick="setDailyT2PersonalDisplayAll(true)" class="text-[11px] font-bold text-emerald-600 hover:text-emerald-700 cursor-pointer">All</button>
@@ -1349,16 +1349,8 @@
                                 <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
                                     <div class="flex items-center gap-1">
                                         <span>បានជ្រើសរើស:</span>
-                                        <span id="dailyT2PersonalDisplayFooterCountBadge" class="text-[11px] font-bold font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">17/17</span>
+                                        <span id="dailyT2PersonalDisplayFooterCountBadge" class="text-[11px] font-bold font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">15/15</span>
                                     </div>
-                                    <button type="button" onclick="closeDailyT2PersonalDisplayMenu()" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition cursor-pointer">
-                                        រួចរាល់ (Done)
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
                                     <button type="button" onclick="closeDailyT2PersonalDisplayMenu()" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition cursor-pointer">
                                         រួចរាល់ (Done)
                                     </button>
@@ -3546,8 +3538,8 @@
     </div>
 
     <!-- App Core Scripts -->
-    <script src="js/data.js?v=live-v4.8"></script>
-    <script src="js/sheets-sync.js?v=live-v4.8"></script>
-    <script src="js/app.js?v=live-v4.8"></script>
+    <script src="js/data.js?v=live-v4.7.1"></script>
+    <script src="js/sheets-sync.js?v=live-v4.7.1"></script>
+    <script src="js/app.js?v=live-v4.7.1"></script>
 </body>
 </html>
