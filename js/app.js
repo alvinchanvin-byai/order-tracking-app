@@ -5569,7 +5569,7 @@ async function startSecondDelivery(soNumber) {
 // Table 2: Completed Order (15 Columns)
 // ========================================================
 
-// Table 1: Recent Order Columns (14 Columns)
+// Table 1: Recent Order Columns (13 Columns)
 const DAILY_T1_COLUMNS = [
     { key: "status", label: "Status" },
     { key: "soDate", label: "SO Date" },
@@ -5581,13 +5581,12 @@ const DAILY_T1_COLUMNS = [
     { key: "invoiceNumber", label: "Invoice#" },
     { key: "invoiceAmount", label: "Invoice Amount" },
     { key: "totalPackage", label: "Total Packages" },
-    { key: "documentType", label: "Document Type" },
     { key: "driver", label: "អ្នកដឹក (Driver)" },
     { key: "startTime", label: "ពេលចេញ (Start)" },
     { key: "actions", label: "សកម្មភាព (Action)" }
 ];
 
-// Table 2: Completed Order Columns (17 Columns)
+// Table 2: Completed Order Columns (15 Columns)
 const DAILY_T2_COLUMNS = [
     { key: "status", label: "Status" },
     { key: "soDate", label: "SO Date" },
@@ -5598,8 +5597,6 @@ const DAILY_T2_COLUMNS = [
     { key: "packingList", label: "Packing List#" },
     { key: "invoiceNumber", label: "Invoice#" },
     { key: "invoiceAmount", label: "Invoice Amount" },
-    { key: "totalPackage", label: "Total Packages" },
-    { key: "documentType", label: "Document Type" },
     { key: "driver", label: "អ្នកដឹក (Driver)" },
     { key: "startTime", label: "ពេលចេញ (Start)" },
     { key: "endTime", label: "ពេលដល់ (End)" },
@@ -5617,12 +5614,7 @@ function getDailyT1ColumnPrefs() {
         const raw = localStorage.getItem(STORAGE_DAILY_T1_COL_PREFS);
         if (raw) {
             const prefs = JSON.parse(raw);
-            if (prefs && typeof prefs === "object") {
-                DAILY_T1_COLUMNS.forEach(c => {
-                    if (prefs[c.key] === undefined) prefs[c.key] = true;
-                });
-                return prefs;
-            }
+            if (prefs && typeof prefs === "object") return prefs;
         }
     } catch (e) {
         console.warn("Error reading daily T1 column prefs:", e);
@@ -5760,12 +5752,7 @@ function getDailyT2ColumnPrefs() {
         const raw = localStorage.getItem(STORAGE_DAILY_T2_COL_PREFS);
         if (raw) {
             const prefs = JSON.parse(raw);
-            if (prefs && typeof prefs === "object") {
-                DAILY_T2_COLUMNS.forEach(c => {
-                    if (prefs[c.key] === undefined) prefs[c.key] = true;
-                });
-                return prefs;
-            }
+            if (prefs && typeof prefs === "object") return prefs;
         }
     } catch (e) {
         console.warn("Error reading daily T2 column prefs:", e);
@@ -6074,7 +6061,6 @@ function renderDailyDeliveryTable1(orders) {
             <th data-daily-t1-col="invoiceNumber" class="py-3.5 px-3 text-left whitespace-nowrap">Invoice#</th>
             <th data-daily-t1-col="invoiceAmount" class="py-3.5 px-3 text-right whitespace-nowrap">Invoice Amount</th>
             <th data-daily-t1-col="totalPackage" class="py-3.5 px-3 text-center whitespace-nowrap">Total Packages</th>
-            <th data-daily-t1-col="documentType" class="py-3.5 px-3 text-center whitespace-nowrap">Document Type</th>
             <th data-daily-t1-col="driver" class="py-3.5 px-3 text-left whitespace-nowrap">អ្នកដឹក (Driver)</th>
             <th data-daily-t1-col="startTime" class="py-3.5 px-3 text-center whitespace-nowrap">ពេលចេញ (Start)</th>
             <th data-daily-t1-col="actions" class="py-3.5 px-3 text-center whitespace-nowrap">សកម្មភាព (Action)</th>
@@ -6157,12 +6143,7 @@ function renderDailyDeliveryTable1(orders) {
                     ${pkgStr !== "-" ? `<span class="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-bold text-xs">${pkgStr}</span>` : '<span class="text-slate-300 font-semibold">-</span>'}
                 </td>
 
-                <!-- 11. Document Type -->
-                <td data-daily-t1-col="documentType" class="py-3 px-3 text-center whitespace-nowrap">
-                    ${renderDocumentTypeBadge(order.documentType || "SO to customer")}
-                </td>
-
-                <!-- 12. Driver -->
+                <!-- 11. Driver -->
                 <td data-daily-t1-col="driver" class="py-3 px-3 text-sky-700 font-bold whitespace-nowrap">
                     <span class="inline-flex items-center gap-1">
                         <i data-lucide="user-check" class="w-3.5 h-3.5 text-sky-600"></i>
@@ -6217,8 +6198,6 @@ function renderDailyDeliveryTable2(orders) {
             <th data-daily-t2-col="packingList" class="py-3.5 px-3 text-left whitespace-nowrap">Packing List#</th>
             <th data-daily-t2-col="invoiceNumber" class="py-3.5 px-3 text-left whitespace-nowrap">Invoice#</th>
             <th data-daily-t2-col="invoiceAmount" class="py-3.5 px-3 text-right whitespace-nowrap">Invoice Amount</th>
-            <th data-daily-t2-col="totalPackage" class="py-3.5 px-3 text-center whitespace-nowrap">Total Packages</th>
-            <th data-daily-t2-col="documentType" class="py-3.5 px-3 text-center whitespace-nowrap">Document Type</th>
             <th data-daily-t2-col="driver" class="py-3.5 px-3 text-left whitespace-nowrap">អ្នកដឹក (Driver)</th>
             <th data-daily-t2-col="startTime" class="py-3.5 px-3 text-center whitespace-nowrap">ពេលចេញ (Start)</th>
             <th data-daily-t2-col="endTime" class="py-3.5 px-3 text-center whitespace-nowrap">ពេលដល់ (End)</th>
@@ -6259,7 +6238,6 @@ function renderDailyDeliveryTable2(orders) {
         const badge = getStatusBadgeInfo(order);
         const soDateStr = formatSoDateDisplay(order.timestamp || order.soDate || order.so_date || order.date);
         const amtStr = formatInvoiceAmountWithCurrency(order.invoiceAmount, order.currency);
-        const pkgStr = formatPackageWithUnit(order.totalPackage, order.packageUnit);
         const startTimeStr = order.deliveryStartTime ? formatDateTimeDisplay(order.deliveryStartTime) : "-";
         const endTimeStr = order.deliveryEndTime ? formatDateTimeDisplay(order.deliveryEndTime) : "-";
         const durationStr = order.deliveryDuration || calculateDurationHhMm(order.deliveryStartTime, order.deliveryEndTime);
@@ -6316,17 +6294,7 @@ function renderDailyDeliveryTable2(orders) {
                     ${amtStr}
                 </td>
 
-                <!-- 10. Total Packages -->
-                <td data-daily-t2-col="totalPackage" class="py-3 px-3 text-center whitespace-nowrap">
-                    ${pkgStr !== "-" ? `<span class="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-bold text-xs">${pkgStr}</span>` : '<span class="text-slate-300 font-semibold">-</span>'}
-                </td>
-
-                <!-- 11. Document Type -->
-                <td data-daily-t2-col="documentType" class="py-3 px-3 text-center whitespace-nowrap">
-                    ${renderDocumentTypeBadge(order.documentType || "SO to customer")}
-                </td>
-
-                <!-- 12. Driver -->
+                <!-- 10. Driver -->
                 <td data-daily-t2-col="driver" class="py-3 px-3 text-slate-700 font-semibold whitespace-nowrap">
                     ${escapeHtml(order.deliveryBy || "-")}
                 </td>
