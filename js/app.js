@@ -5987,6 +5987,8 @@ function renderDailyDeliveryView() {
     const elCompletedAmt = document.getElementById("dailyKpiCompletedAmount");
     const elSuccessCount = document.getElementById("dailyKpiSuccessCount");
     const elIncompleteCount = document.getElementById("dailyKpiIncompleteCount");
+    const elBadge1 = document.getElementById("table1RecentBadgeCount");
+    const elBadge2 = document.getElementById("table2CompletedBadgeCount");
 
     const recentTotalUsd = filteredRecent.reduce((sum, o) => sum + (parseFloat(o.invoiceAmount) || 0), 0);
     const completedTotalUsd = filteredCompleted.reduce((sum, o) => sum + (parseFloat(o.invoiceAmount) || 0), 0);
@@ -6005,17 +6007,8 @@ function renderDailyDeliveryView() {
     if (elCompletedAmt) elCompletedAmt.textContent = `$${completedTotalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     if (elSuccessCount) elSuccessCount.textContent = successOrders.length;
     if (elIncompleteCount) elIncompleteCount.textContent = incompleteOrders.length;
-    const badgeText1 = `${filteredRecent.length} Orders`;
-    const elBadge1 = document.getElementById("table1RecentBadgeCount");
-    const elBadge1Mobile = document.getElementById("table1RecentBadgeCountMobile");
-    if (elBadge1) elBadge1.textContent = badgeText1;
-    if (elBadge1Mobile) elBadge1Mobile.textContent = badgeText1;
-
-    const badgeText2 = `${filteredCompleted.length} Orders`;
-    const elBadge2 = document.getElementById("table2CompletedBadgeCount");
-    const elBadge2Mobile = document.getElementById("table2CompletedBadgeCountMobile");
-    if (elBadge2) elBadge2.textContent = badgeText2;
-    if (elBadge2Mobile) elBadge2Mobile.textContent = badgeText2;
+    if (elBadge1) elBadge1.textContent = `${filteredRecent.length} Orders`;
+    if (elBadge2) elBadge2.textContent = `${filteredCompleted.length} Orders`;
 
     const summaryText = document.getElementById("table2SummaryText");
     if (summaryText) summaryText.textContent = `សរុប: ${filteredCompleted.length} Orders (ជោគជ័យ: ${successOrders.length}, មិនជោគជ័យ/ត្រឡប់: ${incompleteOrders.length})`;
