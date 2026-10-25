@@ -2045,12 +2045,42 @@ function setupEventListeners() {
         btnSyncAllSetup.addEventListener("click", syncAllSetupToSheets);
     }
 
+// Generate Next Auto SO Number in format: SO-FSCO-YYMMxxx (e.g. SO-FSCO-2610001, SO-FSCO-2610002)
+function generateNextAutoSONumber() {
+    const now = new Date();
+    const yy = String(now.getFullYear()).slice(-2);
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const prefix = `SO-FSCO-${yy}${mm}`;
+
+    let maxSeq = 0;
+    const orders = (window.AppState && Array.isArray(AppState.orders)) ? AppState.orders : [];
+
+    orders.forEach(o => {
+        if (!o || !o.soNumber) return;
+        const cleanSo = String(o.soNumber).trim().toUpperCase();
+        if (cleanSo.startsWith(prefix.toUpperCase())) {
+            const suffix = cleanSo.slice(prefix.length);
+            const match = suffix.match(/^(\d+)/);
+            if (match) {
+                const num = parseInt(match[1], 10);
+                if (!isNaN(num) && num > maxSeq) {
+                    maxSeq = num;
+                }
+            }
+        }
+    });
+
+    const nextSeq = maxSeq + 1;
+    const seqStr = String(nextSeq).padStart(3, "0");
+    return `${prefix}${seqStr}`;
+}
+
     // Auto Generate SO# Button
     const btnGenSO = document.getElementById("btnGenSO");
     if (btnGenSO) {
         btnGenSO.addEventListener("click", () => {
-            const randomNum = Math.floor(1000 + Math.random() * 9000);
-            document.getElementById("fieldSONumber").value = `SO-${new Date().getFullYear()}-${randomNum}`;
+            const soInput = document.getElementById("fieldSONumber");
+            if (soInput) soInput.value = generateNextAutoSONumber();
         });
     }
 
@@ -2071,6 +2101,8 @@ function setupEventListeners() {
             document.getElementById("customerSuggestionsList")?.classList.add("hidden");
             document.getElementById("provinceSuggestionsList")?.classList.add("hidden");
             document.getElementById("khanSuggestionsList")?.classList.add("hidden");
+            const soInput = document.getElementById("fieldSONumber");
+            if (soInput) soInput.value = generateNextAutoSONumber();
         });
     }
 
@@ -4001,10 +4033,9 @@ async function handleOrderRegistration(e) {
     const documentType = document.getElementById("fieldDocType")?.value.trim() || "SO to customer";
     const specialNotes = document.getElementById("fieldSpecialNotes").value.trim();
 
-    // Auto-generate SO# if empty (since all fields are optional)
+    // Auto-generate SO# if empty (format: SO-FSCO-YYMMxxx)
     if (!soNumber) {
-        const randomNum = Math.floor(1000 + Math.random() * 9000);
-        soNumber = `SO-${new Date().getFullYear()}-${randomNum}`;
+        soNumber = generateNextAutoSONumber();
     }
     if (!customerName) {
         customerName = "-";
@@ -4318,11 +4349,10 @@ function openCreateOrderModal() {
         userBadge.textContent = curU ? (curU.displayName || curU.username) : "Admin";
     }
 
-    // Auto generate SO# if empty
+    // Auto generate SO# if empty (format: SO-FSCO-YYMMxxx)
     const soInput = document.getElementById("fieldSONumber");
     if (soInput && !soInput.value) {
-        const randomNum = Math.floor(1000 + Math.random() * 9000);
-        soInput.value = `SO-${new Date().getFullYear()}-${randomNum}`;
+        soInput.value = generateNextAutoSONumber();
     }
 
     // Ensure all suggestion dropdowns are closed upon opening modal
@@ -11399,6 +11429,7 @@ window.quickActionNavigate = quickActionNavigate;
 window.startPicking = startPicking;
 window.endPicking = endPicking;
 window.restartPicking = restartPicking;
+window.generateNextAutoSONumber = generateNextAutoSONumber;
 window.startChecking = startChecking;
 window.endChecking = endChecking;
 window.startDelivery = startDelivery;
@@ -11462,6 +11493,7 @@ window.confirmEndChecking = confirmEndChecking;
 window.adjustEndCheckingTotalPkg = adjustEndCheckingTotalPkg;
 window.endChecking = endChecking;
 window.restartPicking = restartPicking;
+window.generateNextAutoSONumber = generateNextAutoSONumber;
 window.switchNavbarModule = switchNavbarModule;
 window.goToDashboard = goToDashboard;
 window.openModuleCards = openModuleCards;
