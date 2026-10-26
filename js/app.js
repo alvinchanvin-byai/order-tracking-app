@@ -5100,6 +5100,10 @@ async function confirmEndChecking() {
     saveOrdersToStorage();
     closeEndCheckingModal();
     renderAll();
+    const detailsModal = document.getElementById("orderDetailsModal");
+    if (detailsModal && !detailsModal.classList.contains("hidden")) {
+        viewOrderDetails(soNumber);
+    }
 
     // Auto sync to Google Sheets
     SheetsSync.syncStageUpdate(soNumber, "CHECKING_END", now, order.checkingDuration, "Waiting Delivery", order.specialNotes, {
@@ -5577,6 +5581,10 @@ async function confirmEndDelivery() {
     if (typeof renderDashboardTable === "function") renderDashboardTable();
     if (typeof renderReportView === "function") renderReportView();
     closeEndDeliveryModal();
+    const detailsModal = document.getElementById("orderDetailsModal");
+    if (detailsModal && !detailsModal.classList.contains("hidden")) {
+        viewOrderDetails(soNumber);
+    }
 
     // Auto sync to Google Sheets
     SheetsSync.syncStageUpdate(soNumber, "DELIVERY_END", now, order.deliveryDuration, statusVal, order.specialNotes, {
@@ -7047,6 +7055,10 @@ function viewOrderDetails(soNumber) {
                         <div class="flex justify-between"><span class="text-slate-400">Created by:</span> <span class="font-bold text-blue-700">${escapeHtml(order.createdBy || "Admin")}</span></div>
                         <div class="flex justify-between"><span class="text-slate-400">កាលបរិច្ឆេទ:</span> <span>${formatDateTimeDisplay(order.timestamp)}</span></div>
                     </div>
+                    <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-center text-xs font-bold text-blue-700 bg-blue-50/70 border border-blue-200/80 rounded-xl py-1.5 px-2">
+                        <i data-lucide="check" class="w-3.5 h-3.5 stroke-[2.5] mr-1"></i>
+                        <span>Registered</span>
+                    </div>
                 </div>
 
                 <!-- Stage 2: Physical Picking -->
@@ -7066,8 +7078,19 @@ function viewOrderDetails(soNumber) {
                     </div>
                     <div class="mt-3 pt-2 border-t border-slate-100 font-mono text-[11px] text-slate-600 space-y-0.5">
                         <div class="flex justify-between"><span class="text-slate-400">Picker by:</span> <span class="font-bold text-amber-700">${escapeHtml(order.pickerBy || "-")}</span></div>
-                        <div class="flex justify-between"><span class="text-slate-400">Start:</span> <span>${formatDateTimeDisplay(order.pickingStartTime) || "-"}</span></div>
-                        <div class="flex justify-between"><span class="text-slate-400">End:</span> <span>${formatDateTimeDisplay(order.pickingEndTime) || "-"}</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Start:</span> <span class="font-bold ${order.pickingStartTime ? 'text-amber-700' : 'text-slate-500'}">${formatDateTimeDisplay(order.pickingStartTime) || "-"}</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">End:</span> <span class="font-bold ${order.pickingEndTime ? 'text-emerald-700' : 'text-slate-500'}">${formatDateTimeDisplay(order.pickingEndTime) || "-"}</span></div>
+                    </div>
+                    <!-- Action Buttons: Start & End Picking -->
+                    <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center gap-2">
+                        <button type="button" onclick="startPickingFromModal('${escapeHtml(order.soNumber)}')" class="flex-1 py-1.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer ${order.pickingStartTime ? 'bg-amber-100 text-amber-900 border border-amber-300 hover:bg-amber-200' : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white'}" title="${order.pickingStartTime ? 'បាន Start: ' + formatDateTimeDisplay(order.pickingStartTime) : 'ចុច Start Physical Picking'}">
+                            <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+                            <span>Start</span>
+                        </button>
+                        <button type="button" onclick="endPickingFromModal('${escapeHtml(order.soNumber)}')" class="flex-1 py-1.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer ${order.pickingEndTime ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 hover:bg-emerald-200' : (order.pickingStartTime ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white animate-pulse' : 'bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200')}" title="${order.pickingEndTime ? 'បាន End: ' + formatDateTimeDisplay(order.pickingEndTime) : 'ចុច End Physical Picking'}">
+                            <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                            <span>End</span>
+                        </button>
                     </div>
                 </div>
 
@@ -7088,8 +7111,19 @@ function viewOrderDetails(soNumber) {
                     </div>
                     <div class="mt-3 pt-2 border-t border-slate-100 font-mono text-[11px] text-slate-600 space-y-0.5">
                         <div class="flex justify-between"><span class="text-slate-400">Checker by:</span> <span class="font-bold text-purple-700">${escapeHtml(order.checkerBy || "-")}</span></div>
-                        <div class="flex justify-between"><span class="text-slate-400">Start:</span> <span>${formatDateTimeDisplay(order.checkingStartTime) || "-"}</span></div>
-                        <div class="flex justify-between"><span class="text-slate-400">End:</span> <span>${formatDateTimeDisplay(order.checkingEndTime) || "-"}</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Start:</span> <span class="font-bold ${order.checkingStartTime ? 'text-purple-700' : 'text-slate-500'}">${formatDateTimeDisplay(order.checkingStartTime) || "-"}</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">End:</span> <span class="font-bold ${order.checkingEndTime ? 'text-emerald-700' : 'text-slate-500'}">${formatDateTimeDisplay(order.checkingEndTime) || "-"}</span></div>
+                    </div>
+                    <!-- Action Buttons: Start & End Checking -->
+                    <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center gap-2">
+                        <button type="button" onclick="startCheckingFromModal('${escapeHtml(order.soNumber)}')" class="flex-1 py-1.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer ${order.checkingStartTime ? 'bg-purple-100 text-purple-900 border border-purple-300 hover:bg-purple-200' : 'bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white'}" title="${order.checkingStartTime ? 'បាន Start: ' + formatDateTimeDisplay(order.checkingStartTime) : 'ចុច Start Physical Checking'}">
+                            <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+                            <span>Start</span>
+                        </button>
+                        <button type="button" onclick="endCheckingFromModal('${escapeHtml(order.soNumber)}')" class="flex-1 py-1.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer ${order.checkingEndTime ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 hover:bg-emerald-200' : (order.checkingStartTime ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white animate-pulse' : 'bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200')}" title="${order.checkingEndTime ? 'បាន End: ' + formatDateTimeDisplay(order.checkingEndTime) : 'ចុច End Physical Checking'}">
+                            <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                            <span>End</span>
+                        </button>
                     </div>
                 </div>
 
@@ -7110,8 +7144,19 @@ function viewOrderDetails(soNumber) {
                     </div>
                     <div class="mt-3 pt-2 border-t border-slate-100 font-mono text-[11px] text-slate-600 space-y-0.5">
                         <div class="flex justify-between"><span class="text-slate-400">Delivery by:</span> <span class="font-bold text-sky-700">${escapeHtml(order.deliveryBy || "-")}</span></div>
-                        <div class="flex justify-between"><span class="text-slate-400">Start:</span> <span>${formatDateTimeDisplay(order.deliveryStartTime) || "-"}</span></div>
-                        <div class="flex justify-between"><span class="text-slate-400">End:</span> <span>${formatDateTimeDisplay(order.deliveryEndTime) || "-"}</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">Start:</span> <span class="font-bold ${order.deliveryStartTime ? 'text-sky-700' : 'text-slate-500'}">${formatDateTimeDisplay(order.deliveryStartTime) || "-"}</span></div>
+                        <div class="flex justify-between"><span class="text-slate-400">End:</span> <span class="font-bold ${order.deliveryEndTime ? 'text-emerald-700' : 'text-slate-500'}">${formatDateTimeDisplay(order.deliveryEndTime) || "-"}</span></div>
+                    </div>
+                    <!-- Action Buttons: Start & End Delivery -->
+                    <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center gap-2">
+                        <button type="button" onclick="startDeliveryFromModal('${escapeHtml(order.soNumber)}')" class="flex-1 py-1.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer ${order.deliveryStartTime ? 'bg-sky-100 text-sky-900 border border-sky-300 hover:bg-sky-200' : 'bg-gradient-to-r from-sky-600 to-sky-700 hover:from-sky-700 hover:to-sky-800 text-white'}" title="${order.deliveryStartTime ? 'បាន Start: ' + formatDateTimeDisplay(order.deliveryStartTime) : 'ចុច Start Delivery'}">
+                            <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+                            <span>Start</span>
+                        </button>
+                        <button type="button" onclick="endDeliveryFromModal('${escapeHtml(order.soNumber)}')" class="flex-1 py-1.5 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-xs cursor-pointer ${order.deliveryEndTime ? 'bg-emerald-100 text-emerald-900 border border-emerald-300 hover:bg-emerald-200' : (order.deliveryStartTime ? 'bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white animate-pulse' : 'bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200')}" title="${order.deliveryEndTime ? 'បាន End: ' + formatDateTimeDisplay(order.deliveryEndTime) : 'ចុច End Delivery'}">
+                            <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                            <span>End</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -7156,6 +7201,159 @@ function toggleFullscreenOrderModal() {
         lucide.createIcons();
     }
 }
+
+// ==============================================================================
+// ORDER DETAILS MODAL ACTIONS (Start & End for Picking, Checking, Delivery)
+// ==============================================================================
+async function startPickingFromModal(soNumber) {
+    if (!hasUserPermission("picking")) {
+        showToast("លោកអ្នកគ្មានសិទ្ធិដំណើរការ Physical Picking ឡើយ! ⛔", "warning");
+        return;
+    }
+    const order = AppState.orders.find(o => o.soNumber === soNumber);
+    if (!order) return;
+
+    const curUser = getCurrentUser();
+    const pickerName = curUser ? (curUser.displayName || curUser.username) : "Admin";
+    const now = formatAppDateTime();
+
+    order.pickingStartTime = now;
+    order.pickerBy = pickerName;
+    order.status = "In Picking";
+    order.lastUpdated = now;
+
+    saveOrdersToStorage();
+    renderAll(false);
+    viewOrderDetails(soNumber);
+
+    SheetsSync.syncStageUpdate(soNumber, "PICKING_START", now, null, "In Picking", null, { pickerBy: pickerName });
+    showToast(`បានចាប់ផ្ដើម Picking សម្រាប់ ${soNumber} ដោយ ${pickerName}`, "info");
+}
+
+async function endPickingFromModal(soNumber) {
+    if (!hasUserPermission("picking")) {
+        showToast("លោកអ្នកគ្មានសិទ្ធិដំណើរការ Physical Picking ឡើយ! ⛔", "warning");
+        return;
+    }
+    const order = AppState.orders.find(o => o.soNumber === soNumber);
+    if (!order) return;
+
+    const curUser = getCurrentUser();
+    const pickerName = order.pickerBy || (curUser ? (curUser.displayName || curUser.username) : "Admin");
+    const now = formatAppDateTime();
+
+    if (!order.pickingStartTime) {
+        order.pickingStartTime = now;
+    }
+
+    order.pickingEndTime = now;
+    order.pickingDuration = calculateDuration(order.pickingStartTime, now);
+    order.status = "Waiting Checking";
+    order.pickerBy = pickerName;
+    order.lastUpdated = now;
+
+    saveOrdersToStorage();
+    renderAll(false);
+    viewOrderDetails(soNumber);
+
+    SheetsSync.syncStageUpdate(soNumber, "PICKING_END", now, order.pickingDuration, "Waiting Checking", null, { pickerBy: pickerName });
+    showToast(`បានបញ្ចប់ Picking សម្រាប់ ${soNumber} (រយៈពេល: ${order.pickingDuration})`, "info");
+}
+
+async function startCheckingFromModal(soNumber) {
+    if (!hasUserPermission("checking")) {
+        showToast("លោកអ្នកគ្មានសិទ្ធិដំណើរការ Physical Checking ឡើយ! ⛔", "warning");
+        return;
+    }
+    const order = AppState.orders.find(o => o.soNumber === soNumber);
+    if (!order) return;
+
+    const curUser = getCurrentUser();
+    const checkerName = curUser ? (curUser.displayName || curUser.username) : "Admin";
+    const now = formatAppDateTime();
+
+    order.checkingStartTime = now;
+    order.checkerBy = checkerName;
+    order.status = "In Checking";
+    order.lastUpdated = now;
+
+    saveOrdersToStorage();
+    renderAll(false);
+    viewOrderDetails(soNumber);
+
+    SheetsSync.syncStageUpdate(soNumber, "CHECKING_START", now, null, "In Checking", null, { checkerBy: checkerName });
+    showToast(`បានចាប់ផ្ដើម Checking សម្រាប់ ${soNumber} ដោយ ${checkerName}`, "info");
+}
+
+function endCheckingFromModal(soNumber) {
+    if (!hasUserPermission("checking")) {
+        showToast("លោកអ្នកគ្មានសិទ្ធិដំណើរការ Physical Checking ឡើយ! ⛔", "warning");
+        return;
+    }
+    const order = AppState.orders.find(o => o.soNumber === soNumber);
+    if (!order) return;
+
+    if (!order.checkingStartTime) {
+        order.checkingStartTime = formatAppDateTime();
+        const curUser = getCurrentUser();
+        order.checkerBy = order.checkerBy || (curUser ? (curUser.displayName || curUser.username) : "Admin");
+    }
+    openEndCheckingModal(soNumber);
+}
+
+async function startDeliveryFromModal(soNumber) {
+    if (!hasUserPermission("delivery")) {
+        showToast("លោកអ្នកគ្មានសិទ្ធិដំណើរការ Delivery ឡើយ! ⛔", "warning");
+        return;
+    }
+    const order = AppState.orders.find(o => o.soNumber === soNumber);
+    if (!order) return;
+
+    const curUser = getCurrentUser();
+    const deliveryName = curUser ? (curUser.displayName || curUser.username) : "Admin";
+    const now = formatAppDateTime();
+
+    order.deliveryStartTime = now;
+    order.deliveryEndTime = "";
+    order.deliveryDuration = "-";
+    order.deliveryBy = deliveryName;
+    order.completedFromDailyDelivery = false;
+    unmarkOrderCompletedFromDaily(soNumber, false);
+    const att = Number(order.deliveryAttempts) || 1;
+    const deliveryStatus = getDeliveryStatusName(att);
+    order.status = deliveryStatus;
+    order.lastUpdated = now;
+
+    saveOrdersToStorage();
+    renderAll(false);
+    viewOrderDetails(soNumber);
+
+    SheetsSync.syncStageUpdate(soNumber, "DELIVERY_START", now, null, deliveryStatus, null, { deliveryBy: deliveryName, deliveryAttempts: att });
+    showToast(`ឡានបានចេញដំណើរដឹក ${soNumber} (${deliveryStatus}) ដោយ ${deliveryName}`, "info");
+}
+
+function endDeliveryFromModal(soNumber) {
+    if (!hasUserPermission("delivery")) {
+        showToast("លោកអ្នកគ្មានសិទ្ធិដំណើរការ Delivery ឡើយ! ⛔", "warning");
+        return;
+    }
+    const order = AppState.orders.find(o => o.soNumber === soNumber);
+    if (!order) return;
+
+    if (!order.deliveryStartTime) {
+        order.deliveryStartTime = formatAppDateTime();
+        const curUser = getCurrentUser();
+        order.deliveryBy = order.deliveryBy || (curUser ? (curUser.displayName || curUser.username) : "Admin");
+    }
+    openEndDeliveryModal(soNumber);
+}
+
+window.startPickingFromModal = startPickingFromModal;
+window.endPickingFromModal = endPickingFromModal;
+window.startCheckingFromModal = startCheckingFromModal;
+window.endCheckingFromModal = endCheckingFromModal;
+window.startDeliveryFromModal = startDeliveryFromModal;
+window.endDeliveryFromModal = endDeliveryFromModal;
 
 // ========================================================
 // ESCAPE KEY & BACKDROP CLOSE CONTROLLER
@@ -7219,6 +7417,10 @@ function closeTopActiveModal() {
     const endDeliveryModal = document.getElementById("endDeliveryModal");
     if (endDeliveryModal && !endDeliveryModal.classList.contains("hidden")) {
         closeEndDeliveryModal();
+    const detailsModal = document.getElementById("orderDetailsModal");
+    if (detailsModal && !detailsModal.classList.contains("hidden")) {
+        viewOrderDetails(soNumber);
+    }
         return true;
     }
     // 2.3 End checking modal
