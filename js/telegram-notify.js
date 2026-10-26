@@ -175,6 +175,60 @@ const TelegramNotify = (function () {
     }
 
     /**
+     * Retrieve recent chats that have messaged or added the Bot
+     * Helps auto-detect Chat ID easily without user having to manually find it.
+     */
+    async function getRecentChats(customToken) {
+        const cfg = getConfig();
+        const token = (customToken || cfg.botToken || "").trim();
+        if (!token) {
+            return { success: false, error: "សូមបញ្ចូល Telegram Bot Token ជាមុនសិន!" };
+        }
+
+        const url = `https://api.telegram.org/bot${token}/getUpdates`;
+
+        // Direct fetch first
+        try {
+            const res = await fetch(url);
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data.ok) {
+                const updates = Array.isArray(data.result) ? data.result : [];
+                const chatMap = new Map();
+                updates.forEach(u => {
+                    const msg = u.message || u.channel_post || u.my_chat_member;
+                    if (msg && msg.chat) {
+                        const c = msg.chat;
+                        const id = String(c.id);
+                        const title = c.title || (c.first_name ? `${c.first_name} ${c.last_name || ""}`.trim() : c.username) || "Chat";
+                        const type = c.type || "group";
+                        chatMap.set(id, { id, title, type });
+                    }
+                });
+                return { success: true, chats: Array.from(chatMap.values()) };
+            } else {
+                throw new Error(data.description || `HTTP ${res.status}`);
+            }
+        } catch (err) {
+            // Fallback via Google Apps Script
+            if (window.SheetsSync && window.SheetsSync.isConfigured && window.SheetsSync.isConfigured()) {
+                try {
+                    const gasUrl = window.SheetsSync.getApiUrl();
+                    const gasRes = await fetch(gasUrl, {
+                        method: "POST",
+                        headers: { "Content-Type": "text/plain;charset=utf-8" },
+                        body: JSON.stringify({ action: "getTelegramUpdates", botToken: token })
+                    });
+                    const gasData = await gasRes.json().catch(() => ({}));
+                    if (gasData.success && Array.isArray(gasData.chats)) {
+                        return { success: true, chats: gasData.chats };
+                    }
+                } catch (gasErr) {}
+            }
+            return { success: false, error: err.message };
+        }
+    }
+
+    /**
      * Queue an order that has just started delivery.
      * Uses a debounce timer (3.5s) to bundle multiple orders started together
      * into a single clean Telegram message.
@@ -512,6 +566,7 @@ ${driverListText.trim()}
         isConfigured,
         sendMessage,
         testConnection,
+        getRecentChats,
         queueDeliveryStart,
         flushStartDeliveryQueue,
         sendDeliveryEndReport,
