@@ -1045,6 +1045,44 @@ function doPost(e) {
     }
 
     // ==========================================
+    // ACTION: GET TELEGRAM UPDATES / AUTO-DETECT CHATS
+    // ==========================================
+    if (action === "getTelegramUpdates") {
+      var botToken = payload.botToken ? String(payload.botToken).trim() : "";
+      if (!botToken) {
+        return createJsonResponse({ status: "error", message: "Missing botToken" });
+      }
+      try {
+        var tgUrl = "https://api.telegram.org/bot" + botToken + "/getUpdates";
+        var tgResp = UrlFetchApp.fetch(tgUrl, { method: "get", muteHttpExceptions: true });
+        var tgData = JSON.parse(tgResp.getContentText());
+        var chatMap = {};
+        if (tgData && tgData.ok && Array.isArray(tgData.result)) {
+          tgData.result.forEach(function(u) {
+            var msg = u.message || u.channel_post || u.my_chat_member;
+            if (msg && msg.chat) {
+              var c = msg.chat;
+              var id = String(c.id);
+              var title = c.title || (c.first_name ? (c.first_name + " " + (c.last_name || "")).trim() : c.username) || "Chat";
+              chatMap[id] = { id: id, title: title, type: c.type || "group" };
+            }
+          });
+        }
+        var chatList = [];
+        for (var cid in chatMap) {
+          chatList.push(chatMap[cid]);
+        }
+        return createJsonResponse({
+          status: "success",
+          success: true,
+          chats: chatList
+        });
+      } catch (tgErr) {
+        return createJsonResponse({ status: "error", message: tgErr.toString() });
+      }
+    }
+
+    // ==========================================
     // ACTION: LOGOUT PRESENCE
     // ==========================================
     if (action === "logout_presence") {
