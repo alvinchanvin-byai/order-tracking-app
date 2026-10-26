@@ -320,7 +320,7 @@ const TelegramNotify = (function () {
                     ? formatInvoiceAmountWithCurrency(o.invoiceAmount, o.currency)
                     : (o.invoiceAmount ? `$${o.invoiceAmount}` : "");
 
-                listHtml += `${idx + 1}. <b>${so}</b>        |  <b>Packing List#:</b> ${escapeTg(plNum)}\n${cust}${amt ? ` (${escapeTg(amt)})` : ""}\n`;
+                listHtml += `${idx + 1}. <b>${so}</b>        |  <b>Packing List#:</b> ${escapeTg(plNum)}\n🏢 <b>${cust}</b>${amt ? ` (${escapeTg(amt)})` : ""}\n`;
                 if (idx < items.length - 1) {
                     listHtml += "\n";
                 }
@@ -348,7 +348,7 @@ const TelegramNotify = (function () {
 👤 <b>អ្នកដឹក (Driver):</b> ${escapeTg(drv)}
 ⏰ <b>ម៉ោងចេញ:</b> <code>${escapeTg(timeStr)}</code>  |  <b>Document type:</b> ${escapeTg(docTypeStr)}
 📦 <b>ចំនួន Order:</b> <b>${count} ${count > 1 ? "Orders" : "Order"}</b>  |  <b>ចំនួន Package:</b> <b>${escapeTg(packageStr)}</b>
-Special Notes: ${escapeTg(notesSummary)}
+📝 <b>Special Notes:</b> ${notesSummary ? `<b>${escapeTg(notesSummary)}</b>` : ""}
 
 ━━━━━━━━━━━━━━━━━━━━━
 ${listHtml.trim()}
