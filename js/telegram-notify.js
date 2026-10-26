@@ -166,7 +166,7 @@ const TelegramNotify = (function () {
         const timeStr = typeof formatAppDateTime === "function" ? formatAppDateTime() : new Date().toLocaleString();
         const testHtml = 
 `🎉 <b>សាកល្បងការតភ្ជាប់ជោគជ័យ! (Test Successful)</b>
-━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━
 🤖 <b>ប្រព័ន្ធ:</b> Order Tracking &amp; Delivery System
 ⏰ <b>កាលបរិច្ឆេទ:</b> <code>${escapeTg(timeStr)}</code>
 ✅ <b>ស្ថានភាព:</b> Telegram Bot ដំណើរការធម្មតា និងរួចរាល់សម្រាប់ការផ្ញើ Report ស្វ័យប្រវត្តិ!`;
@@ -320,7 +320,7 @@ const TelegramNotify = (function () {
                     ? formatInvoiceAmountWithCurrency(o.invoiceAmount, o.currency)
                     : (o.invoiceAmount ? `$${o.invoiceAmount}` : "");
 
-                listHtml += `${idx + 1}. <b>${so}</b>        |  <b>Packing List#:</b> ${escapeTg(plNum)}\n🏢 <b>${cust}</b>${amt ? ` (${escapeTg(amt)})` : ""}\n`;
+                listHtml += `${idx + 1}. <b>${so}</b>  |  <b>Packing List#:</b> ${escapeTg(plNum)}\n🏢 <b>${cust}</b>${amt ? ` (${escapeTg(amt)})` : ""}\n`;
                 if (idx < items.length - 1) {
                     listHtml += "\n";
                 }
@@ -344,15 +344,15 @@ const TelegramNotify = (function () {
 
             const msgHtml = 
 `🚚 <b>ចាប់ផ្ដើមដឹកជញ្ជូន (Start Delivery)</b>
-━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━
 👤 <b>អ្នកដឹក (Driver):</b> ${escapeTg(drv)}
 ⏰ <b>ម៉ោងចេញ:</b> <code>${escapeTg(timeStr)}</code>  |  <b>Document type:</b> ${escapeTg(docTypeStr)}
 📦 <b>ចំនួន Order:</b> <b>${count} ${count > 1 ? "Orders" : "Order"}</b>  |  <b>ចំនួន Package:</b> <b>${escapeTg(packageStr)}</b>
 📝 <b>Special Notes:</b> ${notesSummary ? `<b>${escapeTg(notesSummary)}</b>` : ""}
 
-━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━
 ${listHtml.trim()}
-━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━
 ${destSummary ? `📍 <b>គោលដៅ:</b> ${destSummary}\n` : ""}📱 <i>ចេញដំណើរពីប្រព័ន្ធ Order Tracking</i>`;
 
             await sendMessage(msgHtml);
@@ -434,14 +434,14 @@ ${destSummary ? `📍 <b>គោលដៅ:</b> ${destSummary}\n` : ""}📱 <i>ច
 
         const msgHtml = 
 `${iconHeader} <b>${statusTitle}</b>
-━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━
 📋 <b>SO#:</b> <code>${escapeTg(order.soNumber)}</code>
 👤 <b>អតិថិជន:</b> <b>${escapeTg(order.customerName || "អតិថិជនទូទៅ")}</b>
 🎯 <b>ស្ថានភាព:</b> ${statusBadge}
 ⏱ <b>រយៈពេលដឹក:</b> <b>${escapeTg(durStr)}</b>
 🛵 <b>អ្នកដឹក (Driver):</b> <b>${escapeTg(driverName)}</b>
 ${pkgLine}${locLine}${paymentLine}${notesLine}⏰ <b>ម៉ោងបញ្ចប់:</b> <code>${escapeTg(timeStr)}</code>
-━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━
 📱 <i>Order Tracking System</i>`;
 
         return await sendMessage(msgHtml);
@@ -552,20 +552,20 @@ ${pkgLine}${locLine}${paymentLine}${notesLine}⏰ <b>ម៉ោងបញ្ចប
 
         const reportHtml = 
 `📊 <b>របាយការណ៍ដឹកជញ្ជូនប្រចាំថ្ងៃ (Daily Delivery Report)</b>
-━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━
 📅 <b>កាលបរិច្ឆេទ:</b> <code>${escapeTg(displayDate)}</code>
 📦 <b>ការដឹកសរុប:</b> <b>${totalActive} Orders</b>
-━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━
 ✅ <b>បានបញ្ចប់ជោគជ័យ (Success):</b> <b>${countSuccess} Orders</b>
 ⚠️ <b>មិនជោគជ័យ (Incomplete):</b> <b>${countIncomplete} Orders</b>
 ↩️ <b>ត្រឡប់មកវិញ (Return):</b> <b>${countReturn} Orders</b>
 🚚 <b>កំពុងដឹកជញ្ជូន (In Delivery):</b> <b>${countInDelivery} Orders</b>
-━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━
 💵 <b>ទឹកប្រាក់សរុប (Total Invoices):</b>
-${totalUsd > 0 ? `• USD: <b>$${totalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b>\n` : ""}${totalKhr > 0 ? `• KHR: <b>៛${totalKhr.toLocaleString()}</b>\n` : ""}━━━━━━━━━━━━━━━━━━━━━
+${totalUsd > 0 ? `• USD: <b>$${totalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b>\n` : ""}${totalKhr > 0 ? `• KHR: <b>៛${totalKhr.toLocaleString()}</b>\n` : ""}━━━━━━━━━━━━━
 🛵 <b>ស្ថិតិតាមអ្នកដឹក (Driver Performance):</b>
 ${driverListText.trim()}
-━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━
 ⏰ <b>ម៉ោងបង្កើត Report:</b> <code>${escapeTg(typeof formatAppDateTime === "function" ? formatAppDateTime() : new Date().toLocaleString())}</code>
 📱 <i>ផ្ញើដោយស្វ័យប្រវត្តិពី Order Tracking System</i>`;
 
