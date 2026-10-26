@@ -2194,6 +2194,24 @@ function setupEventListeners() {
                 return;
             }
             if (gasUrlInput) gasUrlInput.value = SheetsSync.getApiUrl();
+
+            // Populate Telegram Settings
+            if (window.TelegramNotify) {
+                const tgCfg = window.TelegramNotify.getConfig();
+                const tgTokenEl = document.getElementById("tgBotTokenInput");
+                const tgChatEl = document.getElementById("tgChatIdInput");
+                const tgToggleEl = document.getElementById("tgEnabledToggle");
+                const tgOnStartEl = document.getElementById("tgNotifyOnStart");
+                const tgOnEndEl = document.getElementById("tgNotifyOnEnd");
+                const tgIncludePayEl = document.getElementById("tgIncludePayment");
+                if (tgTokenEl) tgTokenEl.value = tgCfg.botToken || "";
+                if (tgChatEl) tgChatEl.value = tgCfg.chatId || "";
+                if (tgToggleEl) tgToggleEl.checked = Boolean(tgCfg.enabled);
+                if (tgOnStartEl) tgOnStartEl.checked = Boolean(tgCfg.notifyOnStart);
+                if (tgOnEndEl) tgOnEndEl.checked = Boolean(tgCfg.notifyOnEnd);
+                if (tgIncludePayEl) tgIncludePayEl.checked = Boolean(tgCfg.includePayment);
+            }
+
             settingsModal.classList.remove("hidden");
             if (typeof lucide !== "undefined" && lucide.createIcons) {
                 lucide.createIcons();
@@ -2267,7 +2285,112 @@ function setupEventListeners() {
                 }
             });
         }
+
+        // Telegram Settings Events
+        const btnSaveTelegramSettings = document.getElementById("btnSaveTelegramSettings");
+        if (btnSaveTelegramSettings) {
+            btnSaveTelegramSettings.addEventListener("click", () => {
+                const user = getCurrentUser();
+                if (!user || user.role !== "Admin") {
+                    showToast("មានតែ Admin ប៉ុណ្ណោះដែលអាចរក្សាទុកការកំណត់ Telegram បាន!", "error");
+                    return;
+                }
+                const token = document.getElementById("tgBotTokenInput")?.value.trim() || "";
+                const chatId = document.getElementById("tgChatIdInput")?.value.trim() || "";
+                const enabled = Boolean(document.getElementById("tgEnabledToggle")?.checked);
+                const notifyOnStart = Boolean(document.getElementById("tgNotifyOnStart")?.checked);
+                const notifyOnEnd = Boolean(document.getElementById("tgNotifyOnEnd")?.checked);
+                const includePayment = Boolean(document.getElementById("tgIncludePayment")?.checked);
+
+                if (window.TelegramNotify) {
+                    window.TelegramNotify.saveConfig({
+                        enabled,
+                        botToken: token,
+                        chatId,
+                        notifyOnStart,
+                        notifyOnEnd,
+                        includePayment
+                    });
+                }
+
+                Swal.fire({
+                    title: "រក្សាទុកការកំណត់ Telegram រួចរាល់! ✈️✅",
+                    text: "រាល់ការផ្លាស់ប្ដូរត្រូវបានរក្សាទុក និង Sync ទៅកាន់គ្រប់ឧបករណ៍ទាំងអស់ដោយស្វ័យប្រវត្តិ។",
+                    icon: "success",
+                    confirmButtonText: "យល់ព្រម",
+                    confirmButtonColor: "#0284c7"
+                });
+                settingsModal.classList.add("hidden");
+            });
+        }
+
+        const btnTestTelegram = document.getElementById("btnTestTelegram");
+        if (btnTestTelegram) {
+            btnTestTelegram.addEventListener("click", async () => {
+                const token = document.getElementById("tgBotTokenInput")?.value.trim() || "";
+                const chatId = document.getElementById("tgChatIdInput")?.value.trim() || "";
+                if (!token || !chatId) {
+                    showToast("សូមបញ្ចូល Telegram Bot Token និង Chat ID ជាមុនសិន!", "warning");
+                    return;
+                }
+
+                btnTestTelegram.disabled = true;
+                btnTestTelegram.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin inline mr-1"></i> កំពុងផ្ញើសារសាកល្បង...`;
+                if (typeof lucide !== "undefined" && lucide.createIcons) lucide.createIcons();
+
+                const res = await window.TelegramNotify.testConnection(token, chatId);
+                btnTestTelegram.disabled = false;
+                btnTestTelegram.innerHTML = `<i data-lucide="send" class="w-4 h-4 inline mr-1"></i> សាកល្បងផ្ញើសារ (Test Send)`;
+                if (typeof lucide !== "undefined" && lucide.createIcons) lucide.createIcons();
+
+                if (res.success) {
+                    Swal.fire({
+                        title: "ផ្ញើសារសាកល្បងជោគជ័យ! 🎉✈️",
+                        text: "Bot បានបញ្ជូនសារ Test ចូលទៅកាន់ Telegram Group / Channel របស់អ្នកដោយជោគជ័យ!",
+                        icon: "success",
+                        confirmButtonText: "អស្ចារ្យ",
+                        confirmButtonColor: "#0284c7"
+                    });
+                } else {
+                    Swal.fire({
+                        title: "ផ្ញើសារបរាជ័យ! ⚠️",
+                        html: `ប្រព័ន្ធមិនអាចផ្ញើសារទៅកាន់ Telegram បានឡើយ:<br><b class="text-rose-600">${res.error || "Unknown error"}</b><br><br><span class="text-xs text-slate-500">សូមប្រាកដថា៖<br>1. Token ត្រឹមត្រូវពី @BotFather<br>2. Chat ID ត្រឹមត្រូវ<br>3. បានទាញ Bot ចូល Group/Channel និងកំណត់ជា Admin</span>`,
+                        icon: "error",
+                        confirmButtonText: "ពិនិត្យឡើងវិញ",
+                        confirmButtonColor: "#ef4444"
+                    });
+                }
+            });
+        }
     }
+
+    // Settings Navigation Tab Switcher
+    window.switchSettingsTab = function(tabName) {
+        const tabGas = document.getElementById("tabBtnSettingsGas");
+        const tabTg = document.getElementById("tabBtnSettingsTelegram");
+        const panelGas = document.getElementById("settingsPanel-gas");
+        const panelTg = document.getElementById("settingsPanel-telegram");
+        if (!tabGas || !tabTg || !panelGas || !panelTg) return;
+
+        if (tabName === "telegram") {
+            tabGas.className = "settings-nav-tab flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition text-slate-600 hover:text-blue-700 cursor-pointer";
+            tabTg.className = "settings-nav-tab flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition bg-white text-sky-700 shadow-xs cursor-pointer";
+            panelGas.classList.add("hidden");
+            panelTg.classList.remove("hidden");
+        } else {
+            tabGas.className = "settings-nav-tab flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition bg-white text-blue-700 shadow-xs cursor-pointer";
+            tabTg.className = "settings-nav-tab flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition text-slate-600 hover:text-sky-700 cursor-pointer";
+            panelGas.classList.remove("hidden");
+            panelTg.classList.add("hidden");
+        }
+        if (typeof lucide !== "undefined" && lucide.createIcons) lucide.createIcons();
+    };
+
+    window.togglePasswordVisibility = function(inputId) {
+        const el = document.getElementById(inputId);
+        if (!el) return;
+        el.type = (el.type === "password") ? "text" : "password";
+    };
 
     // Sync From Sheet Button
     const btnSyncNow = document.getElementById("btnSyncNow");
@@ -5350,7 +5473,90 @@ async function startDelivery(soNumber) {
     // Auto sync to Google Sheets
     SheetsSync.syncStageUpdate(soNumber, "DELIVERY_START", now, null, deliveryStatus, null, { deliveryBy: deliveryName, deliveryAttempts: att });
     showToast(`ឡានបានចេញដំណើរដឹក ${soNumber} (${deliveryStatus}) ដោយ ${deliveryName}`, "info");
+
+    // Telegram Notification: Queue Start Delivery (buffers multiple started orders into 1 Telegram report)
+    if (window.TelegramNotify && typeof window.TelegramNotify.queueDeliveryStart === "function") {
+        window.TelegramNotify.queueDeliveryStart(order, deliveryName);
+    }
 }
+
+async function batchStartWaitingDeliveryOrders() {
+    if (!hasUserPermission("delivery")) {
+        showToast("លោកអ្នកគ្មានសិទ្ធិដំណើរការ Delivery ឡើយ! ⛔", "warning");
+        return;
+    }
+
+    const waitingOrders = AppState.orders.filter(o => isOrderDelivery(o) && !o.deliveryStartTime);
+    if (waitingOrders.length === 0) {
+        showToast("មិនមាន Order ណាមួយកំពុងរង់ចាំ Start Delivery ឡើយ!", "info");
+        return;
+    }
+
+    const curUser = getCurrentUser();
+    const deliveryName = curUser ? (curUser.displayName || curUser.username) : "Admin";
+
+    const listPreview = waitingOrders.map((o, idx) => `
+        <div class="flex items-center justify-between text-xs py-1 border-b border-slate-100">
+            <span class="font-bold text-sky-800">${idx + 1}. ${escapeHtml(o.soNumber)}</span>
+            <span class="text-slate-600 truncate max-w-[200px] text-right">${escapeHtml(o.customerName || "-")}</span>
+        </div>
+    `).join("");
+
+    const confirmRes = await Swal.fire({
+        title: `ចាប់ផ្ដើមដឹក (Start Delivery) ${waitingOrders.length} Orders? 🚚`,
+        html: `
+            <p class="text-xs text-slate-600 mb-2">តើលោកអ្នកចង់ចុច Start Delivery លើចំនួន <b>${waitingOrders.length} Orders</b> នេះក្នុងពេលតែមួយមែនទេ?</p>
+            <div class="max-h-48 overflow-y-auto p-2 bg-slate-50 rounded-xl border border-slate-200 text-left space-y-0.5">
+                ${listPreview}
+            </div>
+            <p class="text-[11px] text-sky-700 font-semibold mt-2">✨ ប្រព័ន្ធនឹងបញ្ជូន Report រួមគ្នានៃ Orders ទាំង ${waitingOrders.length} នេះទៅ Telegram ស្វ័យប្រវត្តិ!</p>
+        `,
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonText: `Start ${waitingOrders.length} Orders ឥឡូវ`,
+        cancelButtonText: "បោះបង់",
+        confirmButtonColor: "#0284c7",
+        cancelButtonColor: "#64748b"
+    });
+
+    if (!confirmRes.isConfirmed) return;
+
+    const now = formatAppDateTime();
+    waitingOrders.forEach(order => {
+        order.deliveryStartTime = now;
+        order.deliveryEndTime = "";
+        order.deliveryDuration = "-";
+        order.deliveryBy = deliveryName;
+        order.completedFromDailyDelivery = false;
+        unmarkOrderCompletedFromDaily(order.soNumber);
+        const att = Number(order.deliveryAttempts) || 1;
+        const deliveryStatus = getDeliveryStatusName(att);
+        order.status = deliveryStatus;
+        order.lastUpdated = now;
+
+        SheetsSync.syncStageUpdate(order.soNumber, "DELIVERY_START", now, null, deliveryStatus, null, { deliveryBy: deliveryName, deliveryAttempts: att });
+
+        if (window.TelegramNotify && typeof window.TelegramNotify.queueDeliveryStart === "function") {
+            window.TelegramNotify.queueDeliveryStart(order, deliveryName);
+        }
+    });
+
+    saveOrdersToStorage();
+    renderAll(true);
+
+    if (window.TelegramNotify && typeof window.TelegramNotify.flushStartDeliveryQueue === "function") {
+        window.TelegramNotify.flushStartDeliveryQueue();
+    }
+
+    Swal.fire({
+        title: "ចាប់ផ្ដើមដឹកជោគជ័យ! 🚚🎉",
+        text: `បានចុច Start Delivery លើ ${waitingOrders.length} Orders ដោយជោគជ័យ និងបានបញ្ជូន Report ទៅ Telegram រួចរាល់!`,
+        icon: "success",
+        confirmButtonText: "យល់ព្រម",
+        confirmButtonColor: "#0284c7"
+    });
+}
+window.batchStartWaitingDeliveryOrders = batchStartWaitingDeliveryOrders;
 
 function openEndDeliveryModal(soNumber) {
     const order = AppState.orders.find(o => o.soNumber === soNumber);
@@ -5600,6 +5806,11 @@ async function confirmEndDelivery() {
         paymentCashCurrency: order.paymentCashCurrency
     });
 
+    // Telegram Notification: Alert End Delivery immediately
+    if (window.TelegramNotify && typeof window.TelegramNotify.sendDeliveryEndReport === "function") {
+        window.TelegramNotify.sendDeliveryEndReport(order, statusVal, order.deliveryDuration, notes);
+    }
+
     const isSuccess = (statusVal === "Success" || statusVal.endsWith("Success") || statusVal === "Delivered");
 
     if (isSuccess && typeof confetti === "function") {
@@ -5826,6 +6037,11 @@ async function startSecondDelivery(soNumber) {
         deliveryAttempts: order.deliveryAttempts,
         deliveryNotes: order.deliveryNotes
     });
+
+    // Telegram Notification: Queue Start Delivery
+    if (window.TelegramNotify && typeof window.TelegramNotify.queueDeliveryStart === "function") {
+        window.TelegramNotify.queueDeliveryStart(order, deliveryName);
+    }
 
     Swal.fire({
         title: `បានចាប់ផ្ដើមដឹកលើកទី ${nextAttempt} (${nextStatus})! 🚀`,
@@ -7330,6 +7546,11 @@ async function startDeliveryFromModal(soNumber) {
 
     SheetsSync.syncStageUpdate(soNumber, "DELIVERY_START", now, null, deliveryStatus, null, { deliveryBy: deliveryName, deliveryAttempts: att });
     showToast(`ឡានបានចេញដំណើរដឹក ${soNumber} (${deliveryStatus}) ដោយ ${deliveryName}`, "info");
+
+    // Telegram Notification: Queue Start Delivery
+    if (window.TelegramNotify && typeof window.TelegramNotify.queueDeliveryStart === "function") {
+        window.TelegramNotify.queueDeliveryStart(order, deliveryName);
+    }
 }
 
 function endDeliveryFromModal(soNumber) {
