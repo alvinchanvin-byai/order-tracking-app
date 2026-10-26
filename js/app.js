@@ -2362,6 +2362,110 @@ function setupEventListeners() {
                 }
             });
         }
+
+        const btnAutoDetectChatId = document.getElementById("btnAutoDetectChatId");
+        if (btnAutoDetectChatId) {
+            btnAutoDetectChatId.addEventListener("click", async () => {
+                const token = document.getElementById("tgBotTokenInput")?.value.trim() || "";
+                if (!token) {
+                    showToast("សូមបញ្ចូល Telegram Bot Token ជាមុនសិន!", "warning");
+                    document.getElementById("tgBotTokenInput")?.focus();
+                    return;
+                }
+
+                btnAutoDetectChatId.disabled = true;
+                btnAutoDetectChatId.innerHTML = `<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin text-sky-600 inline mr-1"></i><span>កំពុងស្វែងរក...</span>`;
+                if (typeof lucide !== "undefined" && lucide.createIcons) lucide.createIcons();
+
+                const res = await window.TelegramNotify.getRecentChats(token);
+                btnAutoDetectChatId.disabled = false;
+                btnAutoDetectChatId.innerHTML = `<i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500 inline mr-1"></i><span>🔍 ស្វែងរក Chat ID ស្វ័យប្រវត្តិ</span>`;
+                if (typeof lucide !== "undefined" && lucide.createIcons) lucide.createIcons();
+
+                if (!res.success) {
+                    Swal.fire({
+                        title: "មិនអាចស្វែងរកបានឡើយ!",
+                        text: res.error || "Token មិនត្រឹមត្រូវ",
+                        icon: "error",
+                        confirmButtonText: "បិទ",
+                        confirmButtonColor: "#ef4444"
+                    });
+                    return;
+                }
+
+                const chats = res.chats || [];
+                if (chats.length === 0) {
+                    Swal.fire({
+                        title: "មិនទាន់រកឃើញ Chat ឬ Group ឡើយ! ⚠️",
+                        html: `
+                            <p class="text-xs text-slate-600 mb-2 leading-relaxed">
+                                Bot មិនទាន់ទទួលបានសារណាមួយពី Telegram នៅឡើយទេ។<br>
+                                សូមអនុវត្តជំហានណាមួយខាងក្រោម៖
+                            </p>
+                            <div class="text-left bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1.5 text-slate-700">
+                                <div><b>ករណីទី ១ (Group):</b> Add Bot ចូល Group រួចវាយសារអ្វីមួយ (ឧ. <code>hello</code> ឬ <code>/start</code>) ក្នុង Group នោះ</div>
+                                <div><b>ករណីទី ២ (Private):</b> ចូលទៅកាន់ Bot របស់អ្នក រួចចុច <b>"Start"</b></div>
+                            </div>
+                            <p class="text-[11px] text-sky-700 font-semibold mt-2">រួចហើយចុចប៊ូតុង "ស្វែងរក Chat ID ស្វ័យប្រវត្តិ" នេះម្ដងទៀត!</p>
+                        `,
+                        icon: "info",
+                        confirmButtonText: "យល់ព្រម",
+                        confirmButtonColor: "#0284c7"
+                    });
+                    return;
+                }
+
+                if (chats.length === 1) {
+                    const c = chats[0];
+                    const chatInput = document.getElementById("tgChatIdInput");
+                    if (chatInput) chatInput.value = c.id;
+                    Swal.fire({
+                        title: "រកឃើញ Chat ID ជោគជ័យ! 🎉",
+                        html: `ឈ្មោះ: <b>${escapeHtml(c.title)}</b><br>ប្រភេទ: <span class="font-mono text-xs text-sky-700">${escapeHtml(c.type)}</span><br>Chat ID: <b class="font-mono text-emerald-600">${escapeHtml(c.id)}</b><br><br><span class="text-xs text-slate-500">ប្រព័ន្ធបានបំពេញ Chat ID នេះចូលក្នុងប្រអប់រួចរាល់! លោកអ្នកអាចចុច "សាកល្បងផ្ញើសារ (Test Send)" បានឥឡូវនេះ។</span>`,
+                        icon: "success",
+                        confirmButtonText: "អស្ចារ្យ",
+                        confirmButtonColor: "#0284c7"
+                    });
+                } else {
+                    const optionsHtml = chats.map((c, i) => `
+                        <label class="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 hover:border-sky-400 hover:bg-sky-50/50 cursor-pointer transition select-none text-left">
+                            <div class="flex items-center gap-2">
+                                <input type="radio" name="selectedDetectedChat" value="${escapeHtml(c.id)}" ${i === 0 ? 'checked' : ''} class="w-4 h-4 text-sky-600">
+                                <div>
+                                    <div class="font-bold text-xs text-slate-800">${escapeHtml(c.title)}</div>
+                                    <div class="text-[10px] text-slate-400">${escapeHtml(c.type)}</div>
+                                </div>
+                            </div>
+                            <span class="font-mono text-xs font-bold text-sky-700">${escapeHtml(c.id)}</span>
+                        </label>
+                    `).join("");
+
+                    Swal.fire({
+                        title: "ជ្រើសរើស Group / Chat របស់អ្នក",
+                        html: `
+                            <p class="text-xs text-slate-500 mb-2">ប្រព័ន្ធរកឃើញចំនួន ${chats.length} Chats ដូចខាងក្រោម៖</p>
+                            <div class="space-y-1.5 max-h-56 overflow-y-auto p-1 text-left">
+                                ${optionsHtml}
+                            </div>
+                        `,
+                        icon: "question",
+                        showCancelButton: true,
+                        confirmButtonText: "ជ្រើសរើស (Select)",
+                        cancelButtonText: "បោះបង់",
+                        confirmButtonColor: "#0284c7"
+                    }).then(res => {
+                        if (res.isConfirmed) {
+                            const selected = document.querySelector("input[name='selectedDetectedChat']:checked");
+                            if (selected) {
+                                const chatInput = document.getElementById("tgChatIdInput");
+                                if (chatInput) chatInput.value = selected.value;
+                                showToast(`បានកំណត់ Chat ID: ${selected.value}`, "success");
+                            }
+                        }
+                    });
+                }
+            });
+        }
     }
 
     // Settings Navigation Tab Switcher
