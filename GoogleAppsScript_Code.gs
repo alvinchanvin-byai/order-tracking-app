@@ -1011,6 +1011,40 @@ function doPost(e) {
     var nowFormatted = getNowString();
 
     // ==========================================
+    // ACTION: SEND TELEGRAM NOTIFICATION (PROXY)
+    // ==========================================
+    if (action === "sendTelegram") {
+      var botToken = payload.botToken ? String(payload.botToken).trim() : "";
+      var chatId = payload.chatId ? String(payload.chatId).trim() : "";
+      var text = payload.text || "";
+      if (!botToken || !chatId || !text) {
+        return createJsonResponse({ status: "error", message: "Missing botToken, chatId, or text" });
+      }
+      try {
+        var tgUrl = "https://api.telegram.org/bot" + botToken + "/sendMessage";
+        var tgResp = UrlFetchApp.fetch(tgUrl, {
+          method: "post",
+          contentType: "application/json",
+          payload: JSON.stringify({
+            chat_id: chatId,
+            text: text,
+            parse_mode: "HTML",
+            disable_web_page_preview: true
+          }),
+          muteHttpExceptions: true
+        });
+        var tgData = JSON.parse(tgResp.getContentText());
+        return createJsonResponse({
+          status: tgResp.getResponseCode() === 200 && tgData.ok ? "success" : "error",
+          success: tgResp.getResponseCode() === 200 && tgData.ok,
+          result: tgData
+        });
+      } catch (tgErr) {
+        return createJsonResponse({ status: "error", message: tgErr.toString() });
+      }
+    }
+
+    // ==========================================
     // ACTION: LOGOUT PRESENCE
     // ==========================================
     if (action === "logout_presence") {
