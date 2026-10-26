@@ -2058,7 +2058,10 @@
                         <label class="block text-xs font-bold text-slate-700">
                             Telegram Chat ID / Group ID:
                         </label>
-                        <span class="text-[11px] text-slate-400 font-mono">Group/Channel ID</span>
+                        <button type="button" id="btnAutoDetectChatId" class="text-[11px] text-sky-600 hover:text-sky-800 hover:underline flex items-center gap-1 font-semibold cursor-pointer" title="ស្វែងរក Chat ID ដោយស្វ័យប្រវត្តិតាមរយៈសារក្នុង Group ឬ Bot">
+                            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i>
+                            <span>🔍 ស្វែងរក Chat ID ស្វ័យប្រវត្តិ</span>
+                        </button>
                     </div>
                     <input type="text" id="tgChatIdInput" placeholder="ឧទាហរណ៍: -1001234567890 ឬ @channel_name" class="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 font-mono">
                     <p class="text-[11px] text-slate-400 mt-1">Chat ID នៃ Telegram Group ឬ Channel (ត្រូវ add Bot ចូល Group និងកំណត់ជា Admin)</p>
@@ -3693,9 +3696,9 @@
 
     <!-- App Core Scripts -->
     <script src="js/paho-mqtt.min.js"></script>
-    <script src="js/data.js?v=live-v4.8.3"></script>
-    <script src="js/sheets-sync.js?v=live-v4.8.3"></script>
-    <script src="js/telegram-notify.js?v=live-v4.8.3"></script>
-    <script src="js/app.js?v=live-v4.8.3"></script>
+    <script src="js/data.js?v=live-v4.8.4"></script>
+    <script src="js/sheets-sync.js?v=live-v4.8.4"></script>
+    <script src="js/telegram-notify.js?v=live-v4.8.4"></script>
+    <script src="js/app.js?v=live-v4.8.4"></script>
 </body>
 </html>
