@@ -287,6 +287,9 @@ const TelegramNotify = (function () {
 
             let listHtml = "";
             const destinations = new Set();
+            const docTypeSet = new Set();
+            let totalPkgSum = 0;
+            const unitSet = new Set();
 
             items.forEach((item, idx) => {
                 const o = item.order;
@@ -295,12 +298,37 @@ const TelegramNotify = (function () {
                 const loc = [o.cityProvince, o.khan].filter(Boolean).map(escapeTg).join(", ");
                 if (loc) destinations.add(loc);
 
+                const dt = (o.documentType && o.documentType.trim() && o.documentType !== "General")
+                    ? o.documentType.trim()
+                    : "SO to customer";
+                docTypeSet.add(dt);
+
+                if (o.totalPackage !== undefined && o.totalPackage !== null && o.totalPackage !== "" && Number(o.totalPackage) > 0) {
+                    totalPkgSum += Number(o.totalPackage);
+                    if (o.packageUnit && o.packageUnit.trim()) {
+                        unitSet.add(o.packageUnit.trim());
+                    }
+                }
+
                 const amt = (typeof formatInvoiceAmountWithCurrency === "function") 
                     ? formatInvoiceAmountWithCurrency(o.invoiceAmount, o.currency)
                     : (o.invoiceAmount ? `$${o.invoiceAmount}` : "");
 
-                listHtml += `${idx + 1}. <b>${so}</b> — ${cust}${amt ? ` <i>(${escapeTg(amt)})</i>` : ""}\n`;
+                listHtml += `${idx + 1}. <b>${so}</b> — ${cust}${amt ? ` (${escapeTg(amt)})` : ""}\n`;
             });
+
+            const docTypeStr = docTypeSet.size > 0 ? Array.from(docTypeSet).join(", ") : "SO to customer";
+
+            let packageUnitStr = "Cartons";
+            if (unitSet.size === 1) {
+                packageUnitStr = Array.from(unitSet)[0];
+                if (totalPkgSum > 1 && !packageUnitStr.toLowerCase().endsWith("s")) {
+                    packageUnitStr += "s";
+                }
+            } else if (unitSet.size > 1) {
+                packageUnitStr = "Packages";
+            }
+            const packageStr = totalPkgSum > 0 ? `${totalPkgSum} ${packageUnitStr}` : "-";
 
             const destSummary = destinations.size > 0 
                 ? Array.from(destinations).slice(0, 3).join(" • ") + (destinations.size > 3 ? "..." : "")
@@ -309,9 +337,10 @@ const TelegramNotify = (function () {
             const msgHtml = 
 `🚚 <b>ចាប់ផ្ដើមដឹកជញ្ជូន (Start Delivery)</b>
 ━━━━━━━━━━━━━━━━━━━━━
-👤 <b>អ្នកដឹក (Driver):</b> <b>${escapeTg(drv)}</b>
-⏰ <b>ម៉ោងចេញ:</b> <code>${escapeTg(timeStr)}</code>
-📦 <b>ចំនួនសរុប:</b> <b>${count} ${count > 1 ? "Orders" : "Order"}</b>
+👤 <b>អ្នកដឹក (Driver):</b> ${escapeTg(drv)}
+⏰ <b>ម៉ោងចេញ:</b> <code>${escapeTg(timeStr)}</code>  |  <b>Document type:</b> ${escapeTg(docTypeStr)}
+📦 <b>ចំនួន Order:</b> <b>${count} ${count > 1 ? "Orders" : "Order"}</b>  |  <b>ចំនួន Package:</b> <b>${escapeTg(packageStr)}</b>
+
 ━━━━━━━━━━━━━━━━━━━━━
 ${listHtml.trim()}
 ━━━━━━━━━━━━━━━━━━━━━
@@ -373,6 +402,12 @@ ${destSummary ? `📍 <b>គោលដៅ:</b> ${destSummary}\n` : ""}📱 <i>ច
             }
         }
 
+        // Package line if any
+        let pkgLine = "";
+        if (order.totalPackage && Number(order.totalPackage) > 0) {
+            pkgLine = `📦 <b>ចំនួន Package:</b> <b>${order.totalPackage} ${escapeTg(order.packageUnit || "Carton")}</b>\n`;
+        }
+
         // Location line if enabled
         let locLine = "";
         if (cfg.includeLocation && locationStr !== "មិនបានបញ្ជាក់") {
@@ -396,7 +431,7 @@ ${destSummary ? `📍 <b>គោលដៅ:</b> ${destSummary}\n` : ""}📱 <i>ច
 🎯 <b>ស្ថានភាព:</b> ${statusBadge}
 ⏱ <b>រយៈពេលដឹក:</b> <b>${escapeTg(durStr)}</b>
 🛵 <b>អ្នកដឹក (Driver):</b> <b>${escapeTg(driverName)}</b>
-${locLine}${paymentLine}${notesLine}⏰ <b>ម៉ោងបញ្ចប់:</b> <code>${escapeTg(timeStr)}</code>
+${pkgLine}${locLine}${paymentLine}${notesLine}⏰ <b>ម៉ោងបញ្ចប់:</b> <code>${escapeTg(timeStr)}</code>
 ━━━━━━━━━━━━━━━━━━━━━
 📱 <i>Order Tracking System</i>`;
 
