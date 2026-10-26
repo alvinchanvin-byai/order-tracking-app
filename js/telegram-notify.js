@@ -290,6 +290,7 @@ const TelegramNotify = (function () {
             const docTypeSet = new Set();
             let totalPkgSum = 0;
             const unitSet = new Set();
+            const specialNotesList = [];
 
             items.forEach((item, idx) => {
                 const o = item.order;
@@ -310,25 +311,32 @@ const TelegramNotify = (function () {
                     }
                 }
 
+                if (o.specialNotes && o.specialNotes.trim()) {
+                    specialNotesList.push(o.specialNotes.trim());
+                }
+
+                const plNum = o.packingListNumber || o.packingList || o.packing_list || "";
                 const amt = (typeof formatInvoiceAmountWithCurrency === "function") 
                     ? formatInvoiceAmountWithCurrency(o.invoiceAmount, o.currency)
                     : (o.invoiceAmount ? `$${o.invoiceAmount}` : "");
 
-                listHtml += `${idx + 1}. <b>${so}</b> — ${cust}${amt ? ` (${escapeTg(amt)})` : ""}\n`;
+                listHtml += `${idx + 1}. <b>${so}</b>        |  <b>Packing List#:</b> ${escapeTg(plNum)}\n${cust}${amt ? ` (${escapeTg(amt)})` : ""}\n`;
+                if (idx < items.length - 1) {
+                    listHtml += "\n";
+                }
             });
 
             const docTypeStr = docTypeSet.size > 0 ? Array.from(docTypeSet).join(", ") : "SO to customer";
 
-            let packageUnitStr = "Cartons";
+            let packageUnitStr = "Carton (កេស)";
             if (unitSet.size === 1) {
                 packageUnitStr = Array.from(unitSet)[0];
-                if (totalPkgSum > 1 && !packageUnitStr.toLowerCase().endsWith("s")) {
-                    packageUnitStr += "s";
-                }
             } else if (unitSet.size > 1) {
                 packageUnitStr = "Packages";
             }
             const packageStr = totalPkgSum > 0 ? `${totalPkgSum} ${packageUnitStr}` : "-";
+
+            const notesSummary = specialNotesList.length > 0 ? specialNotesList.join(" | ") : "";
 
             const destSummary = destinations.size > 0 
                 ? Array.from(destinations).slice(0, 3).join(" • ") + (destinations.size > 3 ? "..." : "")
@@ -340,6 +348,7 @@ const TelegramNotify = (function () {
 👤 <b>អ្នកដឹក (Driver):</b> ${escapeTg(drv)}
 ⏰ <b>ម៉ោងចេញ:</b> <code>${escapeTg(timeStr)}</code>  |  <b>Document type:</b> ${escapeTg(docTypeStr)}
 📦 <b>ចំនួន Order:</b> <b>${count} ${count > 1 ? "Orders" : "Order"}</b>  |  <b>ចំនួន Package:</b> <b>${escapeTg(packageStr)}</b>
+Special Notes: ${escapeTg(notesSummary)}
 
 ━━━━━━━━━━━━━━━━━━━━━
 ${listHtml.trim()}
