@@ -1105,6 +1105,17 @@ document.addEventListener("DOMContentLoaded", () => {
         syncFromGoogleSheet();
     }
 
+    // Telegram Centralized Sync:
+    // If PC has Telegram configured, auto-push to Cloud & Realtime Relay.
+    // If Mobile is empty, auto-fetch from Cloud immediately.
+    if (window.TelegramNotify) {
+        if (window.TelegramNotify.isConfigured()) {
+            window.TelegramNotify.ensureCloudSynced();
+        } else if (window.SheetsSync && typeof window.SheetsSync.fetchTelegramConfig === "function") {
+            window.SheetsSync.fetchTelegramConfig();
+        }
+    }
+
     // Guard against browser password managers automatically filling username ("csp" or "ksp") into Daily Delivery search input
     function purgeDailySearchAutofill() {
         const sInput = document.getElementById("dailyDeliverySearchInput");
@@ -2232,6 +2243,22 @@ function setupEventListeners() {
                 if (tgOnStartEl) tgOnStartEl.checked = Boolean(tgCfg.notifyOnStart);
                 if (tgOnEndEl) tgOnEndEl.checked = Boolean(tgCfg.notifyOnEnd);
                 if (tgIncludePayEl) tgIncludePayEl.checked = Boolean(tgCfg.includePayment);
+
+                // If currently empty on this device (e.g. freshly opened on Mobile), fetch latest from Cloud immediately!
+                if ((!tgCfg.botToken || !tgCfg.chatId) && window.SheetsSync && typeof window.SheetsSync.fetchTelegramConfig === "function") {
+                    window.SheetsSync.fetchTelegramConfig().then(cloudCfg => {
+                        if (cloudCfg && (cloudCfg.botToken || cloudCfg.chatId)) {
+                            if (tgTokenEl && (!tgTokenEl.value || tgTokenEl.value === "")) tgTokenEl.value = cloudCfg.botToken || "";
+                            if (tgChatEl && (!tgChatEl.value || tgChatEl.value === "")) tgChatEl.value = cloudCfg.chatId || "";
+                            if (tgToggleEl && cloudCfg.enabled !== undefined) tgToggleEl.checked = Boolean(cloudCfg.enabled);
+                            if (tgOnStartEl && cloudCfg.notifyOnStart !== undefined) tgOnStartEl.checked = Boolean(cloudCfg.notifyOnStart);
+                            if (tgOnEndEl && cloudCfg.notifyOnEnd !== undefined) tgOnEndEl.checked = Boolean(cloudCfg.notifyOnEnd);
+                            if (tgIncludePayEl && cloudCfg.includePayment !== undefined) tgIncludePayEl.checked = Boolean(cloudCfg.includePayment);
+                        }
+                    });
+                } else if (tgCfg.botToken && tgCfg.chatId && typeof window.TelegramNotify.ensureCloudSynced === "function") {
+                    window.TelegramNotify.ensureCloudSynced();
+                }
             }
 
             settingsModal.classList.remove("hidden");
