@@ -66,7 +66,14 @@ const TelegramNotify = (function () {
     function applySyncedConfig(incoming) {
         if (!incoming || typeof incoming !== "object") return;
         const current = getConfig();
+
+        // Guard: Do not overwrite valid token or chatId with empty/null strings
+        const incomingToken = incoming.botToken ? String(incoming.botToken).trim() : "";
+        const incomingChatId = incoming.chatId ? String(incoming.chatId).trim() : "";
         const merged = { ...current, ...incoming };
+        if (!incomingToken && current.botToken) merged.botToken = current.botToken;
+        if (!incomingChatId && current.chatId) merged.chatId = current.chatId;
+
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
         } catch (e) {
@@ -80,14 +87,38 @@ const TelegramNotify = (function () {
         const tgOnStartEl = document.getElementById("tgNotifyOnStart");
         const tgOnEndEl = document.getElementById("tgNotifyOnEnd");
         const tgIncludePayEl = document.getElementById("tgIncludePayment");
-        if (tgTokenEl && (!tgTokenEl.value || tgTokenEl.value === "")) tgTokenEl.value = merged.botToken || "";
-        if (tgChatEl && (!tgChatEl.value || tgChatEl.value === "")) tgChatEl.value = merged.chatId || "";
-        if (tgToggleEl) tgToggleEl.checked = Boolean(merged.enabled);
-        if (tgOnStartEl) tgOnStartEl.checked = Boolean(merged.notifyOnStart);
-        if (tgOnEndEl) tgOnEndEl.checked = Boolean(merged.notifyOnEnd);
-        if (tgIncludePayEl) tgIncludePayEl.checked = Boolean(merged.includePayment);
+        if (tgTokenEl && document.activeElement !== tgTokenEl && merged.botToken) {
+            tgTokenEl.value = merged.botToken;
+        }
+        if (tgChatEl && document.activeElement !== tgChatEl && merged.chatId) {
+            tgChatEl.value = merged.chatId;
+        }
+        if (tgToggleEl && merged.enabled !== undefined) tgToggleEl.checked = Boolean(merged.enabled);
+        if (tgOnStartEl && merged.notifyOnStart !== undefined) tgOnStartEl.checked = Boolean(merged.notifyOnStart);
+        if (tgOnEndEl && merged.notifyOnEnd !== undefined) tgOnEndEl.checked = Boolean(merged.notifyOnEnd);
+        if (tgIncludePayEl && merged.includePayment !== undefined) tgIncludePayEl.checked = Boolean(merged.includePayment);
 
         return merged;
+    }
+
+    /**
+     * If this device already has Telegram Bot Token & Chat ID configured (e.g. PC),
+     * auto-broadcast and push it to Google Apps Script Cloud so that Mobile & other users inherit it immediately!
+     */
+    function ensureCloudSynced() {
+        const cfg = getConfig();
+        if (cfg && cfg.botToken && cfg.botToken.trim() && cfg.chatId && cfg.chatId.trim()) {
+            if (window.SheetsSync && typeof window.SheetsSync.syncTelegramConfig === "function") {
+                window.SheetsSync.syncTelegramConfig(cfg);
+            }
+            if (window.SheetsSync && typeof window.SheetsSync.broadcastRealtime === "function") {
+                window.SheetsSync.broadcastRealtime({
+                    action: "SAVE_TELEGRAM_CONFIG",
+                    type: "TELEGRAM_CONFIG_UPDATE",
+                    config: cfg
+                });
+            }
+        }
     }
 
     /**
@@ -649,6 +680,7 @@ ${driverListText.trim()}
         getConfig,
         saveConfig,
         applySyncedConfig,
+        ensureCloudSynced,
         isConfigured,
         sendMessage,
         testConnection,
