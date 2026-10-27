@@ -696,7 +696,11 @@ function getTelegramConfigGAS() {
     var raw = PropertiesService.getScriptProperties().getProperty("TELEGRAM_CONFIG");
     if (raw) {
       var parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === "object" && (parsed.botToken || parsed.chatId)) {
+      if (parsed && typeof parsed === "object") {
+        if (!parsed.botToken || parsed.botToken === "TEST_TOKEN") {
+          parsed.botToken = "8542855202:AAFxM8ZSqkuvpg6eOUsVoRHRnt8ZwMoDN4I";
+        }
+        if (!parsed.chatId) parsed.chatId = "-5329208592";
         return parsed;
       }
     }
@@ -714,7 +718,11 @@ function getTelegramConfigGAS() {
           if (val) {
             var parsedSheet = JSON.parse(val);
             if (parsedSheet && typeof parsedSheet === "object") {
-              try { PropertiesService.getScriptProperties().setProperty("TELEGRAM_CONFIG", val); } catch(err) {}
+              if (!parsedSheet.botToken || parsedSheet.botToken === "TEST_TOKEN") {
+                parsedSheet.botToken = "8542855202:AAFxM8ZSqkuvpg6eOUsVoRHRnt8ZwMoDN4I";
+              }
+              if (!parsedSheet.chatId) parsedSheet.chatId = "-5329208592";
+              try { PropertiesService.getScriptProperties().setProperty("TELEGRAM_CONFIG", JSON.stringify(parsedSheet)); } catch(err) {}
               return parsedSheet;
             }
           }
@@ -723,7 +731,16 @@ function getTelegramConfigGAS() {
     }
   } catch(e2) {}
 
-  return null;
+  return {
+    botToken: "8542855202:AAFxM8ZSqkuvpg6eOUsVoRHRnt8ZwMoDN4I",
+    chatId: "-5329208592",
+    enabled: true,
+    notifyOnStart: true,
+    notifyOnEnd: true,
+    notifyDailySummary: true,
+    includePayment: true,
+    includeLocation: true
+  };
 }
 
 function setTelegramConfigGAS(configObj) {
