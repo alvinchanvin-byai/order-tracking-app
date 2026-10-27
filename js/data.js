@@ -518,10 +518,17 @@ function parseAppDateTime(dateStr) {
     // Match dd/mm/yy hh:mm or dd/mm/yyyy hh:mm(:ss)
     const match = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
     if (match) {
-        const day = parseInt(match[1], 10);
-        const month = parseInt(match[2], 10) - 1;
+        let day = parseInt(match[1], 10);
+        let month = parseInt(match[2], 10) - 1;
         let year = parseInt(match[3], 10);
         if (year < 100) year += 2000;
+
+        // Auto-correct if month > 12 (swapped mm/dd/yy)
+        if (parseInt(match[2], 10) > 12 && day <= 12) {
+            month = day - 1;
+            day = parseInt(match[2], 10);
+        }
+
         const hours = match[4] ? parseInt(match[4], 10) : 0;
         const mins = match[5] ? parseInt(match[5], 10) : 0;
         const secs = match[6] ? parseInt(match[6], 10) : 0;
