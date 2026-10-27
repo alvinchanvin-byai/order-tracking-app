@@ -1,5 +1,5 @@
-# ប្រព័ន្ធតាមដាន Order (Order Tracking Web App) 🚀
-**Modern Order Tracking Web Application with Real-Time Google Sheets Auto-Sync**
+# ប្រព័ន្ធតាមដាន Supply (Supply Tracking Web App) 🚀
+**Modern Supply Tracking Web Application with Real-Time Google Sheets Auto-Sync**
 
 ប្រព័ន្ធ Web App ទំនើប ស្អាត និងទាក់ទាញ ត្រូវបានរចនាឡើងយ៉ាងពិសេសសម្រាប់គ្រប់គ្រង និងតាមដានរាល់ដំណើរការ Order តាំងពីការចុះឈ្មោះ រហូតដល់ដឹកជញ្ជូនដល់ដៃអតិថិជន ដោយភ្ជាប់ទិន្នន័យស្វ័យប្រវត្តិ (Auto-Update) ទៅកាន់ Google Sheet ឈ្មោះ **"Tracking order"** និង Sheet Name **"Tracking"**។
 
