@@ -400,6 +400,14 @@ function cleanAndFormatAllHeadersAndDurations() {
         for (var r = 0; r < numRows; r++) {
           var status = String(allRows[r][15] || "").trim();
           var checkingEnd = String(allRows[r][20] || "").trim();
+          var delivEnd = String(allRows[r][23] || "").trim();
+          
+          // Auto fix status if delivery end time is filled but status was stuck in checking/picking
+          if (delivEnd && delivEnd !== "-" && (status === "In Checking" || status === "Waiting Checking" || status === "In Picking")) {
+            trackSheet.getRange(r + 2, 16).setValue("Success");
+            updatedCount++;
+          }
+
           if ((!checkingEnd || checkingEnd === "-") && (status === "Registered" || status === "In Picking" || status === "Waiting Checking" || status === "In Checking")) {
             if (allRows[r][9] !== "" || allRows[r][10] !== "") {
               trackSheet.getRange(r + 2, 10).setValue("");
@@ -1003,7 +1011,18 @@ function doGet(e) {
             }
             return "";
           })(),
-          status: String(row[cStatus] || "Registered"),
+          status: (function() {
+            var rawSt = String(row[cStatus] || "Registered");
+            var dEnd = (cDEnd !== -1) ? String(row[cDEnd] || "").trim() : "";
+            if (dEnd && dEnd !== "-") {
+              var lowSt = rawSt.toLowerCase();
+              if (lowSt !== "incomplete" && lowSt !== "return" && lowSt.indexOf("incomplete") === -1 && lowSt.indexOf("return") === -1) {
+                var m = rawSt.match(/^(\d+(?:st|nd|rd|th))\s+Success$/i);
+                return m ? m[0] : "Success";
+              }
+            }
+            return rawSt;
+          })(),
           deliveryAttempts: (function() {
             var st = String(row[cStatus] || "");
             var m = st.match(/^(\d+)(?:st|nd|rd|th)\s+(?:Success|Delivery)/i);
