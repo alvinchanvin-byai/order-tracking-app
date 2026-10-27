@@ -33,6 +33,9 @@ const SHEET_BU = "BU";
 const SHEET_PACKAGE = "Package Type";
 const SHEET_DOCUMENT = "Document Type";
 const SHEET_USER = "User Management";
+const SHEET_SETTINGS = "System Settings";
+
+const HEADERS_SETTINGS = ["Setting Key", "Setting Value", "Last Updated", "Updated By"];
 
 // 1. Column Definitions for "Tracking" (30 Columns)
 const HEADERS_TRACKING = [
@@ -272,7 +275,12 @@ function setupAllSheets() {
     userSheet.getRange(2, 1, seedUsers.length, HEADERS_USER.length).setValues(seedUsers);
   }
   
-  Logger.log("✅ All 6 Sheets setup successfully in Spreadsheet: " + SPREADSHEET_NAME);
+  // 7. System Settings Sheet
+  var setSheet = getOrCreateSheet(SHEET_SETTINGS, HEADERS_SETTINGS);
+  setSheet.getRange(1, 1, 1, HEADERS_SETTINGS.length).setValues([HEADERS_SETTINGS]);
+  formatSheetHeader(setSheet, HEADERS_SETTINGS.length);
+  
+  Logger.log("✅ All 7 Sheets setup successfully in Spreadsheet: " + SPREADSHEET_NAME);
 }
 
 function setupTrackingHeaders() {
@@ -680,27 +688,78 @@ function removeDailyCompletedSoGAS(soNumber) {
 
 /**
  * ជំនួយការរក្សាទុក និងទាញយកការកំណត់ Telegram Bot (Cloud Synced សម្រាប់គ្រប់ Users & Devices)
+ * Dual-Layer Persistence: 1) PropertiesService (Ultra-fast memory) + 2) Google Sheet "System Settings" (Permanent)
  */
 function getTelegramConfigGAS() {
+  // Layer 1: PropertiesService
   try {
     var raw = PropertiesService.getScriptProperties().getProperty("TELEGRAM_CONFIG");
     if (raw) {
       var parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === "object") return parsed;
+      if (parsed && typeof parsed === "object" && (parsed.botToken || parsed.chatId)) {
+        return parsed;
+      }
     }
   } catch(e) {}
+
+  // Layer 2: Sheet "System Settings" fallback
+  try {
+    var ss = getSpreadsheet();
+    var setSheet = ss.getSheetByName(SHEET_SETTINGS);
+    if (setSheet && setSheet.getLastRow() > 1) {
+      var data = setSheet.getRange(2, 1, setSheet.getLastRow() - 1, 2).getValues();
+      for (var i = 0; i < data.length; i++) {
+        if (String(data[i][0]).trim() === "TELEGRAM_CONFIG") {
+          var val = String(data[i][1] || "").trim();
+          if (val) {
+            var parsedSheet = JSON.parse(val);
+            if (parsedSheet && typeof parsedSheet === "object") {
+              try { PropertiesService.getScriptProperties().setProperty("TELEGRAM_CONFIG", val); } catch(err) {}
+              return parsedSheet;
+            }
+          }
+        }
+      }
+    }
+  } catch(e2) {}
+
   return null;
 }
 
 function setTelegramConfigGAS(configObj) {
   if (!configObj || typeof configObj !== "object") return null;
+  var jsonStr = JSON.stringify(configObj);
+
+  // Layer 1: PropertiesService
   try {
-    PropertiesService.getScriptProperties().setProperty("TELEGRAM_CONFIG", JSON.stringify(configObj));
-    markDataUpdated();
-    return configObj;
-  } catch(e) {
-    return null;
-  }
+    PropertiesService.getScriptProperties().setProperty("TELEGRAM_CONFIG", jsonStr);
+  } catch(e) {}
+
+  // Layer 2: Google Sheet "System Settings"
+  try {
+    var ss = getSpreadsheet();
+    var setSheet = getOrCreateSheet(SHEET_SETTINGS, HEADERS_SETTINGS);
+    var lastRow = setSheet.getLastRow();
+    var foundRow = -1;
+    if (lastRow > 1) {
+      var keys = setSheet.getRange(2, 1, lastRow - 1, 1).getValues();
+      for (var i = 0; i < keys.length; i++) {
+        if (String(keys[i][0]).trim() === "TELEGRAM_CONFIG") {
+          foundRow = i + 2;
+          break;
+        }
+      }
+    }
+    var nowStr = getNowString();
+    if (foundRow > -1) {
+      setSheet.getRange(foundRow, 2, 1, 2).setValues([[jsonStr, nowStr]]);
+    } else {
+      setSheet.appendRow(["TELEGRAM_CONFIG", jsonStr, nowStr, "Admin"]);
+    }
+  } catch(eSheet) {}
+
+  markDataUpdated();
+  return configObj;
 }
 
 /**
@@ -744,6 +803,14 @@ function doGet(e) {
         dailyCompletedSos: getDailyCompletedSosGAS(),
         telegramConfig: getTelegramConfigGAS(),
         checkedAt: Date.now()
+      });
+    }
+
+    // Telegram Config Endpoint (សម្រាប់ទូរស័ព្ទដៃ ឬ PC ទាញយកការកំណត់ភ្លាមៗ)
+    if (action === "get_telegram_config") {
+      return createJsonResponse({
+        status: "success",
+        telegramConfig: getTelegramConfigGAS()
       });
     }
 
@@ -1043,7 +1110,6 @@ function doPost(e) {
     if (action === "SAVE_TELEGRAM_CONFIG") {
       var tgConfig = payload.config || payload.telegramConfig || payload;
       var savedCfg = setTelegramConfigGAS(tgConfig);
-      recordDataUpdate();
       return createJsonResponse({
         status: "success",
         message: "Telegram configuration saved to Cloud successfully",
