@@ -679,6 +679,31 @@ function removeDailyCompletedSoGAS(soNumber) {
 }
 
 /**
+ * ជំនួយការរក្សាទុក និងទាញយកការកំណត់ Telegram Bot (Cloud Synced សម្រាប់គ្រប់ Users & Devices)
+ */
+function getTelegramConfigGAS() {
+  try {
+    var raw = PropertiesService.getScriptProperties().getProperty("TELEGRAM_CONFIG");
+    if (raw) {
+      var parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") return parsed;
+    }
+  } catch(e) {}
+  return null;
+}
+
+function setTelegramConfigGAS(configObj) {
+  if (!configObj || typeof configObj !== "object") return null;
+  try {
+    PropertiesService.getScriptProperties().setProperty("TELEGRAM_CONFIG", JSON.stringify(configObj));
+    markDataUpdated();
+    return configObj;
+  } catch(e) {
+    return null;
+  }
+}
+
+/**
  * Handle GET Requests (Fetch Orders and Setup Master Data)
  */
 function doGet(e) {
@@ -717,6 +742,7 @@ function doGet(e) {
         serverTimestamp: serverLast,
         onlineUsers: onlineUsers,
         dailyCompletedSos: getDailyCompletedSosGAS(),
+        telegramConfig: getTelegramConfigGAS(),
         checkedAt: Date.now()
       });
     }
@@ -970,6 +996,7 @@ function doGet(e) {
       serverTimestamp: getLastDataUpdate(),
       onlineUsers: handleUserPresence(e),
       dailyCompletedSos: getDailyCompletedSosGAS(),
+      telegramConfig: getTelegramConfigGAS(),
       data: orders,
       setup: {
         customers: customers,
@@ -1011,12 +1038,33 @@ function doPost(e) {
     var nowFormatted = getNowString();
 
     // ==========================================
+    // ACTION: SAVE TELEGRAM CONFIG (CENTRALIZED SCRIPT PROPERTIES FOR ALL USERS)
+    // ==========================================
+    if (action === "SAVE_TELEGRAM_CONFIG") {
+      var tgConfig = payload.config || payload.telegramConfig || payload;
+      var savedCfg = setTelegramConfigGAS(tgConfig);
+      recordDataUpdate();
+      return createJsonResponse({
+        status: "success",
+        message: "Telegram configuration saved to Cloud successfully",
+        telegramConfig: savedCfg
+      });
+    }
+
+    // ==========================================
     // ACTION: SEND TELEGRAM NOTIFICATION (PROXY)
     // ==========================================
     if (action === "sendTelegram") {
       var botToken = payload.botToken ? String(payload.botToken).trim() : "";
       var chatId = payload.chatId ? String(payload.chatId).trim() : "";
       var text = payload.text || "";
+      if (!botToken || !chatId) {
+        var cloudCfg = getTelegramConfigGAS();
+        if (cloudCfg && cloudCfg.botToken && cloudCfg.chatId) {
+          if (!botToken) botToken = cloudCfg.botToken;
+          if (!chatId) chatId = cloudCfg.chatId;
+        }
+      }
       if (!botToken || !chatId || !text) {
         return createJsonResponse({ status: "error", message: "Missing botToken, chatId, or text" });
       }
@@ -1049,6 +1097,10 @@ function doPost(e) {
     // ==========================================
     if (action === "getTelegramUpdates") {
       var botToken = payload.botToken ? String(payload.botToken).trim() : "";
+      if (!botToken) {
+        var cloudCfg = getTelegramConfigGAS();
+        if (cloudCfg && cloudCfg.botToken) botToken = cloudCfg.botToken;
+      }
       if (!botToken) {
         return createJsonResponse({ status: "error", message: "Missing botToken" });
       }
