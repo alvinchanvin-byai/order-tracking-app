@@ -22,7 +22,7 @@ const SheetsSync = {
     isSyncing: false,
     isCheckingUpdates: false,
     pollTimer: null,
-    pollIntervalMs: 1800,     // 1.8 seconds when active (ultra-responsive fallback)
+    pollIntervalMs: 1200,     // 1.2 seconds when active (ultra-responsive fallback)
     bgPollIntervalMs: 8000,   // 8 seconds when page is in background to save battery
     
     broadcastChannel: null,
@@ -430,6 +430,29 @@ const SheetsSync = {
                     (result.hasChanges === undefined && Array.isArray(result.data) && result.data.length > 0);
 
                 if (hasChanges) {
+                    // 1. Ultra-Fast Delta Apply (<5ms) without waiting for 2-3s full sheet download
+                    const mutations = (Array.isArray(result.mutations) && result.mutations.length > 0)
+                        ? result.mutations
+                        : (result.lastMutation ? [result.lastMutation] : []);
+
+                    if (mutations.length > 0 && typeof window.applyIncomingRealtimeAction === "function") {
+                        console.log(`⚡ [Live Sync] Applying ${mutations.length} fast delta mutations from server without sheet reload`);
+                        // Apply in chronological order (oldest to newest)
+                        const chronological = [...mutations].reverse();
+                        for (const mut of chronological) {
+                            if (mut && mut.action) {
+                                window.applyIncomingRealtimeAction(mut.action, mut);
+                            }
+                        }
+                        if (result.serverTimestamp) {
+                            this.setServerTimestamp(result.serverTimestamp);
+                        }
+                        if (typeof this.onLiveSyncPulse === "function") {
+                            this.onLiveSyncPulse();
+                        }
+                        return { hasChanges: true, deltaApplied: true, count: mutations.length };
+                    }
+
                     console.log("⚡ Live change detected on Google Sheets! Fetching latest state...");
                     // Server has detected changes from another device! Fetch complete data silently
                     const fullData = (result.hasChanges === undefined && Array.isArray(result.data))
@@ -507,6 +530,14 @@ const SheetsSync = {
 
     // Sync a stage change (Picking Start/End, Checking Start/End, Delivery Start/End)
     async syncStageUpdate(soNumber, stage, timestamp, duration, status, specialNotes, extraData = {}) {
+        let orderSnapshot = null;
+        try {
+            if (typeof AppState !== "undefined" && Array.isArray(AppState.orders)) {
+                const found = AppState.orders.find(o => (o.soNumber || "").toLowerCase() === String(soNumber).toLowerCase());
+                if (found) orderSnapshot = JSON.parse(JSON.stringify(found));
+            }
+        } catch(e) {}
+
         const payload = {
             action: "UPDATE_STAGE",
             soNumber: soNumber,
@@ -514,6 +545,7 @@ const SheetsSync = {
             timestamp: timestamp,
             duration: duration || "-",
             status: status,
+            order: orderSnapshot,
             ...extraData
         };
         if (specialNotes !== undefined && specialNotes !== null) {
@@ -791,12 +823,30 @@ const RealtimeRelay = {
     topic: "",
     brokers: [
         { host: "broker.hivemq.com", port: 8884, path: "/mqtt", ssl: true },
-        { host: "broker.emqx.io", port: 8084, path: "/mqtt", ssl: true }
+        { host: "broker.emqx.io", port: 8084, path: "/mqtt", ssl: true },
+        { host: "test.mosquitto.org", port: 8081, path: "/mqtt", ssl: true }
     ],
     currentBrokerIndex: 0,
     reconnectTimer: null,
+    connectWatchdog: null,
     reconnectAttempts: 0,
     messageQueue: [],
+    lastActivity: Date.now(),
+
+    isStale() {
+        return (Date.now() - this.lastActivity > 35000);
+    },
+
+    reconnectImmediate() {
+        try {
+            if (this.client && this.isConnected) {
+                this.client.disconnect();
+            }
+        } catch(e) {}
+        this.isConnected = false;
+        this.isConnecting = false;
+        this.connect();
+    },
 
     getTopic() {
         if (this.topic) return this.topic;
@@ -832,6 +882,17 @@ const RealtimeRelay = {
         const broker = this.brokers[this.currentBrokerIndex % this.brokers.length];
         const clientId = "fsco_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now().toString(36);
 
+        // Connection watchdog: if connection hangs for > 4.5 seconds, force failover to next broker
+        if (this.connectWatchdog) clearTimeout(this.connectWatchdog);
+        this.connectWatchdog = setTimeout(() => {
+            if (this.isConnecting && !this.isConnected) {
+                console.warn(`⚡ [Realtime Relay] Connection to ${broker.host} timed out, rotating broker...`);
+                this.isConnecting = false;
+                this.currentBrokerIndex++;
+                this.scheduleReconnect();
+            }
+        }, 4500);
+
         try {
             console.log(`🔌 [Realtime Relay] Connecting WebSocket to ${broker.host}:${broker.port}...`);
             this.client = new Paho.MQTT.Client(broker.host, Number(broker.port), broker.path, clientId);
@@ -839,11 +900,13 @@ const RealtimeRelay = {
             this.client.onConnectionLost = (responseObject) => {
                 this.isConnected = false;
                 this.isConnecting = false;
+                if (this.connectWatchdog) clearTimeout(this.connectWatchdog);
                 console.warn("⚡ [Realtime Relay] Disconnected:", responseObject ? responseObject.errorMessage : "");
                 this.scheduleReconnect();
             };
 
             this.client.onMessageArrived = (message) => {
+                this.lastActivity = Date.now();
                 try {
                     const raw = message.payloadString;
                     const parsed = JSON.parse(raw);
@@ -855,13 +918,15 @@ const RealtimeRelay = {
 
             this.client.connect({
                 useSSL: broker.ssl,
-                timeout: 5,
-                keepAliveInterval: 30,
+                timeout: 4,
+                keepAliveInterval: 20,
                 cleanSession: true,
                 onSuccess: () => {
+                    if (this.connectWatchdog) clearTimeout(this.connectWatchdog);
                     this.isConnected = true;
                     this.isConnecting = false;
                     this.reconnectAttempts = 0;
+                    this.lastActivity = Date.now();
                     const subTopic = this.getTopic();
                     console.log(`⚡ [Realtime Relay] Connected to ${broker.host}! Channel: ${subTopic}`);
                     try {
@@ -879,6 +944,7 @@ const RealtimeRelay = {
                     }
                 },
                 onFailure: (err) => {
+                    if (this.connectWatchdog) clearTimeout(this.connectWatchdog);
                     this.isConnected = false;
                     this.isConnecting = false;
                     console.warn(`⚡ [Realtime Relay] Failed to connect to ${broker.host}:`, err ? err.errorMessage : err);
@@ -887,6 +953,7 @@ const RealtimeRelay = {
                 }
             });
         } catch (e) {
+            if (this.connectWatchdog) clearTimeout(this.connectWatchdog);
             this.isConnected = false;
             this.isConnecting = false;
             console.warn("⚡ [Realtime Relay] Error creating client:", e);
@@ -898,7 +965,7 @@ const RealtimeRelay = {
     scheduleReconnect() {
         if (this.reconnectTimer) clearTimeout(this.reconnectTimer);
         this.reconnectAttempts++;
-        const delay = Math.min(1000 * Math.pow(1.5, Math.min(this.reconnectAttempts, 6)), 10000);
+        const delay = Math.min(1000 * Math.pow(1.3, Math.min(this.reconnectAttempts, 5)), 6000);
         this.reconnectTimer = setTimeout(() => {
             this.connect();
         }, delay);
@@ -906,6 +973,7 @@ const RealtimeRelay = {
 
     publish(msgObj) {
         if (!msgObj) return;
+        this.lastActivity = Date.now();
         if (!this.isConnected || !this.client) {
             if (this.messageQueue.length < 50) {
                 this.messageQueue.push(msgObj);
@@ -926,6 +994,7 @@ const RealtimeRelay = {
 
     handleMessage(msg) {
         if (!msg) return;
+        this.lastActivity = Date.now();
         const myId = (typeof SheetsSync !== "undefined" && SheetsSync.clientId) ? SheetsSync.clientId : "";
         if (msg.senderId && msg.senderId === myId) return;
 
@@ -940,6 +1009,18 @@ window.RealtimeRelay = RealtimeRelay;
 SheetsSync.initBroadcast();
 RealtimeRelay.init();
 
+// Unified wake-up handler for mobile and desktop
+function triggerInstantSyncWakeup() {
+    if (typeof RealtimeRelay !== "undefined") {
+        if (!RealtimeRelay.isConnected || RealtimeRelay.isStale()) {
+            RealtimeRelay.reconnectImmediate();
+        }
+    }
+    if (typeof SheetsSync !== "undefined" && SheetsSync.isConfigured()) {
+        SheetsSync.checkUpdates(true);
+    }
+}
+
 // Auto listen for browser online event
 window.addEventListener("online", () => {
     RealtimeRelay.connect();
@@ -948,40 +1029,19 @@ window.addEventListener("online", () => {
 });
 
 // Immediately check for updates when window gains focus, unlocks, or tab becomes visible (Phone unlock or PC tab switch)
-window.addEventListener("focus", () => {
-    if (!RealtimeRelay.isConnected) {
-        RealtimeRelay.connect();
-    }
-    if (SheetsSync.isConfigured()) {
-        SheetsSync.checkUpdates(true);
-    }
-});
-
-window.addEventListener("pageshow", () => {
-    if (!RealtimeRelay.isConnected) {
-        RealtimeRelay.connect();
-    }
-    if (SheetsSync.isConfigured()) {
-        SheetsSync.checkUpdates(true);
-    }
-});
-
+window.addEventListener("focus", triggerInstantSyncWakeup);
+window.addEventListener("pageshow", triggerInstantSyncWakeup);
 document.addEventListener("visibilitychange", () => {
     if (!document.hidden) {
-        if (!RealtimeRelay.isConnected) {
-            RealtimeRelay.connect();
-        }
-        if (SheetsSync.isConfigured()) {
-            SheetsSync.checkUpdates(true);
-        }
+        triggerInstantSyncWakeup();
     }
 });
 
-// Periodic touch trigger on mobile devices (triggers live check if 6s have elapsed since last check)
+// Periodic touch trigger on mobile devices (checks live if 2s have elapsed since last check)
 let lastUserInteractionCheck = 0;
 window.addEventListener("pointerdown", () => {
     const now = Date.now();
-    if (now - lastUserInteractionCheck > 6000) {
+    if (now - lastUserInteractionCheck > 2000) {
         lastUserInteractionCheck = now;
         if (!RealtimeRelay.isConnected) {
             RealtimeRelay.connect();
