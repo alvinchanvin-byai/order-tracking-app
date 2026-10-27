@@ -3666,7 +3666,7 @@ function isDailyDeliveryRecentOrder(order) {
     return false;
 }
 
-// Table 2: Completed Order (Order ពីតារាង Recent Order ដែលបានបញ្ចប់ការដឹក Success, Incompleted, ឬ Return)
+// Table 2: Completed Order (Order ដែលបានបញ្ចប់ការដឹក Success, Incompleted, ឬ Return)
 function isDailyDeliveryCompletedOrder(order) {
     if (!order) return false;
     if (isDailyDeliveryRecentOrder(order)) return false;
@@ -3676,31 +3676,22 @@ function isDailyDeliveryCompletedOrder(order) {
                                s === "incomplete" || s.includes("incomplete") || s.includes("មិនបានជោគជ័យ") ||
                                s === "return" || s.includes("return") || s.includes("ត្រឡប់") || s.includes("បង្វែរ"));
 
-    // ត្រូវតែជា order ដែលបានបញ្ចប់ការដឹក (status completed ឬមាន deliveryEndTime)
-    if (!isCompletedStatus && (!order.deliveryEndTime || String(order.deliveryEndTime).trim() === "" || String(order.deliveryEndTime).trim() === "-")) {
-        return false;
-    }
+    // 1. បើ status ជា Completed (Success, Incompleted, Return)
+    if (isCompletedStatus) return true;
 
-    // 1. សំខាន់បំផុត៖ ត្រូវតែជា Order ដែលបានបញ្ចប់ចេញពី Recent Order (synced list, flag, or verified batch)
-    if (order.completedFromDailyDelivery === true || getDailyCompletedOrderSos().has(order.soNumber)) {
+    // 2. ឬបើមាន deliveryEndTime (បានបញ្ចប់ការដឹក)
+    if (order.deliveryEndTime && String(order.deliveryEndTime).trim() !== "" && String(order.deliveryEndTime).trim() !== "-") {
         return true;
     }
 
-    // 2. Auto-Detect: បើ Order មាន deliveryEndTime ក្នុងថ្ងៃនេះ (Today / Active Daily Session) ហើយបានបញ្ចប់ការដឹក
-    if (isCompletedStatus && order.deliveryEndTime && order.deliveryStartTime) {
-        const endStr = String(order.deliveryEndTime).trim();
-        const startStr = String(order.deliveryStartTime).trim();
-        if (endStr !== "" && endStr !== "-" && startStr !== "" && startStr !== "-") {
-            const now = new Date();
-            const pad = n => String(n).padStart(2, '0');
-            const todayShort = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${String(now.getFullYear()).slice(-2)}`;
-            const todayFull = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
-            
-            if (endStr.startsWith(todayShort) || endStr.startsWith(todayFull)) {
-                markOrderCompletedFromDaily(order.soNumber, false);
-                return true;
-            }
-        }
+    // 3. ឬបើបានសម្គាល់ថាបានបញ្ចប់ពី Daily Delivery Report
+    if (order.completedFromDailyDelivery === true) return true;
+
+    // 4. Case-insensitive SO check ក្នុង localStorage
+    const cleanSo = String(order.soNumber || "").trim().toLowerCase();
+    const dailySet = getDailyCompletedOrderSos();
+    for (const so of dailySet) {
+        if (String(so).trim().toLowerCase() === cleanSo) return true;
     }
 
     return false;
@@ -6489,6 +6480,28 @@ function resetDailyT2PersonalDisplay() {
     renderDailyT2PersonalDisplayCheckboxes();
 }
 
+function getOrderDatesList(order) {
+    if (!order) return [];
+    const rawDates = [
+        order.deliveryEndTime,
+        order.deliveryStartTime,
+        order.soDate,
+        order.so_date,
+        order.timestamp,
+        order.date
+    ];
+    const parsedList = [];
+    rawDates.forEach(r => {
+        if (r && r !== "-" && String(r).trim() !== "") {
+            const d = parseAppDateTime(r);
+            if (d && !isNaN(d.getTime())) {
+                parsedList.push(d);
+            }
+        }
+    });
+    return parsedList;
+}
+
 function matchesDailyDeliveryFilter(order) {
     if (!order) return false;
     const dd = AppState.dailyDelivery || {};
@@ -6517,31 +6530,42 @@ function matchesDailyDeliveryFilter(order) {
 
     if (customDate) {
         // Custom Date matching (YYYY-MM-DD)
-        const orderDate = order.timestamp || order.soDate || order.so_date || order.date || order.deliveryStartTime || order.deliveryEndTime;
-        const d = parseAppDateTime(orderDate);
-        if (!d || isNaN(d.getTime())) return false;
+        const dates = getOrderDatesList(order);
+        if (dates.length === 0) return false;
         const pad = n => String(n).padStart(2, '0');
-        const orderDateIso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-        if (orderDateIso !== customDate) return false;
+        const matchesCustom = dates.some(d => {
+            const orderDateIso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+            return orderDateIso === customDate;
+        });
+        if (!matchesCustom) return false;
     } else if (preset !== "ALL") {
-        const orderDate = order.timestamp || order.soDate || order.so_date || order.date || order.deliveryStartTime || order.deliveryEndTime;
-        const d = parseAppDateTime(orderDate);
-        if (!d || isNaN(d.getTime())) return false;
+        const dates = getOrderDatesList(order);
+        if (dates.length === 0) return false;
 
         const now = new Date();
         const pad = n => String(n).padStart(2, '0');
         const todayStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
-        const orderDayStr = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
 
         if (preset === "TODAY") {
-            if (orderDayStr !== todayStr) return false;
+            const matchesToday = dates.some(d => {
+                const dayStr = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+                return dayStr === todayStr;
+            });
+            if (!matchesToday) return false;
         } else if (preset === "YESTERDAY") {
             const yesterday = new Date(now);
             yesterday.setDate(now.getDate() - 1);
             const yestStr = `${pad(yesterday.getDate())}/${pad(yesterday.getMonth() + 1)}/${yesterday.getFullYear()}`;
-            if (orderDayStr !== yestStr) return false;
+            const matchesYesterday = dates.some(d => {
+                const dayStr = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+                return dayStr === yestStr;
+            });
+            if (!matchesYesterday) return false;
         } else if (preset === "THIS_MONTH") {
-            if (d.getMonth() !== now.getMonth() || d.getFullYear() !== now.getFullYear()) return false;
+            const matchesThisMonth = dates.some(d => {
+                return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+            });
+            if (!matchesThisMonth) return false;
         }
     }
 
@@ -7401,7 +7425,7 @@ function exportDailyDeliveryToExcel() {
     const pad = n => String(n).padStart(2, '0');
     const dateStr = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}`;
     XLSX.writeFile(wb, `Daily_Delivery_Report_${dateStr}.xlsx`);
-    showToast("បាន Export ឯកសារ Daily Delivery Excel ជោគជ័យ!", "success");
+    showToast("បាន Export ឯកសារ Daily Delivery Report Excel ជោគជ័យ!", "success");
 }
 
 window.renderDailyDeliveryView = renderDailyDeliveryView;
@@ -11046,7 +11070,7 @@ function getModuleNameKh(moduleName) {
         "checking": "Physical Checking",
         "delivery": "Delivery",
         "incompleted-delivery": "In Completed Delivery",
-        "daily-delivery": "Daily Delivery",
+        "daily-delivery": "Daily Delivery Report",
         "report": "Report",
         "setup": "Setup"
     };
@@ -11758,7 +11782,7 @@ function getTabFriendlyName(tab) {
         "checking": "3. Physical Checking",
         "delivery": "4. Delivery",
         "incompleted-delivery": "5. Incomplete Delivery",
-        "daily-delivery": "6. Daily Delivery",
+        "daily-delivery": "6. Daily Delivery Report",
         "report": "7. Report",
         "setup": "8. Setup (ការកំណត់)"
     };
