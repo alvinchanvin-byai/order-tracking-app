@@ -2809,10 +2809,23 @@ function applyIncomingRealtimeAction(action, payload) {
     else if (action === "UPDATE_STAGE") {
         const { soNumber, stage, timestamp, duration, status, specialNotes } = payload;
         if (soNumber) {
-            const order = AppState.orders.find(o => (o.soNumber || "").toLowerCase() === String(soNumber).toLowerCase());
+            let order = AppState.orders.find(o => (o.soNumber || "").toLowerCase() === String(soNumber).toLowerCase());
+            if (!order && payload.order && payload.order.soNumber) {
+                order = normalizeOrderDates(payload.order);
+                AppState.orders.unshift(order);
+                hasChanged = true;
+            }
             if (order) {
                 const nowTime = timestamp || formatAppDateTime();
                 order.lastUpdated = nowTime;
+
+                if (payload.order) {
+                    if (payload.order.pickerBy && !order.pickerBy) order.pickerBy = payload.order.pickerBy;
+                    if (payload.order.checkerBy && !order.checkerBy) order.checkerBy = payload.order.checkerBy;
+                    if (payload.order.deliveryBy && !order.deliveryBy) order.deliveryBy = payload.order.deliveryBy;
+                    if (payload.order.totalPackage !== undefined && payload.order.totalPackage !== null && payload.order.totalPackage !== "") order.totalPackage = payload.order.totalPackage;
+                    if (payload.order.packageUnit) order.packageUnit = payload.order.packageUnit;
+                }
 
                 switch (stage) {
                     case "PICKING_START":
@@ -5179,12 +5192,15 @@ function restartPicking(soNumber) {
         if (res.isConfirmed) {
             const order = AppState.orders.find(o => o.soNumber === soNumber);
             if (order) {
+                const now = formatAppDateTime();
                 order.pickingStartTime = "";
                 order.pickingEndTime = "";
                 order.pickingDuration = "-";
                 order.status = "Registered";
+                order.lastUpdated = now;
                 saveOrdersToStorage();
                 renderAll();
+                SheetsSync.syncStageUpdate(soNumber, "RESTART_PICKING", now, "-", "Registered", null);
                 showToast(`បាន Reset Picking សម្រាប់ ${soNumber}`, "info");
             }
         }
