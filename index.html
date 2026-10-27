@@ -61,6 +61,9 @@
     <!-- Canvas Confetti for celebrate (deferred) -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js" defer></script>
 
+    <!-- Chart.js for interactive analytics charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
     <!-- SheetJS (xlsx) for Report Excel Export (deferred) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
 
@@ -1246,6 +1249,202 @@
                             <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
                             <span>Reset Filters</span>
                         </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======================================================== -->
+            <!-- CARD ថ្មី: ស្ថិតិ និង ភាគរយ ORDER CHART (DAILY DELIVERY ANALYTICS) -->
+            <!-- ======================================================== -->
+            <div id="dailyDeliveryChartCard" class="bg-white rounded-2xl border border-slate-200/90 shadow-2xs overflow-hidden transition-all duration-300">
+                <!-- Card Header -->
+                <div class="p-3.5 sm:p-4 border-b border-slate-100 flex flex-row items-center justify-between gap-2 bg-gradient-to-r from-indigo-50/50 via-white to-white">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 text-white flex items-center justify-center shadow-xs shrink-0">
+                            <i data-lucide="pie-chart" class="w-4 h-4"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h3 class="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">ស្ថិតិ និង ភាគរយ Order (Order Analytics)</h3>
+                                <span id="dailyChartTotalBadge" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 font-mono">0 Orders</span>
+                            </div>
+                            <p class="text-[11px] text-slate-400 hidden sm:block">ការវិភាគលម្អិតចំនួនសរុប ជោគជ័យ (Completed), មិនជោគជ័យ (Incompleted) និង ត្រឡប់មកវិញ (Return)</p>
+                        </div>
+                    </div>
+
+                    <!-- Right Controls: Context Badge & Collapse Button -->
+                    <div class="flex items-center gap-2">
+                        <span id="dailyChartFilterContextBadge" class="hidden md:inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-xl">
+                            <i data-lucide="calendar" class="w-3 h-3 text-indigo-500"></i>
+                            <span id="dailyChartFilterContextText">ទាំងអស់ (All)</span>
+                        </span>
+                        <button type="button" 
+                            id="btnToggleDailyChartCard" 
+                            onclick="toggleDailyDeliveryChartCard()" 
+                            class="p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-semibold flex items-center gap-1 transition cursor-pointer shadow-2xs active:scale-95" 
+                            title="បង្រួម/ពង្រីក Card ស្ថិតិ">
+                            <i id="iconToggleDailyChart" data-lucide="chevron-up" class="w-4 h-4 transition-transform duration-200"></i>
+                            <span class="hidden sm:inline text-xs">បង្រួម</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Card Body -->
+                <div id="dailyChartCardBody" class="p-4 sm:p-5 transition-all duration-300">
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+                        
+                        <!-- Col 1: Modern Donut Chart -->
+                        <div class="lg:col-span-5 flex flex-col items-center justify-center p-4 rounded-2xl bg-gradient-to-b from-slate-50/70 to-white border border-slate-100">
+                            <div class="relative w-48 h-48 sm:w-56 sm:h-56 flex items-center justify-center">
+                                <!-- Chart Canvas for Chart.js / Canvas 2D -->
+                                <canvas id="dailyDeliveryDoughnutCanvas" width="220" height="220" class="w-full h-full max-w-[220px] max-h-[220px] z-10"></canvas>
+                                
+                                <!-- Center Text Overlay -->
+                                <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none z-20 text-center">
+                                    <span class="text-[10px] font-bold tracking-wider uppercase text-slate-400">Total Orders</span>
+                                    <span id="dailyChartCenterTotal" class="text-3xl sm:text-4xl font-black text-slate-900 font-mono tracking-tight my-0.5">0</span>
+                                    <span id="dailyChartCenterSuccessRate" class="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200/80">0% ជោគជ័យ</span>
+                                </div>
+                            </div>
+
+                            <!-- Under-chart mini legend -->
+                            <div class="flex items-center justify-center gap-2.5 mt-3 text-[11px] font-medium text-slate-500 flex-wrap">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                    <span>Completed</span>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                                    <span>Incompleted</span>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                                    <span>Return</span>
+                                </div>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="w-2.5 h-2.5 rounded-full bg-sky-500"></span>
+                                    <span>In Delivery</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Col 2: Metric Breakdown Cards with Progress Bars -->
+                        <div class="lg:col-span-7 flex flex-col justify-between space-y-2.5 sm:space-y-3">
+                            
+                            <!-- 1. Completed (ជោគជ័យ) -->
+                            <div class="group p-3 sm:p-3.5 rounded-xl border border-emerald-200/90 bg-gradient-to-r from-emerald-50/40 via-white to-white hover:border-emerald-300 transition-all shadow-2xs">
+                                <div class="flex items-center justify-between mb-1.5">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                                            <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="text-xs sm:text-sm font-bold text-slate-800">Completed (ជោគជ័យ)</h4>
+                                            <span class="text-[10px] text-slate-400">បានប្រគល់ទំនិញជោគជ័យ</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="flex items-center gap-1.5 justify-end">
+                                            <span id="dailyChartCountSuccess" class="text-base sm:text-lg font-black text-emerald-700 font-mono">0</span>
+                                            <span class="text-xs text-slate-500 font-medium">Orders</span>
+                                            <span id="dailyChartPctSuccess" class="ml-1 text-xs font-black text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-lg border border-emerald-300 font-mono">0.0%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                                    <div id="dailyChartBarSuccess" class="h-full rounded-full bg-emerald-500 transition-all duration-500" style="width: 0%"></div>
+                                </div>
+                            </div>
+
+                            <!-- 2. Incompleted (មិនបានជោគជ័យ) -->
+                            <div class="group p-3 sm:p-3.5 rounded-xl border border-amber-200/90 bg-gradient-to-r from-amber-50/40 via-white to-white hover:border-amber-300 transition-all shadow-2xs">
+                                <div class="flex items-center justify-between mb-1.5">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                                            <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="text-xs sm:text-sm font-bold text-slate-800">Incompleted (មិនបានជោគជ័យ)</h4>
+                                            <span class="text-[10px] text-slate-400">មិនទាន់បានប្រគល់ (ត្រៀមដឹកម្ដងទៀត)</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="flex items-center gap-1.5 justify-end">
+                                            <span id="dailyChartCountIncomplete" class="text-base sm:text-lg font-black text-amber-700 font-mono">0</span>
+                                            <span class="text-xs text-slate-500 font-medium">Orders</span>
+                                            <span id="dailyChartPctIncomplete" class="ml-1 text-xs font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-lg border border-amber-300 font-mono">0.0%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                                    <div id="dailyChartBarIncomplete" class="h-full rounded-full bg-amber-500 transition-all duration-500" style="width: 0%"></div>
+                                </div>
+                            </div>
+
+                            <!-- 3. Return (ត្រឡប់មកវិញ) -->
+                            <div class="group p-3 sm:p-3.5 rounded-xl border border-rose-200/90 bg-gradient-to-r from-rose-50/40 via-white to-white hover:border-rose-300 transition-all shadow-2xs">
+                                <div class="flex items-center justify-between mb-1.5">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-7 h-7 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+                                            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="text-xs sm:text-sm font-bold text-slate-800">Return (ត្រឡប់មកវិញ)</h4>
+                                            <span class="text-[10px] text-slate-400">ទំនិញត្រូវបានបង្វែរត្រឡប់មកឃ្លាំងវិញ</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="flex items-center gap-1.5 justify-end">
+                                            <span id="dailyChartCountReturn" class="text-base sm:text-lg font-black text-rose-700 font-mono">0</span>
+                                            <span class="text-xs text-slate-500 font-medium">Orders</span>
+                                            <span id="dailyChartPctReturn" class="ml-1 text-xs font-black text-rose-700 bg-rose-100 px-2 py-0.5 rounded-lg border border-rose-300 font-mono">0.0%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                                    <div id="dailyChartBarReturn" class="h-full rounded-full bg-rose-500 transition-all duration-500" style="width: 0%"></div>
+                                </div>
+                            </div>
+
+                            <!-- 4. In Delivery (កំពុងដឹកជញ្ជូន) -->
+                            <div class="group p-3 sm:p-3.5 rounded-xl border border-sky-200/90 bg-gradient-to-r from-sky-50/40 via-white to-white hover:border-sky-300 transition-all shadow-2xs">
+                                <div class="flex items-center justify-between mb-1.5">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-7 h-7 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center shrink-0">
+                                            <i data-lucide="truck" class="w-4 h-4"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="text-xs sm:text-sm font-bold text-slate-800">In Delivery (កំពុងដឹក)</h4>
+                                            <span class="text-[10px] text-slate-400">ទំនិញកំពុងស្ថិតនៅលើផ្លូវ (Recent Orders)</span>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="flex items-center gap-1.5 justify-end">
+                                            <span id="dailyChartCountInDelivery" class="text-base sm:text-lg font-black text-sky-700 font-mono">0</span>
+                                            <span class="text-xs text-slate-500 font-medium">Orders</span>
+                                            <span id="dailyChartPctInDelivery" class="ml-1 text-xs font-black text-sky-700 bg-sky-100 px-2 py-0.5 rounded-lg border border-sky-300 font-mono">0.0%</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                                    <div id="dailyChartBarInDelivery" class="h-full rounded-full bg-sky-500 transition-all duration-500" style="width: 0%"></div>
+                                </div>
+                            </div>
+
+                            <!-- Bottom Summary Strip -->
+                            <div class="pt-2 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2 text-xs text-slate-500">
+                                <div class="flex items-center gap-3">
+                                    <span>បានបញ្ចប់ការដឹកសរុប: <b id="dailyChartFinishedCount" class="text-slate-800 font-mono">0</b> Orders</span>
+                                    <span class="text-slate-300">|</span>
+                                    <span>អត្រាជោគជ័យ (Success Rate): <b id="dailyChartSuccessRateBottom" class="text-emerald-700 font-bold font-mono">0%</b></span>
+                                </div>
+                                <div class="text-[11px] text-slate-400 flex items-center gap-1">
+                                    <i data-lucide="info" class="w-3.5 h-3.5 text-indigo-500"></i>
+                                    <span>គណនាស្វ័យប្រវត្តិតាមតម្រងកាលបរិច្ឆេទ</span>
+                                </div>
+                            </div>
+
+                        </div>
                     </div>
                 </div>
             </div>
@@ -3696,9 +3895,9 @@
 
     <!-- App Core Scripts -->
     <script src="js/paho-mqtt.min.js"></script>
-    <script src="js/data.js?v=live-v4.8.8"></script>
-    <script src="js/sheets-sync.js?v=live-v4.8.8"></script>
-    <script src="js/telegram-notify.js?v=live-v4.8.8"></script>
-    <script src="js/app.js?v=live-v4.8.8"></script>
+    <script src="js/data.js?v=live-v4.9.0"></script>
+    <script src="js/sheets-sync.js?v=live-v4.9.0"></script>
+    <script src="js/telegram-notify.js?v=live-v4.9.0"></script>
+    <script src="js/app.js?v=live-v4.9.0"></script>
 </body>
 </html>
