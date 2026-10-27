@@ -1104,6 +1104,28 @@ document.addEventListener("DOMContentLoaded", () => {
     if (SheetsSync.isConfigured()) {
         syncFromGoogleSheet();
     }
+
+    // Guard against browser password managers automatically filling username ("csp" or "ksp") into Daily Delivery search input
+    function purgeDailySearchAutofill() {
+        const sInput = document.getElementById("dailyDeliverySearchInput");
+        if (sInput) {
+            const v = (sInput.value || "").trim().toLowerCase();
+            if (v === "csp" || v === "ksp" || !AppState.dailyDelivery || !AppState.dailyDelivery.searchQuery) {
+                sInput.value = "";
+                if (AppState.dailyDelivery && (AppState.dailyDelivery.searchQuery.toLowerCase() === "csp" || AppState.dailyDelivery.searchQuery.toLowerCase() === "ksp")) {
+                    AppState.dailyDelivery.searchQuery = "";
+                    if (typeof renderDailyDeliveryView === "function") {
+                        renderDailyDeliveryView();
+                    }
+                }
+            }
+        }
+    }
+    purgeDailySearchAutofill();
+    setTimeout(purgeDailySearchAutofill, 50);
+    setTimeout(purgeDailySearchAutofill, 150);
+    setTimeout(purgeDailySearchAutofill, 350);
+    setTimeout(purgeDailySearchAutofill, 800);
 });
 
 // Load Orders & Setup Data from localStorage or default
@@ -3290,6 +3312,11 @@ function switchNavbarModule(moduleName) {
 
     if (moduleName === "daily-delivery") {
         AppState.currentTab = "daily-delivery";
+        if (AppState.dailyDelivery) {
+            AppState.dailyDelivery.searchQuery = "";
+        }
+        const sInput = document.getElementById("dailyDeliverySearchInput");
+        if (sInput) sInput.value = "";
         updateNavbarActiveBtn("daily-delivery");
         showOnlyView("daily-delivery");
         updateKpiCardsVisibility();
@@ -6589,6 +6616,11 @@ function matchesDailyDeliveryFilter(order) {
 
     // 1. Text Search Filter across multiple fields
     if (q) {
+        // Prevent accidental browser credential autofill ('csp' / 'ksp') from filtering out all orders
+        if (q === "csp" || q === "ksp") {
+            return true;
+        }
+
         const so = String(order.soNumber || "").toLowerCase();
         const cust = String(order.customerName || "").toLowerCase();
         const inv = String(order.invoiceNumber || "").toLowerCase();
@@ -6906,6 +6938,18 @@ function renderDailyDeliveryView() {
             pageTable2: 1,
             pageSizeTable2: 15
         };
+    }
+
+    // Guard against unwanted browser credential autofill ("csp" or "ksp") in search input
+    const searchInput = document.getElementById("dailyDeliverySearchInput");
+    if (searchInput) {
+        const val = (searchInput.value || "").trim().toLowerCase();
+        if (val === "csp" || val === "ksp") {
+            searchInput.value = "";
+            AppState.dailyDelivery.searchQuery = "";
+        } else if (!AppState.dailyDelivery.searchQuery && searchInput.value !== "") {
+            searchInput.value = "";
+        }
     }
 
     // Filter orders for both tables
@@ -7355,7 +7399,14 @@ function toggleDailyTable2Sort() {
 
 function onDailyDeliverySearchInput(e) {
     if (!AppState.dailyDelivery) return;
-    AppState.dailyDelivery.searchQuery = e.target.value;
+    const rawVal = e.target.value || "";
+    // If browser auto-injected saved username ("csp" or "ksp") on page enter, ignore and clean it
+    if (rawVal.trim().toLowerCase() === "csp" || rawVal.trim().toLowerCase() === "ksp") {
+        e.target.value = "";
+        AppState.dailyDelivery.searchQuery = "";
+    } else {
+        AppState.dailyDelivery.searchQuery = rawVal;
+    }
     AppState.dailyDelivery.pageTable2 = 1;
     renderDailyDeliveryView();
 }
