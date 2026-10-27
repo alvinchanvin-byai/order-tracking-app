@@ -1,5 +1,5 @@
 /**
- * Data Constants & Initial Demo Data for Order Tracking Web App
+ * Data Constants & Initial Demo Data for Supply Tracking Web App
  */
 
 const CAMBODIA_PROVINCES = [
