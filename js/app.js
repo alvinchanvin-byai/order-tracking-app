@@ -2338,7 +2338,7 @@ function setupEventListeners() {
         // Telegram Settings Events
         const btnSaveTelegramSettings = document.getElementById("btnSaveTelegramSettings");
         if (btnSaveTelegramSettings) {
-            btnSaveTelegramSettings.addEventListener("click", () => {
+            btnSaveTelegramSettings.addEventListener("click", async () => {
                 const user = getCurrentUser();
                 if (!user || user.role !== "Admin") {
                     showToast("មានតែ Admin ប៉ុណ្ណោះដែលអាចរក្សាទុកការកំណត់ Telegram បាន!", "error");
@@ -2351,25 +2351,40 @@ function setupEventListeners() {
                 const notifyOnEnd = Boolean(document.getElementById("tgNotifyOnEnd")?.checked);
                 const includePayment = Boolean(document.getElementById("tgIncludePayment")?.checked);
 
-                if (window.TelegramNotify) {
-                    window.TelegramNotify.saveConfig({
-                        enabled,
-                        botToken: token,
-                        chatId,
-                        notifyOnStart,
-                        notifyOnEnd,
-                        includePayment
-                    }, true);
-                }
+                // Visual loading state
+                btnSaveTelegramSettings.disabled = true;
+                const origHtml = btnSaveTelegramSettings.innerHTML;
+                btnSaveTelegramSettings.innerHTML = `<i data-lucide="loader" class="w-4 h-4 animate-spin inline mr-1"></i> កំពុងរក្សាទុក...`;
+                if (typeof lucide !== "undefined" && lucide.createIcons) lucide.createIcons();
 
-                Swal.fire({
-                    title: "រក្សាទុកការកំណត់ Telegram រួចរាល់! ✈️✅",
-                    text: "ការកំណត់ Telegram ត្រូវបានរក្សាទុក និង Sync ទៅកាន់ Cloud (Master Config) រួចរាល់។ រាល់គណនីទាំងអស់ (Manager & User) លើគ្រប់ទូរស័ព្ទដៃ និងកុំព្យូទ័រ អាចប្រើប្រាស់ និងទទួលបាន Report ភ្លាមៗដោយមិនបាច់ Setup អ្វីឡើយ!",
-                    icon: "success",
-                    confirmButtonText: "យល់ព្រម",
-                    confirmButtonColor: "#0284c7"
-                });
-                settingsModal.classList.add("hidden");
+                try {
+                    if (window.TelegramNotify) {
+                        await window.TelegramNotify.saveConfig({
+                            enabled,
+                            botToken: token,
+                            chatId,
+                            notifyOnStart,
+                            notifyOnEnd,
+                            includePayment
+                        }, true);
+                    }
+
+                    Swal.fire({
+                        title: "រក្សាទុកការកំណត់ Telegram រួចរាល់! ✈️✅",
+                        text: "ការកំណត់ Telegram ត្រូវបានរក្សាទុក និង Sync ទៅកាន់ Cloud (Master Config) រួចរាល់។ រាល់គណនីទាំងអស់ (Manager & User) លើគ្រប់ទូរស័ព្ទដៃ និងកុំព្យូទ័រ អាចប្រើប្រាស់ និងទទួលបាន Report ភ្លាមៗដោយមិនបាច់ Setup អ្វីឡើយ!",
+                        icon: "success",
+                        confirmButtonText: "យល់ព្រម",
+                        confirmButtonColor: "#0284c7"
+                    });
+                    settingsModal.classList.add("hidden");
+                } catch (e) {
+                    console.error("[Settings] Save Telegram error:", e);
+                    showToast("បរាជ័យក្នុងការរក្សាទុក: " + (e.message || e), "error");
+                } finally {
+                    btnSaveTelegramSettings.disabled = false;
+                    btnSaveTelegramSettings.innerHTML = origHtml;
+                    if (typeof lucide !== "undefined" && lucide.createIcons) lucide.createIcons();
+                }
             });
         }
 
