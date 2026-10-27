@@ -1188,10 +1188,18 @@
             <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
                 <!-- Row 1: Search Field + Back to Dashboard Button -->
                 <div class="flex items-center gap-2 sm:gap-2.5 w-full">
-                    <!-- Text Search -->
+                    <!-- Text Search (Anti-Autofill Configured: Never fills saved credentials) -->
                     <div class="relative flex-1">
-                        <input type="text" 
+                        <input type="search" 
                             id="dailyDeliverySearchInput"
+                            name="daily_delivery_search_prevent_autofill"
+                            autocomplete="off"
+                            autocorrect="off"
+                            autocapitalize="off"
+                            spellcheck="false"
+                            data-lpignore="true"
+                            data-form-type="other"
+                            value=""
                             oninput="onDailyDeliverySearchInput(event)"
                             placeholder="🔍 ស្វែងរក SO#, Customer Name, Invoice#, Driver, ខេត្ត/ក្រុង..." 
                             class="w-full pl-9 pr-8 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium">
@@ -3883,9 +3891,9 @@
 
     <!-- App Core Scripts -->
     <script src="js/paho-mqtt.min.js"></script>
-    <script src="js/data.js?v=live-v4.9.4"></script>
-    <script src="js/sheets-sync.js?v=live-v4.9.4"></script>
-    <script src="js/telegram-notify.js?v=live-v4.9.4"></script>
-    <script src="js/app.js?v=live-v4.9.4"></script>
+    <script src="js/data.js?v=live-v4.9.5"></script>
+    <script src="js/sheets-sync.js?v=live-v4.9.5"></script>
+    <script src="js/telegram-notify.js?v=live-v4.9.5"></script>
+    <script src="js/app.js?v=live-v4.9.5"></script>
 </body>
 </html>
