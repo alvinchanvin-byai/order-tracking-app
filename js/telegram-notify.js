@@ -517,10 +517,10 @@ ${pkgLine}${locLine}${paymentLine}${notesLine}⏰ <b>ម៉ោងបញ្ចប
             } else if (st.includes("incomplete") || st.includes("មិនបានជោគជ័យ")) {
                 countIncomplete++;
                 driverStats[drv].completed++;
-            } else if (st.includes("return") || st.includes("ត្រឡប់")) {
+            } else if (st.includes("return") || st.includes("ត្រឡប់") || st.includes("បង្វែរ")) {
                 countReturn++;
                 driverStats[drv].completed++;
-            } else if (st.includes("success") || st.includes("delivered") || st.includes("ជោគជ័យ")) {
+            } else if (st.includes("success") || st.includes("delivered") || st.includes("ជោគជ័យ") || (o.deliveryEndTime && String(o.deliveryEndTime).trim() !== "" && String(o.deliveryEndTime).trim() !== "-" && !st.includes("incomplete") && !st.includes("return"))) {
                 countSuccess++;
                 driverStats[drv].completed++;
             } else {
