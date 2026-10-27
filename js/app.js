@@ -1,5 +1,5 @@
 /**
- * Order Tracking Web App - Core Controller
+ * Supply Tracking Web App - Core Controller
  * Manages State, Form Validation, Stage Progression, Google Sheets Auto-Sync & Views
  */
 
