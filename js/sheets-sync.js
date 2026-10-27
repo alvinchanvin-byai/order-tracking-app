@@ -631,6 +631,29 @@ const SheetsSync = {
         });
     },
 
+    // Fetch Telegram Configuration explicitly from Google Apps Script Cloud
+    async fetchTelegramConfig() {
+        if (!this.isConfigured()) return null;
+        try {
+            const url = `${this.getApiUrl()}?action=get_telegram_config&_t=${Date.now()}`;
+            const response = await fetch(url, {
+                method: "GET",
+                mode: "cors",
+                cache: "no-store"
+            });
+            const result = await response.json();
+            if (result && result.status === "success" && result.telegramConfig) {
+                if (window.TelegramNotify && typeof window.TelegramNotify.applySyncedConfig === "function") {
+                    window.TelegramNotify.applySyncedConfig(result.telegramConfig);
+                }
+                return result.telegramConfig;
+            }
+        } catch (e) {
+            console.warn("[SheetsSync] fetchTelegramConfig error:", e);
+        }
+        return null;
+    },
+
     // Low-level send with fallback to offline queue and timeout protection
     async sendPayload(payload, timeoutMs = 20000) {
         // 1. Optimistic Real-Time Broadcast (<50ms between PC and Phone via WebSocket + Local Tabs)
