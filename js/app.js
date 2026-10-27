@@ -11316,11 +11316,11 @@ function hasUserPermission(moduleName) {
 function getModuleNameKh(moduleName) {
     const map = {
         "dashboard": "Dashboard",
-        "register": "Register Order",
-        "picking": "Physical Picking",
-        "checking": "Physical Checking",
-        "delivery": "Delivery",
-        "incompleted-delivery": "In Completed Delivery",
+        "register": "1. Register order",
+        "picking": "2. Physical Picking",
+        "checking": "3. Physical Checking",
+        "delivery": "4. Delivery to customer",
+        "incompleted-delivery": "5. In Completed Delivery",
         "daily-delivery": "Daily Delivery Report",
         "report": "Report",
         "setup": "Setup"
