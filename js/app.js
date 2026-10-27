@@ -3547,7 +3547,45 @@ function isOrderCompleted(order) {
 
 // Daily Delivery Storage & Helper for Tracking Orders Completed from Recent Order (Cross-Device Cloud Synced)
 const STORAGE_DAILY_COMPLETED_ORDERS = "order_tracker_daily_completed_sos_v3";
-const DEFAULT_DAILY_COMPLETED_SOS = ["SO-2026-4409", "DHC-0005349", "SO-2026-4534"];
+const DEFAULT_DAILY_COMPLETED_SOS = [
+    "SO-2026-4409",
+    "DHC-0005349",
+    "SO-2026-4534",
+    "SO-DHC-0005518",
+    "So-DHC-0005519",
+    "SO-FSCO-2610011",
+    "SO-FSCO-2610012"
+];
+
+function sanitizeDailyCompletedOrders() {
+    try {
+        const raw = localStorage.getItem(STORAGE_DAILY_COMPLETED_ORDERS);
+        if (raw) {
+            const arr = JSON.parse(raw);
+            if (Array.isArray(arr) && Array.isArray(AppState.orders) && AppState.orders.length > 0) {
+                const cleaned = arr.filter(so => {
+                    const cleanSo = String(so || "").trim().toLowerCase();
+                    const found = AppState.orders.find(o => String(o.soNumber || "").trim().toLowerCase() === cleanSo);
+                    if (!found) return true;
+                    const hasEnd = Boolean(found.deliveryEndTime && String(found.deliveryEndTime).trim() !== "" && String(found.deliveryEndTime).trim() !== "-");
+                    const st = (found.status || "").toLowerCase().trim();
+                    const isComp = (st === "success" || st.endsWith("success") || st === "delivered" || st.includes("ជោគជ័យ") ||
+                                    st === "incomplete" || st.includes("incomplete") || st.includes("មិនបានជោគជ័យ") ||
+                                    st === "return" || st.includes("return") || st.includes("ត្រឡប់") || st.includes("បង្វែរ"));
+                    if (!hasEnd && !isComp) {
+                        found.completedFromDailyDelivery = false;
+                        return false;
+                    }
+                    return true;
+                });
+                localStorage.setItem(STORAGE_DAILY_COMPLETED_ORDERS, JSON.stringify(cleaned));
+            }
+        }
+    } catch (e) {
+        console.warn("sanitizeDailyCompletedOrders error:", e);
+    }
+}
+window.sanitizeDailyCompletedOrders = sanitizeDailyCompletedOrders;
 
 function getDailyCompletedOrderSos() {
     const set = new Set();
@@ -3672,30 +3710,68 @@ function isDailyDeliveryCompletedOrder(order) {
     if (isDailyDeliveryRecentOrder(order)) return false;
 
     const s = (order.status || "").toLowerCase().trim();
-    const isCompletedStatus = (s === "success" || s.endsWith("success") || s === "delivered" || s.includes("ជោគជ័យ") ||
-                               s === "incomplete" || s.includes("incomplete") || s.includes("មិនបានជោគជ័យ") ||
+    const hasEndTime = Boolean(order.deliveryEndTime && String(order.deliveryEndTime).trim() !== "" && String(order.deliveryEndTime).trim() !== "-");
+
+    const isCompletedStatus = (s === "success" || s.endsWith("success") || s === "delivered" || s.includes("ជោគជ័យ") || s.includes("ប្រគល់") ||
+                               s === "incomplete" || s.includes("incomplete") || s.includes("មិនបានជោគជ័យ") || s.includes("មិនជោគជ័យ") ||
                                s === "return" || s.includes("return") || s.includes("ត្រឡប់") || s.includes("បង្វែរ"));
+
+    // ប្រសិនបើ order កំពុងស្ថិតក្នុងដំណាក់កាលរៀបចំ ឬមិនទាន់បញ្ចប់ការដឹកជញ្ជូន ហើយគ្មាន deliveryEndTime គឺដាច់ខាតមិនបង្ហាញក្នុង Completed Order ទេ
+    if (!hasEndTime && (s === "registered" || s.includes("register") ||
+        s === "in picking" || s.includes("picking") ||
+        s === "waiting checking" || s.includes("waiting checking") ||
+        s === "in checking" || s.includes("in checking") ||
+        s === "waiting delivery" || s.includes("waiting delivery") ||
+        s === "in delivery" || s.includes("in delivery") || /^(\d+(?:st|nd|rd|th))\s+delivery$/i.test(s) ||
+        s.includes("កំពុងដឹក") || s.includes("រៀបចំ") || s.includes("ត្រួតពិនិត្យ"))) {
+        return false;
+    }
+
+    // ប្រសិនបើគ្មាន completed status ហើយគ្មាន deliveryEndTime គឺមិនមែនជា Completed Order ទេ
+    if (!isCompletedStatus && !hasEndTime) {
+        return false;
+    }
 
     // 1. បើ status ជា Completed (Success, Incompleted, Return)
     if (isCompletedStatus) return true;
 
     // 2. ឬបើមាន deliveryEndTime (បានបញ្ចប់ការដឹក)
-    if (order.deliveryEndTime && String(order.deliveryEndTime).trim() !== "" && String(order.deliveryEndTime).trim() !== "-") {
-        return true;
-    }
+    if (hasEndTime) return true;
 
-    // 3. ឬបើបានសម្គាល់ថាបានបញ្ចប់ពី Daily Delivery Report
-    if (order.completedFromDailyDelivery === true) return true;
-
-    // 4. Case-insensitive SO check ក្នុង localStorage
-    const cleanSo = String(order.soNumber || "").trim().toLowerCase();
-    const dailySet = getDailyCompletedOrderSos();
-    for (const so of dailySet) {
-        if (String(so).trim().toLowerCase() === cleanSo) return true;
-    }
+    // 3. ឬបើបានសម្គាល់ថាបានបញ្ចប់ពី Daily Delivery Report ដោយមាន deliveryEndTime ឬ status សមស្រប
+    if (order.completedFromDailyDelivery === true && (hasEndTime || isCompletedStatus)) return true;
 
     return false;
 }
+
+// Helper to determine Success in Daily Delivery
+function isDailyOrderSuccess(order) {
+    if (!order) return false;
+    if (isDailyOrderReturn(order) || isDailyOrderIncomplete(order)) return false;
+    const s = (order.status || "").toLowerCase().trim();
+    if (s === "success" || s.endsWith("success") || s === "delivered" || s.includes("ជោគជ័យ") || s.includes("ប្រគល់")) return true;
+    if (order.deliveryEndTime && String(order.deliveryEndTime).trim() !== "" && String(order.deliveryEndTime).trim() !== "-") return true;
+    return false;
+}
+
+// Helper to determine Return in Daily Delivery
+function isDailyOrderReturn(order) {
+    if (!order) return false;
+    const s = (order.status || "").toLowerCase().trim();
+    return s === "return" || s.includes("return") || s.includes("ត្រឡប់") || s.includes("បង្វែរ");
+}
+
+// Helper to determine Incomplete in Daily Delivery
+function isDailyOrderIncomplete(order) {
+    if (!order) return false;
+    if (isDailyOrderReturn(order)) return false;
+    const s = (order.status || "").toLowerCase().trim();
+    return s === "incomplete" || s.includes("incomplete") || s.includes("មិនបានជោគជ័យ") || s.includes("មិនជោគជ័យ");
+}
+
+window.isDailyOrderSuccess = isDailyOrderSuccess;
+window.isDailyOrderReturn = isDailyOrderReturn;
+window.isDailyOrderIncomplete = isDailyOrderIncomplete;
 
 // Update Top KPI Cards & Sidebar Navigation Badges
 function renderStatsCounters() {
@@ -6485,10 +6561,14 @@ function getOrderDatesList(order) {
     const rawDates = [
         order.deliveryEndTime,
         order.deliveryStartTime,
+        order.lastUpdated,
         order.soDate,
         order.so_date,
         order.timestamp,
-        order.date
+        order.date,
+        order.registeredDate,
+        order.pickingEndTime,
+        order.checkingEndTime
     ];
     const parsedList = [];
     rawDates.forEach(r => {
@@ -6540,28 +6620,40 @@ function matchesDailyDeliveryFilter(order) {
         if (!matchesCustom) return false;
     } else if (preset !== "ALL") {
         const dates = getOrderDatesList(order);
-        if (dates.length === 0) return false;
-
         const now = new Date();
         const pad = n => String(n).padStart(2, '0');
         const todayStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
+        const todayShort = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${String(now.getFullYear()).slice(-2)}`;
 
         if (preset === "TODAY") {
             const matchesToday = dates.some(d => {
                 const dayStr = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
                 return dayStr === todayStr;
             });
-            if (!matchesToday) return false;
+            if (matchesToday) return true;
+
+            // Fast string check for DD/MM/YY (e.g. 27/10/26) across timestamps
+            const rawDates = [order.deliveryEndTime, order.deliveryStartTime, order.lastUpdated, order.soDate, order.so_date, order.timestamp, order.date];
+            if (rawDates.some(s => s && String(s).includes(todayShort))) return true;
+
+            return false;
         } else if (preset === "YESTERDAY") {
             const yesterday = new Date(now);
             yesterday.setDate(now.getDate() - 1);
             const yestStr = `${pad(yesterday.getDate())}/${pad(yesterday.getMonth() + 1)}/${yesterday.getFullYear()}`;
+            const yestShort = `${pad(yesterday.getDate())}/${pad(yesterday.getMonth() + 1)}/${String(yesterday.getFullYear()).slice(-2)}`;
             const matchesYesterday = dates.some(d => {
                 const dayStr = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
                 return dayStr === yestStr;
             });
-            if (!matchesYesterday) return false;
+            if (matchesYesterday) return true;
+
+            const rawDates = [order.deliveryEndTime, order.deliveryStartTime, order.lastUpdated, order.soDate, order.so_date, order.timestamp, order.date];
+            if (rawDates.some(s => s && String(s).includes(yestShort))) return true;
+
+            return false;
         } else if (preset === "THIS_MONTH") {
+            if (dates.length === 0) return false;
             const matchesThisMonth = dates.some(d => {
                 return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
             });
@@ -6799,6 +6891,10 @@ function toggleDailyDeliveryChartCard() {
 }
 
 function renderDailyDeliveryView() {
+    if (typeof sanitizeDailyCompletedOrders === "function") {
+        sanitizeDailyCompletedOrders();
+    }
+
     if (!AppState.dailyDelivery) {
         AppState.dailyDelivery = {
             searchQuery: "",
@@ -6847,30 +6943,17 @@ function renderDailyDeliveryView() {
 
     const recentTotalUsd = filteredRecent.reduce((sum, o) => sum + (parseFloat(o.invoiceAmount) || 0), 0);
     const completedTotalUsd = filteredCompleted.reduce((sum, o) => sum + (parseFloat(o.invoiceAmount) || 0), 0);
-    const successOrders = filteredCompleted.filter(o => {
-        const s = (o.status || "").toLowerCase();
-        return s === "success" || s.endsWith("success") || s === "delivered" || s.includes("ជោគជ័យ");
-    });
-    const returnOrders = filteredCompleted.filter(o => {
-        const s = (o.status || "").toLowerCase();
-        return s === "return" || s.includes("return") || s.includes("ត្រឡប់") || s.includes("បង្វែរ");
-    });
-    const strictlyIncompleteOrders = filteredCompleted.filter(o => {
-        const s = (o.status || "").toLowerCase();
-        if (s === "return" || s.includes("return") || s.includes("ត្រឡប់") || s.includes("បង្វែរ")) return false;
-        return s === "incomplete" || s.includes("incomplete") || s.includes("មិនបានជោគជ័យ");
-    });
-    const incompleteOrders = filteredCompleted.filter(o => {
-        const s = (o.status || "").toLowerCase();
-        return s === "incomplete" || s.includes("incomplete") || s === "return" || s.includes("return");
-    });
+    const successOrders = filteredCompleted.filter(isDailyOrderSuccess);
+    const returnOrders = filteredCompleted.filter(isDailyOrderReturn);
+    const strictlyIncompleteOrders = filteredCompleted.filter(isDailyOrderIncomplete);
+    const incompleteOrders = filteredCompleted.filter(o => isDailyOrderIncomplete(o) || isDailyOrderReturn(o));
 
     if (elRecentCount) elRecentCount.textContent = filteredRecent.length;
     if (elRecentAmt) elRecentAmt.textContent = `$${recentTotalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     if (elCompletedCount) elCompletedCount.textContent = filteredCompleted.length;
     if (elCompletedAmt) elCompletedAmt.textContent = `$${completedTotalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     if (elSuccessCount) elSuccessCount.textContent = successOrders.length;
-    if (elIncompleteCount) elIncompleteCount.textContent = incompleteOrders.length;
+    if (elIncompleteCount) elIncompleteCount.textContent = (strictlyIncompleteOrders.length + returnOrders.length);
     if (elBadge1) elBadge1.textContent = `${filteredRecent.length} Orders`;
     if (elBadge2) elBadge2.textContent = `${filteredCompleted.length} Orders`;
 
