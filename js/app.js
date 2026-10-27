@@ -585,10 +585,19 @@ function normalizeOrderDates(order) {
     const payCashCurr = order.paymentCashCurrency || (payParsed ? payParsed.cashCurrency : (rawPay.includes("៛") ? "KHR" : (order.currency || "USD")));
     const payReceiptCurr = order.paymentReceiptCurrency || (rawPay.includes("៛") ? "KHR" : (order.currency || "USD"));
 
+    let finalStatus = normalizeOrderStatus(order.status, attempts);
+    const hasDeliveryEnded = !!(order.deliveryEndTime && String(order.deliveryEndTime).trim() !== "" && String(order.deliveryEndTime).trim() !== "-");
+    if (hasDeliveryEnded) {
+        const sLow = finalStatus.toLowerCase();
+        if (sLow !== "incomplete" && sLow !== "return" && !sLow.includes("incomplete") && !sLow.includes("return")) {
+            finalStatus = attempts > 1 ? getSuccessStatusName(attempts) : "Success";
+        }
+    }
+
     return {
         ...order,
         deliveryAttempts: attempts,
-        status: normalizeOrderStatus(order.status, attempts),
+        status: finalStatus,
         documentType: docType,
         totalPackage: cleanTotalPackage,
         packageUnit: cleanPackageUnit,
@@ -3605,12 +3614,29 @@ function isOrderRegistered(order) {
 
 function isOrderPicking(order) {
     if (!order) return false;
+    if (isOrderCompleted(order)) return false;
+    const s = (order.status || "").toLowerCase().trim();
+    if (s === "success" || s.includes("success") || s === "delivered" || s.includes("delivered") || s === "return" || s.includes("return") || s === "incomplete" || s.includes("incomplete") || s.includes("ប្រគល់") || s.includes("ជោគជ័យ")) {
+        return false;
+    }
+    if (order.checkingStartTime || order.checkingEndTime || order.deliveryStartTime || order.deliveryEndTime) return false;
+    if (s.includes("checking") || s.includes("delivery") || s.includes("ដឹក")) return false;
     return !!(order.pickingStartTime && !order.pickingEndTime);
 }
 
 function isOrderChecking(order) {
     if (!order) return false;
-    return !!(order.pickingEndTime && !order.checkingEndTime);
+    if (isOrderCompleted(order)) return false;
+    const s = (order.status || "").toLowerCase().trim();
+    if (s === "success" || s.includes("success") || s === "delivered" || s.includes("delivered") || s === "return" || s.includes("return") || s === "incomplete" || s.includes("incomplete") || s.includes("ប្រគល់") || s.includes("ជោគជ័យ")) {
+        return false;
+    }
+    if (order.deliveryStartTime || order.deliveryEndTime) return false;
+    if (order.checkingEndTime && order.checkingEndTime !== "-") return false;
+    if (s === "waiting delivery" || s.includes("waiting delivery") || s.includes("ready for delivery") || s.includes("delivery") || s.includes("ដឹក")) {
+        return false;
+    }
+    return !!(order.pickingEndTime || s === "waiting checking" || s === "in checking");
 }
 
 function isOrderDelivery(order) {
@@ -3978,22 +4004,49 @@ function filterByStatusFromCard(status) {
 // Filter Orders List
 function getFilteredOrders() {
     const filtered = AppState.orders.filter(order => {
+        // Strict guard: In Physical Checking module table, NEVER show Success / Completed orders
+        if (AppState.currentTab === "checking") {
+            const raw = (order.status || "").toLowerCase().trim();
+            if (raw === "success" || raw.includes("success") || raw === "delivered" || raw.includes("ប្រគល់") || raw.includes("ជោគជ័យ") || isOrderCompleted(order) || order.deliveryEndTime) {
+                return false;
+            }
+        }
+        if (AppState.currentTab === "picking") {
+            const raw = (order.status || "").toLowerCase().trim();
+            if (raw === "success" || raw.includes("success") || raw === "delivered" || raw.includes("ប្រគល់") || raw.includes("ជោគជ័យ") || isOrderCompleted(order) || order.deliveryEndTime) {
+                return false;
+            }
+        }
+        if (AppState.currentTab === "register") {
+            const raw = (order.status || "").toLowerCase().trim();
+            if (raw === "success" || raw.includes("success") || raw === "delivered" || raw.includes("ប្រគល់") || raw.includes("ជោគជ័យ") || isOrderCompleted(order) || order.deliveryEndTime) {
+                return false;
+            }
+        }
+
         // Status filter
         if (AppState.filterStatus && AppState.filterStatus !== "ALL") {
-            const raw = (order.status || "").toLowerCase();
+            const raw = (order.status || "").toLowerCase().trim();
             if (AppState.filterStatus === "REGISTERED" && !isOrderRegistered(order)) return false;
             if (AppState.filterStatus === "PICKING" && !isOrderPicking(order)) return false;
             if (AppState.filterStatus === "WAITING_CHECKING") {
+                if (raw === "success" || raw.includes("success") || isOrderCompleted(order) || order.deliveryEndTime) return false;
                 if (raw !== "waiting checking" && !(order.pickingEndTime && !order.checkingStartTime)) return false;
             }
             if (AppState.filterStatus === "IN_CHECKING") {
+                if (raw === "success" || raw.includes("success") || isOrderCompleted(order) || order.deliveryEndTime) return false;
                 if (raw !== "in checking" && !(order.checkingStartTime && !order.checkingEndTime)) return false;
             }
-            if (AppState.filterStatus === "CHECKING" && !isOrderChecking(order)) return false;
+            if (AppState.filterStatus === "CHECKING") {
+                if (raw === "success" || raw.includes("success") || isOrderCompleted(order) || order.deliveryEndTime) return false;
+                if (!isOrderChecking(order)) return false;
+            }
             if (AppState.filterStatus === "WAITING_DELIVERY") {
+                if (raw === "success" || raw.includes("success") || isOrderCompleted(order) || order.deliveryEndTime) return false;
                 if (raw !== "waiting delivery" && !(order.checkingEndTime && !order.deliveryStartTime)) return false;
             }
             if (AppState.filterStatus === "IN_DELIVERY") {
+                if (raw === "success" || raw.includes("success") || isOrderCompleted(order)) return false;
                 if (!isOrderDelivery(order) || raw === "waiting delivery") return false;
             }
             if (AppState.filterStatus === "DELIVERY_1ST") {
