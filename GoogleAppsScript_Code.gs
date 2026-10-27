@@ -1,6 +1,6 @@
 /**
  * =======================================================================
- * GOOGLE APPS SCRIPT: ORDER TRACKING SYSTEM (ប្រព័ន្ធតាមដាន Order)
+ * GOOGLE APPS SCRIPT: SUPPLY TRACKING SYSTEM (ប្រព័ន្ធតាមដាន Supply)
  * Spreadsheet Target: "Tracking order"
  * 
  * Sheets/Tabs in Spreadsheet:
@@ -119,7 +119,7 @@ const HEADERS_USER = [
  */
 function onOpen() {
   SpreadsheetApp.getUi()
-    .createMenu("🚀 Order Tracking")
+    .createMenu("🚀 Supply Tracking")
     .addItem("✨ Clean Headers & Durations (ដកអក្សរខ្មែរ & Format hh:mm)", "cleanAndFormatAllHeadersAndDurations")
     .addItem("⚡ Setup All 6 Sheets (បង្កើត & រៀបចំ Sheet ទាំង ៦)", "setupAllSheets")
     .addItem("🔄 Format Tracking Sheet Headers", "setupTrackingHeaders")
