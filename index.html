@@ -119,11 +119,11 @@
             </div>
             <div class="sidebar-collapsed-only hidden w-8 h-px bg-slate-200 mx-auto my-1"></div>
 
-            <!-- 1. Daily Delivery (Module ទី១ នៅខាងលើបង្អស់) -->
-            <button class="nav-tab-btn w-full text-left px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-between gap-2 transition whitespace-nowrap bg-blue-600 text-white shadow-sm" data-tab="daily-delivery" title="Daily Delivery">
+            <!-- 1. Daily Delivery Report (Module ទី១ នៅខាងលើបង្អស់) -->
+            <button class="nav-tab-btn w-full text-left px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-between gap-2 transition whitespace-nowrap bg-blue-600 text-white shadow-sm" data-tab="daily-delivery" title="Daily Delivery Report">
                 <div class="flex items-center gap-3 min-w-0">
                     <i data-lucide="calendar-check" class="w-5 h-5 text-emerald-400 shrink-0"></i>
-                    <span class="nav-tab-text sidebar-expanded-only truncate">Daily Delivery</span>
+                    <span class="nav-tab-text sidebar-expanded-only truncate">Daily Delivery Report</span>
                 </div>
                 <span id="navBadgeDailyDelivery" class="nav-tab-badge sidebar-expanded-only text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-white border border-white/25 shrink-0">0</span>
             </button>
@@ -396,7 +396,7 @@
                     <i id="sidebarToggleIcon" data-lucide="menu" class="w-5 h-5"></i>
                 </button>
                 <div class="flex items-center gap-2 sm:gap-2.5 flex-wrap">
-                    <h2 id="headerCurrentPageTitle" class="font-extrabold text-base sm:text-lg text-slate-900 tracking-tight">Daily Delivery</h2>
+                    <h2 id="headerCurrentPageTitle" class="font-extrabold text-base sm:text-lg text-slate-900 tracking-tight">Daily Delivery Report</h2>
                     <div id="liveSyncStatusBadge" onclick="forceCheckLiveUpdates()" class="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 shadow-2xs hover:bg-emerald-100/80 transition cursor-pointer select-none" title="Live Real-time Auto-Sync ដំណើរការ (ចុចដើម្បី Sync ភ្លាមៗ)">
                         <span id="liveSyncPulseDot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                         <span id="liveSyncStatusText">LIVE SYNC</span>
@@ -3493,7 +3493,7 @@
                             <input type="checkbox" name="userPermCheckbox" value="daily-delivery" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500">
                             <div class="flex items-center gap-2">
                                 <i data-lucide="calendar-check" class="w-4 h-4 text-emerald-600"></i>
-                                <span class="text-xs font-bold text-slate-800">៦. Daily Delivery (ការដឹកជញ្ជូនប្រចាំថ្ងៃ)</span>
+                                <span class="text-xs font-bold text-slate-800">៦. Daily Delivery Report (របាយការណ៍ដឹកជញ្ជូនប្រចាំថ្ងៃ)</span>
                             </div>
                         </label>
 
@@ -3883,9 +3883,9 @@
 
     <!-- App Core Scripts -->
     <script src="js/paho-mqtt.min.js"></script>
-    <script src="js/data.js?v=live-v4.9.2"></script>
-    <script src="js/sheets-sync.js?v=live-v4.9.2"></script>
-    <script src="js/telegram-notify.js?v=live-v4.9.2"></script>
-    <script src="js/app.js?v=live-v4.9.2"></script>
+    <script src="js/data.js?v=live-v4.9.3"></script>
+    <script src="js/sheets-sync.js?v=live-v4.9.3"></script>
+    <script src="js/telegram-notify.js?v=live-v4.9.3"></script>
+    <script src="js/app.js?v=live-v4.9.3"></script>
 </body>
 </html>
