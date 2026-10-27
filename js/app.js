@@ -1100,6 +1100,12 @@ document.addEventListener("DOMContentLoaded", () => {
     renderAll(true);
     startLiveTimers();
 
+    // Check Authentication on Web App startup:
+    // If no active user session exists (e.g. first time opening link), enforce Login Modal immediately!
+    if (!getCurrentUser()) {
+        openLoginModal(true);
+    }
+
     // Auto sync from Google Sheet on start if configured
     if (SheetsSync.isConfigured()) {
         syncFromGoogleSheet();
@@ -1242,13 +1248,13 @@ function initSetupState() {
     if (savedActiveUser) {
         try {
             const parsed = JSON.parse(savedActiveUser);
-            const found = AppState.setup.users.find(u => u.id === parsed.id || u.username === parsed.username);
-            AppState.currentUser = found || AppState.setup.users[0];
+            const found = (AppState.setup.users || []).find(u => u.id === parsed.id || u.username === parsed.username);
+            AppState.currentUser = found || parsed || null;
         } catch (e) {
-            AppState.currentUser = AppState.setup.users[0];
+            AppState.currentUser = null;
         }
     } else {
-        AppState.currentUser = AppState.setup.users[0] || null;
+        AppState.currentUser = null;
     }
 
     if (AppState.currentUser && !AppState.currentUser.photoUrl && AppState.currentUser.username) {
@@ -11222,13 +11228,7 @@ function getCurrentUser() {
             AppState.currentUser.photoUrl = cached;
         }
     }
-    return AppState.currentUser || {
-        id: "USR-001",
-        username: "admin",
-        displayName: "Administrator",
-        role: "Admin",
-        permissions: ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "daily-delivery", "report", "setup"]
-    };
+    return AppState.currentUser || null;
 }
 
 // Check if user has permission to access a specific module
@@ -11766,11 +11766,25 @@ function decodeRememberedPassword(encoded) {
     }
 }
 
+let isLoginMandatory = false;
+
 // Open Login Modal
-function openLoginModal() {
+function openLoginModal(mandatory = false) {
     const modal = document.getElementById("loginModal");
     if (!modal) return;
     
+    isLoginMandatory = mandatory || !getCurrentUser();
+
+    // Hide or show close 'X' button depending on whether login is mandatory
+    const closeBtn = document.getElementById("loginModalCloseBtn");
+    if (closeBtn) {
+        if (isLoginMandatory) {
+            closeBtn.classList.add("hidden");
+        } else {
+            closeBtn.classList.remove("hidden");
+        }
+    }
+
     // Close dropdown
     const dd = document.getElementById("userMenuDropdown");
     if (dd) dd.classList.add("hidden");
@@ -11807,7 +11821,9 @@ function openLoginModal() {
     }
 
     modal.classList.remove("hidden");
-    lucide.createIcons();
+    if (typeof lucide !== "undefined" && lucide.createIcons) {
+        lucide.createIcons();
+    }
 
     setTimeout(() => {
         if (loginUserIn && isRemembered && rememberedUser && rememberedPass) {
@@ -11818,12 +11834,19 @@ function openLoginModal() {
         } else {
             loginUserIn?.focus();
         }
-    }, 100);
+    }, 120);
 }
 
 function closeLoginModal() {
+    if (isLoginMandatory && !getCurrentUser()) {
+        showToast("សូមបញ្ចូល Username និង Password ដើម្បីចូលប្រើប្រាស់ Web App!", "warning");
+        return;
+    }
     const modal = document.getElementById("loginModal");
     if (modal) modal.classList.add("hidden");
+    const closeBtn = document.getElementById("loginModalCloseBtn");
+    if (closeBtn) closeBtn.classList.remove("hidden");
+    isLoginMandatory = false;
 }
 
 function handleLoginFormSubmit(e) {
@@ -11875,6 +11898,7 @@ function quickSwitchUser(username) {
 }
 
 function loginUser(user) {
+    isLoginMandatory = false;
     AppState.isLoggedOut = false;
     // Restore cached avatar photo if present
     if (user.username) {
@@ -11948,7 +11972,7 @@ function logoutCurrentUser() {
 
             updateOnlineUsersPresence();
             renderCurrentUserProfile();
-            openLoginModal();
+            openLoginModal(true);
         }
     });
 }
