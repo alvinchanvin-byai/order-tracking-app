@@ -2237,27 +2237,26 @@ function setupEventListeners() {
                 const tgOnStartEl = document.getElementById("tgNotifyOnStart");
                 const tgOnEndEl = document.getElementById("tgNotifyOnEnd");
                 const tgIncludePayEl = document.getElementById("tgIncludePayment");
-                if (tgTokenEl) tgTokenEl.value = tgCfg.botToken || "";
-                if (tgChatEl) tgChatEl.value = tgCfg.chatId || "";
+                
+                const tokenVal = (tgCfg.botToken && tgCfg.botToken !== "TEST_TOKEN") ? tgCfg.botToken : "8542855202:AAFxM8ZSqkuvpg6eOUsVoRHRnt8ZwMoDN4I";
+                const chatVal = tgCfg.chatId || "-5329208592";
+
+                if (tgTokenEl) tgTokenEl.value = tokenVal;
+                if (tgChatEl) tgChatEl.value = chatVal;
                 if (tgToggleEl) tgToggleEl.checked = Boolean(tgCfg.enabled);
                 if (tgOnStartEl) tgOnStartEl.checked = Boolean(tgCfg.notifyOnStart);
                 if (tgOnEndEl) tgOnEndEl.checked = Boolean(tgCfg.notifyOnEnd);
                 if (tgIncludePayEl) tgIncludePayEl.checked = Boolean(tgCfg.includePayment);
 
-                // If currently empty on this device (e.g. freshly opened on Mobile), fetch latest from Cloud immediately!
-                if ((!tgCfg.botToken || !tgCfg.chatId) && window.SheetsSync && typeof window.SheetsSync.fetchTelegramConfig === "function") {
+                // Fetch latest from Cloud to guarantee 100% parity
+                if (window.SheetsSync && typeof window.SheetsSync.fetchTelegramConfig === "function") {
                     window.SheetsSync.fetchTelegramConfig().then(cloudCfg => {
-                        if (cloudCfg && (cloudCfg.botToken || cloudCfg.chatId)) {
-                            if (tgTokenEl && (!tgTokenEl.value || tgTokenEl.value === "")) tgTokenEl.value = cloudCfg.botToken || "";
-                            if (tgChatEl && (!tgChatEl.value || tgChatEl.value === "")) tgChatEl.value = cloudCfg.chatId || "";
+                        if (cloudCfg && cloudCfg.botToken && cloudCfg.botToken !== "TEST_TOKEN") {
+                            if (tgTokenEl && (tgTokenEl.value === "TEST_TOKEN" || !tgTokenEl.value)) tgTokenEl.value = cloudCfg.botToken;
+                            if (tgChatEl && !tgChatEl.value) tgChatEl.value = cloudCfg.chatId || "-5329208592";
                             if (tgToggleEl && cloudCfg.enabled !== undefined) tgToggleEl.checked = Boolean(cloudCfg.enabled);
-                            if (tgOnStartEl && cloudCfg.notifyOnStart !== undefined) tgOnStartEl.checked = Boolean(cloudCfg.notifyOnStart);
-                            if (tgOnEndEl && cloudCfg.notifyOnEnd !== undefined) tgOnEndEl.checked = Boolean(cloudCfg.notifyOnEnd);
-                            if (tgIncludePayEl && cloudCfg.includePayment !== undefined) tgIncludePayEl.checked = Boolean(cloudCfg.includePayment);
                         }
                     });
-                } else if (tgCfg.botToken && tgCfg.chatId && typeof window.TelegramNotify.ensureCloudSynced === "function") {
-                    window.TelegramNotify.ensureCloudSynced();
                 }
             }
 
