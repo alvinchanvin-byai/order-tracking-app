@@ -3538,9 +3538,9 @@
     <!-- ======================================================== -->
     <!-- MODAL: LOGIN & SWITCH USER                               -->
     <!-- ======================================================== -->
-    <div id="loginModal" class="fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-4 hidden">
+    <div id="loginModal" class="fixed inset-0 z-[100] modal-backdrop flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md hidden">
         <div class="glass-panel w-full max-w-md rounded-3xl p-6 sm:p-7 shadow-2xl relative max-h-[92vh] overflow-y-auto border border-white/60 bg-white/95 backdrop-blur-xl">
-            <button onclick="closeLoginModal()" class="absolute top-5 right-5 p-1 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition">
+            <button id="loginModalCloseBtn" onclick="closeLoginModal()" class="absolute top-5 right-5 p-1 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
 
@@ -3891,9 +3891,9 @@
 
     <!-- App Core Scripts -->
     <script src="js/paho-mqtt.min.js"></script>
-    <script src="js/data.js?v=live-v4.9.9"></script>
-    <script src="js/sheets-sync.js?v=live-v4.9.9"></script>
-    <script src="js/telegram-notify.js?v=live-v4.9.9"></script>
-    <script src="js/app.js?v=live-v4.9.9"></script>
+    <script src="js/data.js?v=live-v5.0.0"></script>
+    <script src="js/sheets-sync.js?v=live-v5.0.0"></script>
+    <script src="js/telegram-notify.js?v=live-v5.0.0"></script>
+    <script src="js/app.js?v=live-v5.0.0"></script>
 </body>
 </html>
