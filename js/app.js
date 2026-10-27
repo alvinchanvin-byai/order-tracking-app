@@ -6548,6 +6548,232 @@ function matchesDailyDeliveryFilter(order) {
     return true;
 }
 
+// -------------------------------------------------------------
+// DAILY DELIVERY ANALYTICS & STATUS CHART CARD
+// -------------------------------------------------------------
+let dailyDeliveryChartInstance = null;
+
+function renderDailyDeliveryAnalyticsChart(stats) {
+    const cSuccess = stats.successCount || 0;
+    const cIncomplete = stats.incompleteCount || 0;
+    const cReturn = stats.returnCount || 0;
+    const cInDelivery = stats.inDeliveryCount || 0;
+    const total = cSuccess + cIncomplete + cReturn + cInDelivery;
+
+    // Percentages
+    const pctSuccess = total > 0 ? ((cSuccess / total) * 100).toFixed(1) : "0.0";
+    const pctIncomplete = total > 0 ? ((cIncomplete / total) * 100).toFixed(1) : "0.0";
+    const pctReturn = total > 0 ? ((cReturn / total) * 100).toFixed(1) : "0.0";
+    const pctInDelivery = total > 0 ? ((cInDelivery / total) * 100).toFixed(1) : "0.0";
+
+    const finishedTotal = cSuccess + cIncomplete + cReturn;
+    const successRate = finishedTotal > 0 ? ((cSuccess / finishedTotal) * 100).toFixed(1) : (total > 0 ? ((cSuccess / total) * 100).toFixed(1) : "0.0");
+
+    // 1. Update Header Badge & Center Overlays
+    const elBadge = document.getElementById("dailyChartTotalBadge");
+    if (elBadge) elBadge.textContent = `${total} ${total === 1 ? "Order" : "Orders"}`;
+
+    const elCenterTotal = document.getElementById("dailyChartCenterTotal");
+    if (elCenterTotal) elCenterTotal.textContent = total;
+
+    const elCenterRate = document.getElementById("dailyChartCenterSuccessRate");
+    if (elCenterRate) elCenterRate.textContent = `${successRate}% ជោគជ័យ`;
+
+    // 2. Counts and Percentages in Right Column
+    const elCountSuccess = document.getElementById("dailyChartCountSuccess");
+    if (elCountSuccess) elCountSuccess.textContent = cSuccess;
+    const elPctSuccess = document.getElementById("dailyChartPctSuccess");
+    if (elPctSuccess) elPctSuccess.textContent = `${pctSuccess}%`;
+    const elBarSuccess = document.getElementById("dailyChartBarSuccess");
+    if (elBarSuccess) elBarSuccess.style.width = `${pctSuccess}%`;
+
+    const elCountIncomplete = document.getElementById("dailyChartCountIncomplete");
+    if (elCountIncomplete) elCountIncomplete.textContent = cIncomplete;
+    const elPctIncomplete = document.getElementById("dailyChartPctIncomplete");
+    if (elPctIncomplete) elPctIncomplete.textContent = `${pctIncomplete}%`;
+    const elBarIncomplete = document.getElementById("dailyChartBarIncomplete");
+    if (elBarIncomplete) elBarIncomplete.style.width = `${pctIncomplete}%`;
+
+    const elCountReturn = document.getElementById("dailyChartCountReturn");
+    if (elCountReturn) elCountReturn.textContent = cReturn;
+    const elPctReturn = document.getElementById("dailyChartPctReturn");
+    if (elPctReturn) elPctReturn.textContent = `${pctReturn}%`;
+    const elBarReturn = document.getElementById("dailyChartBarReturn");
+    if (elBarReturn) elBarReturn.style.width = `${pctReturn}%`;
+
+    const elCountInDelivery = document.getElementById("dailyChartCountInDelivery");
+    if (elCountInDelivery) elCountInDelivery.textContent = cInDelivery;
+    const elPctInDelivery = document.getElementById("dailyChartPctInDelivery");
+    if (elPctInDelivery) elPctInDelivery.textContent = `${pctInDelivery}%`;
+    const elBarInDelivery = document.getElementById("dailyChartBarInDelivery");
+    if (elBarInDelivery) elBarInDelivery.style.width = `${pctInDelivery}%`;
+
+    // 3. Bottom Summary Strip
+    const elFinished = document.getElementById("dailyChartFinishedCount");
+    if (elFinished) elFinished.textContent = finishedTotal;
+    const elRateBottom = document.getElementById("dailyChartSuccessRateBottom");
+    if (elRateBottom) elRateBottom.textContent = `${successRate}%`;
+
+    // 4. Update Filter Context Text
+    const elFilterContext = document.getElementById("dailyChartFilterContextText");
+    if (elFilterContext && AppState.dailyDelivery) {
+        const p = AppState.dailyDelivery.datePreset;
+        const d = AppState.dailyDelivery.filterDate;
+        if (d) {
+            elFilterContext.textContent = d;
+        } else if (p === "TODAY") {
+            elFilterContext.textContent = "ថ្ងៃនេះ (Today)";
+        } else if (p === "YESTERDAY") {
+            elFilterContext.textContent = "ម្សិលមិញ (Yesterday)";
+        } else if (p === "THIS_MONTH") {
+            elFilterContext.textContent = "ខែនេះ (This Month)";
+        } else {
+            elFilterContext.textContent = "ទាំងអស់ (All)";
+        }
+    }
+
+    // 5. Restore saved collapse state if any
+    try {
+        const isCollapsed = localStorage.getItem("dailyDeliveryChartCardCollapsed") === "true";
+        const body = document.getElementById("dailyChartCardBody");
+        const icon = document.getElementById("iconToggleDailyChart");
+        if (body && isCollapsed && !body.classList.contains("hidden")) {
+            body.classList.add("hidden");
+            if (icon) icon.classList.add("rotate-180");
+        }
+    } catch(e){}
+
+    // 6. Update Donut Chart
+    updateDailyDeliveryDoughnutCanvas(cSuccess, cIncomplete, cReturn, cInDelivery, total);
+}
+
+function updateDailyDeliveryDoughnutCanvas(cSuccess, cIncomplete, cReturn, cInDelivery, total) {
+    const canvas = document.getElementById("dailyDeliveryDoughnutCanvas");
+    if (!canvas) return;
+
+    if (typeof Chart !== "undefined") {
+        if (dailyDeliveryChartInstance) {
+            try { dailyDeliveryChartInstance.destroy(); } catch(e){}
+            dailyDeliveryChartInstance = null;
+        }
+
+        const isZero = total === 0;
+        const dataArr = isZero ? [1] : [cSuccess, cIncomplete, cReturn, cInDelivery];
+        const bgColors = isZero 
+            ? ["#e2e8f0"] 
+            : ["#10b981", "#f59e0b", "#f43f5e", "#0ea5e9"];
+        const hoverColors = isZero 
+            ? ["#cbd5e1"] 
+            : ["#059669", "#d97706", "#e11d48", "#0284c7"];
+        const labels = isZero 
+            ? ["មិនទាន់មាន Order"] 
+            : ["Completed (ជោគជ័យ)", "Incompleted (មិនបានជោគជ័យ)", "Return (ត្រឡប់)", "In Delivery (កំពុងដឹក)"];
+
+        const ctx = canvas.getContext("2d");
+        dailyDeliveryChartInstance = new Chart(ctx, {
+            type: "doughnut",
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: dataArr,
+                    backgroundColor: bgColors,
+                    hoverBackgroundColor: hoverColors,
+                    borderWidth: isZero ? 0 : 3,
+                    borderColor: "#ffffff",
+                    hoverOffset: isZero ? 0 : 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: "75%",
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        enabled: !isZero,
+                        callbacks: {
+                            label: function(context) {
+                                const val = context.raw || 0;
+                                const pct = total > 0 ? ((val / total) * 100).toFixed(1) : "0.0";
+                                return ` ${context.label}: ${val} Orders (${pct}%)`;
+                            }
+                        }
+                    }
+                },
+                animation: {
+                    animateRotate: true,
+                    animateScale: true,
+                    duration: 500
+                }
+            }
+        });
+    } else {
+        // Fallback: Canvas 2D manual draw
+        drawFallbackCanvasDonut(canvas, cSuccess, cIncomplete, cReturn, cInDelivery, total);
+    }
+}
+
+function drawFallbackCanvasDonut(canvas, cSuccess, cIncomplete, cReturn, cInDelivery, total) {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    const w = canvas.width || 220;
+    const h = canvas.height || 220;
+    ctx.clearRect(0, 0, w, h);
+
+    const cx = w / 2;
+    const cy = h / 2;
+    const radius = Math.min(cx, cy) - 16;
+    const lineWidth = 20;
+
+    if (total === 0) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+        ctx.lineWidth = lineWidth;
+        ctx.strokeStyle = "#e2e8f0";
+        ctx.stroke();
+        return;
+    }
+
+    const segments = [
+        { count: cSuccess, color: "#10b981" },
+        { count: cIncomplete, color: "#f59e0b" },
+        { count: cReturn, color: "#f43f5e" },
+        { count: cInDelivery, color: "#0ea5e9" }
+    ];
+
+    let startAngle = -Math.PI / 2;
+    segments.forEach(seg => {
+        if (seg.count > 0) {
+            const sliceAngle = (seg.count / total) * (2 * Math.PI);
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, startAngle, startAngle + sliceAngle);
+            ctx.lineWidth = lineWidth;
+            ctx.strokeStyle = seg.color;
+            ctx.stroke();
+            startAngle += sliceAngle;
+        }
+    });
+}
+
+function toggleDailyDeliveryChartCard() {
+    const body = document.getElementById("dailyChartCardBody");
+    const icon = document.getElementById("iconToggleDailyChart");
+    if (!body) return;
+    const isHidden = body.classList.contains("hidden");
+    if (isHidden) {
+        body.classList.remove("hidden");
+        if (icon) icon.classList.remove("rotate-180");
+        try { localStorage.setItem("dailyDeliveryChartCardCollapsed", "false"); } catch(e){}
+    } else {
+        body.classList.add("hidden");
+        if (icon) icon.classList.add("rotate-180");
+        try { localStorage.setItem("dailyDeliveryChartCardCollapsed", "true"); } catch(e){}
+    }
+    if (typeof scheduleLucideIcons === "function") scheduleLucideIcons();
+}
+
 function renderDailyDeliveryView() {
     if (!AppState.dailyDelivery) {
         AppState.dailyDelivery = {
@@ -6601,6 +6827,15 @@ function renderDailyDeliveryView() {
         const s = (o.status || "").toLowerCase();
         return s === "success" || s.endsWith("success") || s === "delivered" || s.includes("ជោគជ័យ");
     });
+    const returnOrders = filteredCompleted.filter(o => {
+        const s = (o.status || "").toLowerCase();
+        return s === "return" || s.includes("return") || s.includes("ត្រឡប់") || s.includes("បង្វែរ");
+    });
+    const strictlyIncompleteOrders = filteredCompleted.filter(o => {
+        const s = (o.status || "").toLowerCase();
+        if (s === "return" || s.includes("return") || s.includes("ត្រឡប់") || s.includes("បង្វែរ")) return false;
+        return s === "incomplete" || s.includes("incomplete") || s.includes("មិនបានជោគជ័យ");
+    });
     const incompleteOrders = filteredCompleted.filter(o => {
         const s = (o.status || "").toLowerCase();
         return s === "incomplete" || s.includes("incomplete") || s === "return" || s.includes("return");
@@ -6616,9 +6851,19 @@ function renderDailyDeliveryView() {
     if (elBadge2) elBadge2.textContent = `${filteredCompleted.length} Orders`;
 
     const summaryText = document.getElementById("table2SummaryText");
-    if (summaryText) summaryText.textContent = `សរុប: ${filteredCompleted.length} Orders (ជោគជ័យ: ${successOrders.length}, មិនជោគជ័យ/ត្រឡប់: ${incompleteOrders.length})`;
+    if (summaryText) summaryText.textContent = `សរុប: ${filteredCompleted.length} Orders (ជោគជ័យ: ${successOrders.length}, មិនជោគជ័យ: ${strictlyIncompleteOrders.length}, ត្រឡប់: ${returnOrders.length})`;
 
-    // 4. Render Table 1 and Table 2
+    // 4. Update the New Modern Analytics Chart Card (Donut Chart & Percentages)
+    if (typeof renderDailyDeliveryAnalyticsChart === "function") {
+        renderDailyDeliveryAnalyticsChart({
+            successCount: successOrders.length,
+            incompleteCount: strictlyIncompleteOrders.length,
+            returnCount: returnOrders.length,
+            inDeliveryCount: filteredRecent.length
+        });
+    }
+
+    // 5. Render Table 1 and Table 2
     renderDailyDeliveryTable1(filteredRecent);
     renderDailyDeliveryTable2(filteredCompleted);
 
