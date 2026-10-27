@@ -291,6 +291,12 @@ const SheetsSync = {
                 window.mergeDailyCompletedOrderSos([msg.payload.soNumber]);
             }
         }
+        if ((msg.type === "TELEGRAM_CONFIG_UPDATE" || msg.type === "SAVE_TELEGRAM_CONFIG") && msg.payload) {
+            const cfg = msg.payload.config || msg.payload;
+            if (window.TelegramNotify && typeof window.TelegramNotify.applySyncedConfig === "function") {
+                window.TelegramNotify.applySyncedConfig(cfg);
+            }
+        }
         if (typeof this.onBroadcastReceived === "function") {
             this.onBroadcastReceived(msg);
         }
@@ -353,6 +359,9 @@ const SheetsSync = {
                 if (result.dailyCompletedSos && typeof window.mergeDailyCompletedOrderSos === "function") {
                     window.mergeDailyCompletedOrderSos(result.dailyCompletedSos);
                 }
+                if (result.telegramConfig && window.TelegramNotify && typeof window.TelegramNotify.applySyncedConfig === "function") {
+                    window.TelegramNotify.applySyncedConfig(result.telegramConfig);
+                }
                 if (result.serverTimestamp) {
                     this.setServerTimestamp(result.serverTimestamp);
                 }
@@ -411,6 +420,9 @@ const SheetsSync = {
                 }
                 if (result.dailyCompletedSos && typeof window.mergeDailyCompletedOrderSos === "function") {
                     window.mergeDailyCompletedOrderSos(result.dailyCompletedSos);
+                }
+                if (result.telegramConfig && window.TelegramNotify && typeof window.TelegramNotify.applySyncedConfig === "function") {
+                    window.TelegramNotify.applySyncedConfig(result.telegramConfig);
                 }
 
                 // If hasChanges is true, or fallback if server returned full data directly
@@ -608,6 +620,14 @@ const SheetsSync = {
         return this.sendPayload({
             action: "SYNC_ALL_SETUP",
             setup: setupData
+        });
+    },
+
+    // Sync Telegram Configuration to Cloud (Master Config for all Users)
+    async syncTelegramConfig(config) {
+        return this.sendPayload({
+            action: "SAVE_TELEGRAM_CONFIG",
+            config: config
         });
     },
 
