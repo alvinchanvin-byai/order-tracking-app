@@ -15,6 +15,9 @@
 const TelegramNotify = (function () {
     const STORAGE_KEY = "order_tracker_telegram_config_v1";
 
+    // Track the last time Admin saved locally to guard against race condition overwrites from background polling
+    let lastLocalSaveTimestamp = 0;
+
     // Default configuration
     const defaultConfig = {
         enabled: true,
@@ -65,6 +68,13 @@ const TelegramNotify = (function () {
      */
     function applySyncedConfig(incoming) {
         if (!incoming || typeof incoming !== "object") return;
+
+        // Guard against race conditions: If the local Admin recently saved a config (<25 seconds ago),
+        // protect the newly saved settings from being overwritten by stale incoming polling data!
+        if (Date.now() - lastLocalSaveTimestamp < 25000) {
+            return getConfig();
+        }
+
         const current = getConfig();
 
         // Guard: Do not overwrite valid token or chatId with empty/null strings
@@ -123,8 +133,10 @@ const TelegramNotify = (function () {
 
     /**
      * Save configuration and broadcast to other tabs/devices
+     * Returns a Promise that resolves when local + cloud save completes
      */
-    function saveConfig(newConfig, broadcastCloud = true) {
+    async function saveConfig(newConfig, broadcastCloud = true) {
+        lastLocalSaveTimestamp = Date.now();
         const merged = { ...getConfig(), ...newConfig };
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
@@ -147,11 +159,16 @@ const TelegramNotify = (function () {
         }
 
         // 3. Save to Google Apps Script cloud storage for persistence across all users
+        let cloudRes = null;
         if (broadcastCloud && window.SheetsSync && typeof window.SheetsSync.syncTelegramConfig === "function") {
-            window.SheetsSync.syncTelegramConfig(merged);
+            try {
+                cloudRes = await window.SheetsSync.syncTelegramConfig(merged);
+            } catch (err) {
+                console.warn("[TelegramNotify] Cloud save warning:", err);
+            }
         }
 
-        return merged;
+        return { success: true, config: merged, cloudResult: cloudRes };
     }
 
     /**
