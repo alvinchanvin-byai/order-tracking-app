@@ -1,6 +1,6 @@
 /**
  * ========================================================
- * TELEGRAM NOTIFICATION MODULE FOR ORDER TRACKING APP
+ * TELEGRAM NOTIFICATION MODULE FOR SUPPLY TRACKING APP
  * Version: 1.0.0
  * Features:
  *  - Direct Telegram Bot API integration (via CORS-supported sendMessage)
@@ -273,7 +273,7 @@ const TelegramNotify = (function () {
         const testHtml = 
 `🎉 <b>សាកល្បងការតភ្ជាប់ជោគជ័យ! (Test Successful)</b>
 ━━━━━━━━━━━━━
-🤖 <b>ប្រព័ន្ធ:</b> Order Tracking &amp; Delivery System
+🤖 <b>ប្រព័ន្ធ:</b> Supply Tracking &amp; Delivery System
 ⏰ <b>កាលបរិច្ឆេទ:</b> <code>${escapeTg(timeStr)}</code>
 ✅ <b>ស្ថានភាព:</b> Telegram Bot ដំណើរការធម្មតា និងរួចរាល់សម្រាប់ការផ្ញើ Report ស្វ័យប្រវត្តិ!`;
 
@@ -459,7 +459,7 @@ const TelegramNotify = (function () {
 ━━━━━━━━━━━━━
 ${listHtml.trim()}
 ━━━━━━━━━━━━━
-${destSummary ? `📍 <b>គោលដៅ:</b> ${destSummary}\n` : ""}📱 <i>ចេញដំណើរពីប្រព័ន្ធ Order Tracking</i>`;
+${destSummary ? `📍 <b>គោលដៅ:</b> ${destSummary}\n` : ""}📱 <i>ចេញដំណើរពីប្រព័ន្ធ Supply Tracking</i>`;
 
             await sendMessage(msgHtml);
         }
@@ -548,7 +548,7 @@ ${destSummary ? `📍 <b>គោលដៅ:</b> ${destSummary}\n` : ""}📱 <i>ច
 🛵 <b>អ្នកដឹក (Driver):</b> <b>${escapeTg(driverName)}</b>
 ${pkgLine}${locLine}${paymentLine}${notesLine}⏰ <b>ម៉ោងបញ្ចប់:</b> <code>${escapeTg(timeStr)}</code>
 ━━━━━━━━━━━━━
-📱 <i>Order Tracking System</i>`;
+📱 <i>Supply Tracking System</i>`;
 
         return await sendMessage(msgHtml);
     }
@@ -673,7 +673,7 @@ ${totalUsd > 0 ? `• USD: <b>$${totalUsd.toLocaleString(undefined, { minimumFra
 ${driverListText.trim()}
 ━━━━━━━━━━━━━
 ⏰ <b>ម៉ោងបង្កើត Report:</b> <code>${escapeTg(typeof formatAppDateTime === "function" ? formatAppDateTime() : new Date().toLocaleString())}</code>
-📱 <i>ផ្ញើដោយស្វ័យប្រវត្តិពី Order Tracking System</i>`;
+📱 <i>ផ្ញើដោយស្វ័យប្រវត្តិពី Supply Tracking System</i>`;
 
         if (typeof showToast === "function") {
             showToast("កំពុងផ្ញើ Daily Delivery Report ទៅ Telegram...", "info");
