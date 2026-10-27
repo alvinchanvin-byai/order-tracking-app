@@ -2332,12 +2332,12 @@ function setupEventListeners() {
                         notifyOnStart,
                         notifyOnEnd,
                         includePayment
-                    });
+                    }, true);
                 }
 
                 Swal.fire({
                     title: "រក្សាទុកការកំណត់ Telegram រួចរាល់! ✈️✅",
-                    text: "រាល់ការផ្លាស់ប្ដូរត្រូវបានរក្សាទុក និង Sync ទៅកាន់គ្រប់ឧបករណ៍ទាំងអស់ដោយស្វ័យប្រវត្តិ។",
+                    text: "ការកំណត់ Telegram ត្រូវបានរក្សាទុក និង Sync ទៅកាន់ Cloud (Master Config) រួចរាល់។ រាល់គណនីទាំងអស់ (Manager & User) លើគ្រប់ទូរស័ព្ទដៃ និងកុំព្យូទ័រ អាចប្រើប្រាស់ និងទទួលបាន Report ភ្លាមៗដោយមិនបាច់ Setup អ្វីឡើយ!",
                     icon: "success",
                     confirmButtonText: "យល់ព្រម",
                     confirmButtonColor: "#0284c7"
@@ -2914,6 +2914,13 @@ function applyIncomingRealtimeAction(action, payload) {
             saveSetupState("bus");
             setupDropdownOptions();
             if (AppState.currentTab === "setup") renderSetupBU();
+        }
+    }
+    // 5. TELEGRAM CONFIGURATION CLOUD & REAL-TIME SYNC (ADMIN -> ALL ROLES)
+    else if (action === "SAVE_TELEGRAM_CONFIG" || action === "TELEGRAM_CONFIG_UPDATE") {
+        const tgCfg = payload.config || payload.telegramConfig || payload;
+        if (window.TelegramNotify && typeof window.TelegramNotify.applySyncedConfig === "function") {
+            window.TelegramNotify.applySyncedConfig(tgCfg);
         }
     }
 
