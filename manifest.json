@@ -1,7 +1,7 @@
 {
-  "name": "Order Tracking System",
-  "short_name": "OrderTrack",
-  "description": "Smart Order Tracking & Delivery Management Web App",
+  "name": "Supply Tracking System",
+  "short_name": "SupplyTrack",
+  "description": "Smart Supply Tracking & Delivery Management Web App",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "any",
