@@ -18,11 +18,11 @@ const TelegramNotify = (function () {
     // Track the last time Admin saved locally to guard against race condition overwrites from background polling
     let lastLocalSaveTimestamp = 0;
 
-    // Default configuration
+    // Default configuration (Master credentials)
     const defaultConfig = {
         enabled: true,
-        botToken: "",
-        chatId: "",
+        botToken: "8542855202:AAFxM8ZSqkuvpg6eOUsVoRHRnt8ZwMoDN4I",
+        chatId: "-5329208592",
         notifyOnStart: true,
         notifyOnEnd: true,
         notifyDailySummary: true,
@@ -54,6 +54,13 @@ const TelegramNotify = (function () {
             const raw = localStorage.getItem(STORAGE_KEY);
             if (raw) {
                 const parsed = JSON.parse(raw);
+                // Purge any stale TEST_TOKEN or missing credentials
+                if (!parsed.botToken || parsed.botToken === "TEST_TOKEN") {
+                    parsed.botToken = defaultConfig.botToken;
+                }
+                if (!parsed.chatId) {
+                    parsed.chatId = defaultConfig.chatId;
+                }
                 return { ...defaultConfig, ...parsed };
             }
         } catch (e) {
@@ -77,12 +84,22 @@ const TelegramNotify = (function () {
 
         const current = getConfig();
 
-        // Guard: Do not overwrite valid token or chatId with empty/null strings
-        const incomingToken = incoming.botToken ? String(incoming.botToken).trim() : "";
-        const incomingChatId = incoming.chatId ? String(incoming.chatId).trim() : "";
+        // Guard: Do not accept dummy TEST_TOKEN or empty strings
+        let incomingToken = incoming.botToken ? String(incoming.botToken).trim() : "";
+        let incomingChatId = incoming.chatId ? String(incoming.chatId).trim() : "";
+        if (incomingToken === "TEST_TOKEN") incomingToken = "";
+
         const merged = { ...current, ...incoming };
-        if (!incomingToken && current.botToken) merged.botToken = current.botToken;
-        if (!incomingChatId && current.chatId) merged.chatId = current.chatId;
+        if (incomingToken) {
+            merged.botToken = incomingToken;
+        } else {
+            merged.botToken = current.botToken || defaultConfig.botToken;
+        }
+        if (incomingChatId) {
+            merged.chatId = incomingChatId;
+        } else {
+            merged.chatId = current.chatId || defaultConfig.chatId;
+        }
 
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
