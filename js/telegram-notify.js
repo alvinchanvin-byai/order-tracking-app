@@ -60,25 +60,66 @@ const TelegramNotify = (function () {
     }
 
     /**
+     * Apply synced configuration from Cloud (Google Apps Script) or Realtime Relay
+     * Allows all devices and non-admin roles (Manager & User) to inherit Telegram config automatically
+     */
+    function applySyncedConfig(incoming) {
+        if (!incoming || typeof incoming !== "object") return;
+        const current = getConfig();
+        const merged = { ...current, ...incoming };
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+        } catch (e) {
+            console.warn("[TelegramNotify] Failed to cache synced config:", e);
+        }
+
+        // If the settings modal inputs are currently rendered on screen, update them
+        const tgTokenEl = document.getElementById("tgBotTokenInput");
+        const tgChatEl = document.getElementById("tgChatIdInput");
+        const tgToggleEl = document.getElementById("tgEnabledToggle");
+        const tgOnStartEl = document.getElementById("tgNotifyOnStart");
+        const tgOnEndEl = document.getElementById("tgNotifyOnEnd");
+        const tgIncludePayEl = document.getElementById("tgIncludePayment");
+        if (tgTokenEl && (!tgTokenEl.value || tgTokenEl.value === "")) tgTokenEl.value = merged.botToken || "";
+        if (tgChatEl && (!tgChatEl.value || tgChatEl.value === "")) tgChatEl.value = merged.chatId || "";
+        if (tgToggleEl) tgToggleEl.checked = Boolean(merged.enabled);
+        if (tgOnStartEl) tgOnStartEl.checked = Boolean(merged.notifyOnStart);
+        if (tgOnEndEl) tgOnEndEl.checked = Boolean(merged.notifyOnEnd);
+        if (tgIncludePayEl) tgIncludePayEl.checked = Boolean(merged.includePayment);
+
+        return merged;
+    }
+
+    /**
      * Save configuration and broadcast to other tabs/devices
      */
-    function saveConfig(newConfig) {
+    function saveConfig(newConfig, broadcastCloud = true) {
         const merged = { ...getConfig(), ...newConfig };
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
-            // Broadcast event across tabs
-            if (window.SheetsSync && typeof window.SheetsSync.broadcastEvent === "function") {
-                window.SheetsSync.broadcastEvent("TELEGRAM_CONFIG_UPDATED", {
-                    enabled: merged.enabled,
-                    botToken: merged.botToken,
-                    chatId: merged.chatId,
-                    notifyOnStart: merged.notifyOnStart,
-                    notifyOnEnd: merged.notifyOnEnd
-                });
-            }
         } catch (e) {
             console.error("[TelegramNotify] Error saving config:", e);
         }
+
+        // 1. Broadcast across open tabs on the same computer (<5ms)
+        if (window.SheetsSync && typeof window.SheetsSync.broadcast === "function") {
+            window.SheetsSync.broadcast("TELEGRAM_CONFIG_UPDATE", merged);
+        }
+
+        // 2. Broadcast across all devices (PC <-> Mobile) via Realtime Relay (<50ms)
+        if (broadcastCloud && window.SheetsSync && typeof window.SheetsSync.broadcastRealtime === "function") {
+            window.SheetsSync.broadcastRealtime({
+                action: "SAVE_TELEGRAM_CONFIG",
+                type: "TELEGRAM_CONFIG_UPDATE",
+                config: merged
+            });
+        }
+
+        // 3. Save to Google Apps Script cloud storage for persistence across all users
+        if (broadcastCloud && window.SheetsSync && typeof window.SheetsSync.syncTelegramConfig === "function") {
+            window.SheetsSync.syncTelegramConfig(merged);
+        }
+
         return merged;
     }
 
@@ -454,7 +495,7 @@ ${pkgLine}${locLine}${paymentLine}${notesLine}⏰ <b>ម៉ោងបញ្ចប
     async function sendDailySummaryReport(targetDateStr) {
         if (!isConfigured()) {
             if (typeof showToast === "function") {
-                showToast("សូមកំណត់ Telegram Bot Token និង Chat ID នៅក្នុង Settings ជាមុនសិន!", "warning");
+                showToast("សូមឱ្យ Admin កំណត់ Telegram Bot Token និង Chat ID ក្នុង System Settings ជាមុនសិន!", "warning");
             }
             return { success: false, error: "Not configured" };
         }
@@ -607,6 +648,7 @@ ${driverListText.trim()}
     return {
         getConfig,
         saveConfig,
+        applySyncedConfig,
         isConfigured,
         sendMessage,
         testConnection,
