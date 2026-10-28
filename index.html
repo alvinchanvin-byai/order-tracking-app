@@ -729,6 +729,16 @@
                         </div>
                     </div>
 
+                    <!-- Switch to Cards View Button (Visible when viewing module in Table View) -->
+                    <button type="button" 
+                        id="btnSwitchToCardsView" 
+                        onclick="switchCurrentTabToCards()" 
+                        class="hidden py-2.5 px-3.5 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5 whitespace-nowrap cursor-pointer active:scale-95" 
+                        title="ប្តូរទៅមើលជា Order Cards (Cards View)">
+                        <i data-lucide="layout-grid" class="w-4 h-4 text-indigo-600"></i>
+                        <span>📇 មើលជា Cards (Cards View)</span>
+                    </button>
+
                     <button onclick="openCreateOrderModal()" class="btn-gradient-primary py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 whitespace-nowrap shadow-md">
                         <i data-lucide="plus" class="w-4 h-4"></i>
                         <span>+ បង្កើត Order ថ្មី</span>
@@ -812,7 +822,7 @@
                         <i data-lucide="layout-dashboard" class="w-4 h-4 text-slate-500"></i>
                         <span>Back to Dashboard</span>
                     </button>
-                    <button type="button" onclick="switchNavbarModule('register')" class="py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5 cursor-pointer" title="ត្រឡប់ទៅមើលតារាង Register Order">
+                    <button type="button" onclick="openModuleTable('register')" class="py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5 cursor-pointer" title="ត្រឡប់ទៅមើលតារាង Register Order">
                         <i data-lucide="table" class="w-4 h-4 text-blue-600"></i>
                         <span>📊 មើលជាតារាង (Table View)</span>
                     </button>
@@ -879,7 +889,7 @@
                         <i data-lucide="layout-dashboard" class="w-4 h-4 text-slate-500"></i>
                         <span>Back to Dashboard</span>
                     </button>
-                    <button type="button" onclick="switchNavbarModule('picking')" class="py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5 cursor-pointer" title="ត្រឡប់ទៅមើលតារាង Picking">
+                    <button type="button" onclick="openModuleTable('picking')" class="py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5 cursor-pointer" title="ត្រឡប់ទៅមើលតារាង Picking">
                         <i data-lucide="table" class="w-4 h-4 text-amber-600"></i>
                         <span>📊 មើលជាតារាង (Table View)</span>
                     </button>
@@ -942,7 +952,7 @@
                         <i data-lucide="layout-dashboard" class="w-4 h-4 text-slate-500"></i>
                         <span>Back to Dashboard</span>
                     </button>
-                    <button type="button" onclick="switchNavbarModule('checking')" class="py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5 cursor-pointer" title="ត្រឡប់ទៅមើលតារាង Checking">
+                    <button type="button" onclick="openModuleTable('checking')" class="py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5 cursor-pointer" title="ត្រឡប់ទៅមើលតារាង Checking">
                         <i data-lucide="table" class="w-4 h-4 text-purple-600"></i>
                         <span>📊 មើលជាតារាង (Table View)</span>
                     </button>
@@ -1009,7 +1019,7 @@
                         <i data-lucide="layout-dashboard" class="w-4 h-4 text-slate-500"></i>
                         <span>Back to Dashboard</span>
                     </button>
-                    <button type="button" onclick="switchNavbarModule('delivery')" class="py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5 cursor-pointer" title="ត្រឡប់ទៅមើលតារាង Delivery">
+                    <button type="button" onclick="openModuleTable('delivery')" class="py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5 cursor-pointer" title="ត្រឡប់ទៅមើលតារាង Delivery">
                         <i data-lucide="table" class="w-4 h-4 text-sky-600"></i>
                         <span>📊 មើលជាតារាង (Table View)</span>
                     </button>
@@ -1072,7 +1082,7 @@
                         <i data-lucide="layout-dashboard" class="w-4 h-4 text-slate-500"></i>
                         <span>Back to Dashboard</span>
                     </button>
-                    <button type="button" onclick="switchNavbarModule('incompleted-delivery')" class="py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5 cursor-pointer" title="ត្រឡប់ទៅមើលតារាង Incompleted Delivery">
+                    <button type="button" onclick="openModuleTable('incompleted-delivery')" class="py-2.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs sm:text-sm shadow-2xs transition flex items-center gap-1.5 cursor-pointer" title="ត្រឡប់ទៅមើលតារាង Incompleted Delivery">
                         <i data-lucide="table" class="w-4 h-4 text-amber-600"></i>
                         <span>📊 មើលជាតារាង (Table View)</span>
                     </button>
@@ -3891,9 +3901,9 @@
 
     <!-- App Core Scripts -->
     <script src="js/paho-mqtt.min.js"></script>
-    <script src="js/data.js?v=live-v5.0.4"></script>
-    <script src="js/sheets-sync.js?v=live-v5.0.4"></script>
-    <script src="js/telegram-notify.js?v=live-v5.0.4"></script>
-    <script src="js/app.js?v=live-v5.0.4"></script>
+    <script src="js/data.js?v=live-v5.0.5"></script>
+    <script src="js/sheets-sync.js?v=live-v5.0.5"></script>
+    <script src="js/telegram-notify.js?v=live-v5.0.5"></script>
+    <script src="js/app.js?v=live-v5.0.5"></script>
 </body>
 </html>
