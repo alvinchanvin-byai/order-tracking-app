@@ -1405,7 +1405,7 @@ function doPost(e) {
         if (!order.checkerBy && existingRow[28]) rowValues[28] = existingRow[28];
         if (!order.deliveryBy && existingRow[29]) rowValues[29] = existingRow[29];
         sheet.getRange(rowIndex, 1, 1, rowValues.length).setValues([rowValues]);
-        var mutReg = { action: "REGISTER_ORDER", soNumber: soNumber, order: order };
+        var mutReg = { action: "REGISTER_ORDER", soNumber: soNumber, originalSoNumber: originalSo, order: order };
         return createJsonResponse({ status: "success", action: "UPDATED", soNumber: soNumber, row: rowIndex, serverTimestamp: markDataUpdated(mutReg) });
       } else {
         sheet.appendRow(rowValues);
