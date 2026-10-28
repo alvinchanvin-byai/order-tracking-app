@@ -614,15 +614,15 @@
                         <option value="WAITING_CHECKING">Waiting Checking</option>
                         <option value="CHECKING">In Checking</option>
                         <option value="WAITING_DELIVERY">Waiting Delivery</option>
-                        <option value="DELIVERY">Delivery ទាំងអស់ (All Deliveries)</option>
-                        <option value="DELIVERY_1ST">In Delivery (ដឹកលើកទី១)</option>
-                        <option value="DELIVERY_2ND">2nd Delivery (ដឹកលើកទី២)</option>
-                        <option value="DELIVERY_3RD">3rd Delivery (ដឹកលើកទី៣)</option>
+                        <option value="DELIVERY">Delivering ទាំងអស់ (All Deliveries)</option>
+                        <option value="DELIVERY_1ST">Delivering (កំពុងដឹកលើកទី១)</option>
+                        <option value="DELIVERY_2ND">2nd Delivering (ដឹកលើកទី២)</option>
+                        <option value="DELIVERY_3RD">3rd Delivering (ដឹកលើកទី៣)</option>
                         <option value="COMPLETED">បានប្រគល់រួច (Success & Return)</option>
                         <option value="SUCCESS_1ST">1st Success (ជោគជ័យលើកទី១)</option>
                         <option value="SUCCESS_2ND">2nd Success (ជោគជ័យលើកទី២)</option>
                         <option value="SUCCESS_3RD">3rd Success (ជោគជ័យលើកទី៣)</option>
-                        <option value="INCOMPLETE">Incomplete (មិនបានជោគជ័យ)</option>
+                        <option value="INCOMPLETE">Incompleted (មិនបានជោគជ័យ)</option>
                         <option value="RETURN">Return (ត្រឡប់មកវិញ)</option>
                     </select>
 
@@ -2943,14 +2943,14 @@
                         </div>
                     </label>
 
-                    <!-- Option 2: Incomplete -->
-                    <label id="optIncompleteLabel" class="delivery-status-option flex items-start gap-3 p-3.5 rounded-2xl border border-slate-200 bg-white cursor-pointer hover:bg-amber-50/40 transition-all select-none" onclick="updateDeliveryOptionStyles('Incomplete')">
-                        <input type="radio" name="deliveryFinalStatus" value="Incomplete" class="mt-1 text-amber-600 focus:ring-amber-500 w-4 h-4">
+                    <!-- Option 2: Incompleted -->
+                    <label id="optIncompleteLabel" class="delivery-status-option flex items-start gap-3 p-3.5 rounded-2xl border border-slate-200 bg-white cursor-pointer hover:bg-amber-50/40 transition-all select-none" onclick="updateDeliveryOptionStyles('Incompleted')">
+                        <input type="radio" name="deliveryFinalStatus" value="Incompleted" class="mt-1 text-amber-600 focus:ring-amber-500 w-4 h-4">
                         <div class="flex-1">
                             <div class="flex items-center justify-between">
                                 <span class="font-bold text-sm text-amber-900 flex items-center gap-1.5">
                                     <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-600"></i>
-                                    <span>Incomplete (មិនបានជោគជ័យ)</span>
+                                    <span>Incompleted (មិនបានជោគជ័យ)</span>
                                 </span>
                                 <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800">មិនបានជោគជ័យ</span>
                             </div>
@@ -3901,9 +3901,9 @@
 
     <!-- App Core Scripts -->
     <script src="js/paho-mqtt.min.js"></script>
-    <script src="js/data.js?v=live-v5.0.5"></script>
-    <script src="js/sheets-sync.js?v=live-v5.0.5"></script>
-    <script src="js/telegram-notify.js?v=live-v5.0.5"></script>
-    <script src="js/app.js?v=live-v5.0.5"></script>
+    <script src="js/data.js?v=live-v5.0.6"></script>
+    <script src="js/sheets-sync.js?v=live-v5.0.6"></script>
+    <script src="js/telegram-notify.js?v=live-v5.0.6"></script>
+    <script src="js/app.js?v=live-v5.0.6"></script>
 </body>
 </html>
