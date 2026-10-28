@@ -1012,20 +1012,65 @@ function doGet(e) {
             return "";
           })(),
           status: (function() {
-            var rawSt = String(row[cStatus] || "Registered");
+            var rawSt = String(row[cStatus] || "").trim();
             var dEnd = (cDEnd !== -1) ? String(row[cDEnd] || "").trim() : "";
-            if (dEnd && dEnd !== "-") {
+            var dStart = (cDStart !== -1) ? String(row[cDStart] || "").trim() : "";
+            var cEnd = (cCEnd !== -1) ? String(row[cCEnd] || "").trim() : "";
+            var cStart = (cCStart !== -1) ? String(row[cCStart] || "").trim() : "";
+            var pEnd = (cPEnd !== -1) ? String(row[cPEnd] || "").trim() : "";
+            var pStart = (cPStart !== -1) ? String(row[cPStart] || "").trim() : "";
+
+            var hasDEnd = dEnd !== "" && dEnd !== "-" && dEnd !== "null" && dEnd !== "undefined";
+            var hasDStart = dStart !== "" && dStart !== "-" && dStart !== "null" && dStart !== "undefined";
+            var hasCEnd = cEnd !== "" && cEnd !== "-" && cEnd !== "null" && cEnd !== "undefined";
+            var hasCStart = cStart !== "" && cStart !== "-" && cStart !== "null" && cStart !== "undefined";
+            var hasPEnd = pEnd !== "" && pEnd !== "-" && pEnd !== "null" && pEnd !== "undefined";
+            var hasPStart = pStart !== "" && pStart !== "-" && pStart !== "null" && pStart !== "undefined";
+
+            // 7. Delivery End Time has data -> Success (or Nth Success), Incompleted, or Return
+            if (hasDEnd) {
               var lowSt = rawSt.toLowerCase();
-              if (lowSt !== "incomplete" && lowSt !== "return" && lowSt.indexOf("incomplete") === -1 && lowSt.indexOf("return") === -1) {
-                var m = rawSt.match(/^(\d+(?:st|nd|rd|th))\s+Success$/i);
-                return m ? m[0] : "Success";
-              }
+              if (lowSt === "return" || lowSt.indexOf("return") !== -1 || lowSt.indexOf("ត្រឡប់") !== -1) return "Return";
+              if (lowSt === "incomplete" || lowSt === "incompleted" || lowSt.indexOf("incomplete") !== -1 || lowSt.indexOf("មិនបានជោគជ័យ") !== -1) return "Incompleted";
+              var sm = rawSt.match(/^(\d+(?:st|nd|rd|th))\s+Success$/i);
+              return sm ? sm[0] : "Success";
             }
-            return rawSt;
+
+            // 6. Delivery Start Time has data (and no End Time) -> Delivering (or Nth Delivering)
+            if (hasDStart) {
+              var dm = rawSt.match(/^(\d+(?:st|nd|rd|th))\s+Delivering$/i);
+              if (dm) return dm[0];
+              var dmLegacy = rawSt.match(/^(\d+(?:st|nd|rd|th))\s+Delivery$/i);
+              if (dmLegacy) return dmLegacy[1] + " Delivering";
+              return "Delivering";
+            }
+
+            // 5. Checking End Time has data (and no Delivery Start) -> Waiting Delivery
+            if (hasCEnd) {
+              return "Waiting Delivery";
+            }
+
+            // 4. Checking Start Time has data (and no Checking End) -> In Checking
+            if (hasCStart) {
+              return "In Checking";
+            }
+
+            // 3. Picking End Time has data (and no Checking Start) -> Waiting Checking
+            if (hasPEnd) {
+              return "Waiting Checking";
+            }
+
+            // 2. Picking Start Time has data (and no Picking End) -> In Picking
+            if (hasPStart) {
+              return "In Picking";
+            }
+
+            // 1. No timestamp column data -> Registered
+            return "Registered";
           })(),
           deliveryAttempts: (function() {
             var st = String(row[cStatus] || "");
-            var m = st.match(/^(\d+)(?:st|nd|rd|th)\s+(?:Success|Delivery)/i);
+            var m = st.match(/^(\d+)(?:st|nd|rd|th)\s+(?:Success|Delivering|Delivery)/i);
             if (m) return parseInt(m[1], 10);
             var notes = String(row[cSpec] || "") + " " + String((cDNotes !== -1 ? row[cDNotes] : "") || "");
             var nm = notes.match(/(?:Start|Delivery)\s+(\d+)(?:st|nd|rd|th)/i);
@@ -1446,7 +1491,7 @@ function doPost(e) {
         if (payload.checkerBy) rowVals[colChecker - 1] = payload.checkerBy;
       } else if (stage === "DELIVERY_START") {
         rowVals[colDStart - 1] = asTextDate(time);
-        rowVals[colStatus - 1] = newStatus || "In Delivery";
+        rowVals[colStatus - 1] = newStatus || "Delivering";
         rowVals[colDEnd - 1] = ""; // Clear end time for 2nd delivery
         rowVals[colDDur - 1] = ""; // Clear duration for 2nd delivery
         if (payload.deliveryBy) rowVals[colDriver - 1] = payload.deliveryBy;
