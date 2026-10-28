@@ -1473,15 +1473,60 @@ window.navigateToCustomerSetup = navigateToCustomerSetup;
 // SEARCH FIELDS CONTROLLERS: CUSTOMER NAME, CITY/PROVINCE, AND KHAN
 // ========================================================
 
+// Helper to get unified customer list from setup + existing orders
+function getUnifiedCustomerList() {
+    const list = [];
+    const seen = new Set();
+
+    const setupCusts = (AppState.setup && Array.isArray(AppState.setup.customers)) ? AppState.setup.customers : [];
+    setupCusts.forEach(c => {
+        const n = String(c?.name || "").trim();
+        if (n && !seen.has(n.toLowerCase())) {
+            seen.add(n.toLowerCase());
+            list.push({
+                id: c.id || "CUST",
+                name: n,
+                cityProvince: c.cityProvince || "",
+                khan: c.khan || "",
+                bu: c.bu || ""
+            });
+        }
+    });
+
+    if (Array.isArray(AppState.orders)) {
+        AppState.orders.forEach(o => {
+            const n = String(o?.customerName || "").trim();
+            if (n && n !== "-" && !seen.has(n.toLowerCase())) {
+                seen.add(n.toLowerCase());
+                list.push({
+                    id: "CUST",
+                    name: n,
+                    cityProvince: o.cityProvince || "",
+                    khan: o.khan || "",
+                    bu: o.bu || ""
+                });
+            }
+        });
+    }
+
+    return list;
+}
+window.getUnifiedCustomerList = getUnifiedCustomerList;
+
 function initRegisterSearchFields() {
     initCustomerSearchField();
     initProvinceSearchField();
     initKhanSearchField();
+    initEditCustomerSearchField();
 
     // Close any suggestion popups when clicking outside
     document.addEventListener("click", (e) => {
         if (!e.target.closest("#customerSearchContainer")) {
             const list = document.getElementById("customerSuggestionsList");
+            if (list) list.classList.add("hidden");
+        }
+        if (!e.target.closest("#editCustomerSearchContainer")) {
+            const list = document.getElementById("editCustomerSuggestionsList");
             if (list) list.classList.add("hidden");
         }
         if (!e.target.closest("#provinceSearchContainer")) {
@@ -1557,7 +1602,7 @@ function initCustomerSearchField() {
             return;
         }
 
-        const customers = AppState.setup.customers || [];
+        const customers = getUnifiedCustomerList();
         const filtered = customers.filter(c => 
             (c.name && c.name.toLowerCase().includes(query)) ||
             (c.khan && c.khan.toLowerCase().includes(query)) ||
@@ -2087,6 +2132,257 @@ function initKhanSearchField() {
         });
     }
 }
+
+// Customer Name Search Field for Edit Order Modal (Matching New Order Experience)
+function initEditCustomerSearchField() {
+    const input = document.getElementById("editCustomerName");
+    const list = document.getElementById("editCustomerSuggestionsList");
+    const clearBtn = document.getElementById("btnEditClearCustomer");
+    if (!input || !list) return;
+
+    let selectedIndex = -1;
+
+    function updateHighlight(items) {
+        items.forEach((item, idx) => {
+            if (idx === selectedIndex) {
+                item.classList.add("is-active", "bg-blue-100/90");
+                item.setAttribute("aria-selected", "true");
+                item.scrollIntoView({ block: "nearest", inline: "nearest" });
+            } else {
+                item.classList.remove("is-active", "bg-blue-100/90");
+                item.removeAttribute("aria-selected");
+            }
+        });
+    }
+
+    function selectCustomerItem(item) {
+        if (!item) return;
+        const name = item.getAttribute("data-name");
+        const province = getCleanEnglishLocation(item.getAttribute("data-province"));
+        const khan = getCleanEnglishLocation(item.getAttribute("data-khan"));
+        const bu = item.getAttribute("data-bu") || "";
+
+        input.value = name;
+
+        // Auto-fill City / Province in Edit Modal
+        const provSelect = document.getElementById("editCityProvince");
+        if (provSelect && province) {
+            let matched = false;
+            for (let i = 0; i < provSelect.options.length; i++) {
+                const optVal = provSelect.options[i].value;
+                if (optVal && (optVal.toLowerCase() === province.toLowerCase() || province.toLowerCase().includes(optVal.toLowerCase()))) {
+                    provSelect.selectedIndex = i;
+                    matched = true;
+                    break;
+                }
+            }
+            if (matched && typeof provSelect.onchange === "function") {
+                provSelect.onchange({ target: provSelect });
+            }
+        }
+
+        // Auto-fill Khan / District in Edit Modal
+        const khanInput = document.getElementById("editKhan");
+        if (khanInput && khan) {
+            khanInput.value = khan;
+        }
+
+        // Auto-fill BU if customer has a preferred BU
+        if (bu) {
+            const buSelect = document.getElementById("editBU");
+            if (buSelect) {
+                for (let i = 0; i < buSelect.options.length; i++) {
+                    if (buSelect.options[i].value.toLowerCase() === bu.toLowerCase()) {
+                        buSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+        }
+
+        list.classList.add("hidden");
+        selectedIndex = -1;
+        if (clearBtn) clearBtn.classList.remove("hidden");
+    }
+
+    function renderSuggestions(q = "") {
+        const query = q.toLowerCase().trim();
+
+        if (!query) {
+            list.classList.add("hidden");
+            list.innerHTML = "";
+            selectedIndex = -1;
+            return;
+        }
+
+        const allCustomers = getUnifiedCustomerList();
+        const filtered = allCustomers.filter(c =>
+            (c.name && c.name.toLowerCase().includes(query)) ||
+            (c.khan && c.khan.toLowerCase().includes(query)) ||
+            (c.cityProvince && c.cityProvince.toLowerCase().includes(query))
+        );
+
+        selectedIndex = -1;
+
+        if (filtered.length === 0) {
+            list.innerHTML = `
+                <div class="p-4 text-xs text-slate-500 text-center">
+                    <p class="font-medium text-slate-700">មិនមានអតិថិជន "${escapeHtml(q)}" ក្នុងបញ្ជីឡើយ</p>
+                    <p class="text-[11px] text-slate-400 mt-1">អ្នកអាចវាយឈ្មោះនេះដោយផ្ទាល់សម្រាប់ Order នេះ</p>
+                </div>
+            `;
+            list.classList.remove("hidden");
+            lucide.createIcons();
+            return;
+        }
+
+        const itemsHtml = filtered.map((c, idx) => {
+            const cleanKhan = getCleanEnglishLocation(c.khan);
+            const cleanProv = getCleanEnglishLocation(c.cityProvince);
+            return `
+            <div class="customer-item px-3.5 py-2.5 hover:bg-blue-50/80 cursor-pointer transition flex items-center justify-between gap-3 text-left select-none"
+                data-index="${idx}"
+                data-id="${escapeHtml(c.id || '')}"
+                data-name="${escapeHtml(c.name)}"
+                data-province="${escapeHtml(cleanProv || '')}"
+                data-khan="${escapeHtml(cleanKhan || '')}"
+                data-bu="${escapeHtml(c.bu || '')}">
+                <div class="flex-1 min-w-0">
+                    <div class="font-bold text-sm text-slate-900 truncate">${escapeHtml(c.name)}</div>
+                    <div class="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
+                        <span class="text-slate-400">📍</span>
+                        <span class="font-medium text-blue-700">${escapeHtml(cleanKhan || '-')}</span>
+                        <span class="text-slate-300">•</span>
+                        <span>${escapeHtml(cleanProv || '-')}</span>
+                    </div>
+                </div>
+                <div class="text-[11px] font-mono font-medium text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+                    ${escapeHtml(c.id || 'CUST')}
+                </div>
+            </div>
+            `;
+        }).join("");
+
+        const footerHint = `
+            <div class="px-3.5 py-1.5 bg-slate-50 border-t border-slate-100 text-[11px] text-slate-400 flex items-center justify-between select-none">
+                <span class="flex items-center gap-1">
+                    <kbd class="px-1 py-0.5 rounded bg-white border border-slate-200 font-mono text-[10px] text-slate-600">↑</kbd>
+                    <kbd class="px-1 py-0.5 rounded bg-white border border-slate-200 font-mono text-[10px] text-slate-600">↓</kbd>
+                    <span>រំកិល</span>
+                </span>
+                <span class="flex items-center gap-1">
+                    <kbd class="px-1 py-0.5 rounded bg-white border border-slate-200 font-mono text-[10px] text-slate-600">Enter</kbd>
+                    <span>ជ្រើសរើស</span>
+                </span>
+                <span class="flex items-center gap-1">
+                    <kbd class="px-1 py-0.5 rounded bg-white border border-slate-200 font-mono text-[10px] text-slate-600">Esc</kbd>
+                    <span>បិទ</span>
+                </span>
+            </div>
+        `;
+
+        list.innerHTML = itemsHtml + footerHint;
+
+        const items = list.querySelectorAll(".customer-item");
+        items.forEach((item, idx) => {
+            item.addEventListener("click", () => {
+                selectCustomerItem(item);
+            });
+            item.addEventListener("mouseenter", () => {
+                selectedIndex = idx;
+                updateHighlight(items);
+            });
+        });
+
+        list.classList.remove("hidden");
+        lucide.createIcons();
+    }
+
+    input.addEventListener("input", (e) => {
+        const val = e.target.value;
+        if (clearBtn) clearBtn.classList.toggle("hidden", !val);
+        if (val && val.trim()) {
+            renderSuggestions(val);
+        } else {
+            list.classList.add("hidden");
+            list.innerHTML = "";
+            selectedIndex = -1;
+        }
+    });
+
+    input.addEventListener("focus", () => {
+        if (input.value && input.value.trim()) {
+            renderSuggestions(input.value);
+        } else {
+            list.classList.add("hidden");
+        }
+    });
+
+    input.addEventListener("keydown", (e) => {
+        const items = list.querySelectorAll(".customer-item");
+        const isOpen = !list.classList.contains("hidden");
+
+        if (e.key === "ArrowDown") {
+            if (!isOpen) {
+                if (input.value && input.value.trim()) {
+                    renderSuggestions(input.value);
+                }
+                return;
+            }
+            if (items.length === 0) return;
+            e.preventDefault();
+            if (selectedIndex < items.length - 1) {
+                selectedIndex++;
+            } else {
+                selectedIndex = 0;
+            }
+            updateHighlight(items);
+        } else if (e.key === "ArrowUp") {
+            if (!isOpen) return;
+            if (items.length === 0) return;
+            e.preventDefault();
+            if (selectedIndex > 0) {
+                selectedIndex--;
+            } else {
+                selectedIndex = items.length - 1;
+            }
+            updateHighlight(items);
+        } else if (e.key === "Enter") {
+            if (isOpen && items.length > 0) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (selectedIndex >= 0 && selectedIndex < items.length) {
+                    selectCustomerItem(items[selectedIndex]);
+                } else if (items.length === 1) {
+                    selectCustomerItem(items[0]);
+                }
+            }
+        } else if (e.key === "Escape") {
+            if (isOpen) {
+                e.preventDefault();
+                e.stopPropagation();
+                list.classList.add("hidden");
+                selectedIndex = -1;
+            }
+        } else if (e.key === "Tab") {
+            if (isOpen && selectedIndex >= 0 && selectedIndex < items.length) {
+                selectCustomerItem(items[selectedIndex]);
+            }
+        }
+    });
+
+    if (clearBtn) {
+        clearBtn.addEventListener("click", () => {
+            input.value = "";
+            clearBtn.classList.add("hidden");
+            list.classList.add("hidden");
+            list.innerHTML = "";
+            selectedIndex = -1;
+            input.focus();
+        });
+    }
+}
+window.initEditCustomerSearchField = initEditCustomerSearchField;
 
 // Setup Event Listeners
 function setupEventListeners() {
@@ -8317,7 +8613,12 @@ function closeTopActiveModal() {
         return true;
     }
 
-    // 0.1 Autocomplete suggestions dropdowns (Customer, Province, Khan)
+    // 0.1 Autocomplete suggestions dropdowns (Customer, Province, Khan, Edit Customer)
+    const editCustomerList = document.getElementById("editCustomerSuggestionsList");
+    if (editCustomerList && !editCustomerList.classList.contains("hidden")) {
+        editCustomerList.classList.add("hidden");
+        return true;
+    }
     const customerList = document.getElementById("customerSuggestionsList");
     if (customerList && !customerList.classList.contains("hidden")) {
         customerList.classList.add("hidden");
@@ -8538,6 +8839,13 @@ function openEditOrderModal(soNumber) {
     // Populate values
     const custInput = document.getElementById("editCustomerName");
     if (custInput) custInput.value = order.customerName || "";
+    const editClearCustBtn = document.getElementById("btnEditClearCustomer");
+    if (editClearCustBtn) editClearCustBtn.classList.toggle("hidden", !order.customerName);
+    const editCustList = document.getElementById("editCustomerSuggestionsList");
+    if (editCustList) {
+        editCustList.classList.add("hidden");
+        editCustList.innerHTML = "";
+    }
 
     const khanInput = document.getElementById("editKhan");
     if (khanInput) khanInput.value = getCleanEnglishLocation(order.khan) || "";
@@ -8580,6 +8888,11 @@ function openEditOrderModal(soNumber) {
 function closeEditOrderModal() {
     const editModal = document.getElementById("editOrderModal");
     if (editModal) editModal.classList.add("hidden");
+    const editCustList = document.getElementById("editCustomerSuggestionsList");
+    if (editCustList) {
+        editCustList.classList.add("hidden");
+        editCustList.innerHTML = "";
+    }
 }
 
 async function handleEditOrderSubmit(e) {
