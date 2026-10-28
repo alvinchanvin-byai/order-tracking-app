@@ -3341,19 +3341,44 @@ function updateKpiCardsVisibility() {
         kpiContainer.className = `grid ${gridColsClass} gap-3 sm:gap-4 transition-all duration-300`;
     }
 
-    // Role-based visibility for Dashboard Orders Toolbar & Master Table:
-    // Admin & Manager: SHOW toolbar and orders table
-    // User: HIDE toolbar and orders table (leave ONLY KPI Cards)
-    const canViewTable = user && (user.role === "Admin" || user.role === "Manager");
+    // Orders Toolbar & Master Table Section: Visible for all roles (Admin, Manager, and User)
     const dashTableSection = document.getElementById("dashboardOrdersTableSection");
     if (dashTableSection) {
-        dashTableSection.classList.toggle("hidden", !canViewTable);
+        dashTableSection.classList.remove("hidden");
+        dashTableSection.style.display = "";
     }
 }
 window.updateKpiCardsVisibility = updateKpiCardsVisibility;
 
+// Helper to open module directly in Table View (for all roles including User)
+function openModuleTable(moduleName) {
+    switchNavbarModule(moduleName, true);
+}
+window.openModuleTable = openModuleTable;
+
+// Helper to switch from Table View back to Cards View
+function switchCurrentTabToCards() {
+    const valid = ["register", "picking", "checking", "delivery", "incompleted-delivery"];
+    const tab = valid.includes(AppState.currentTab) ? AppState.currentTab : "register";
+    openModuleCards(tab);
+}
+window.switchCurrentTabToCards = switchCurrentTabToCards;
+
+// Toggle visibility of 'Cards View' button inside Table toolbar
+function updateTableCardsSwitchBtn() {
+    const btn = document.getElementById("btnSwitchToCardsView");
+    if (!btn) return;
+    const valid = ["register", "picking", "checking", "delivery", "incompleted-delivery"];
+    if (valid.includes(AppState.currentTab)) {
+        btn.classList.remove("hidden");
+    } else {
+        btn.classList.add("hidden");
+    }
+}
+window.updateTableCardsSwitchBtn = updateTableCardsSwitchBtn;
+
 // 1. Switch Module from Navbar: SHOWS AS TABLE (Filtered to that module status)
-function switchNavbarModule(moduleName) {
+function switchNavbarModule(moduleName, forceTableView = false) {
     // Permission Access Right Check
     if (!hasUserPermission(moduleName)) {
         const u = getCurrentUser();
@@ -3404,8 +3429,8 @@ function switchNavbarModule(moduleName) {
     const u = getCurrentUser();
     const canViewTable = u && (u.role === "Admin" || u.role === "Manager");
 
-    // If User (non-Admin & non-Manager) clicks a workflow module tab, route directly to its Cards view!
-    if (!canViewTable && moduleName !== "dashboard") {
+    // If User (non-Admin & non-Manager) clicks a workflow module tab from sidebar (without forcing Table View), route to Cards view:
+    if (!forceTableView && !canViewTable && moduleName !== "dashboard") {
         openModuleCards(moduleName);
         return;
     }
@@ -3436,6 +3461,7 @@ function switchNavbarModule(moduleName) {
 
     // Explicitly toggle KPI Cards: Only visible on Dashboard, hidden on modules
     updateKpiCardsVisibility();
+    updateTableCardsSwitchBtn();
 
     updateCardActiveStates();
     applyColumnVisibility();
@@ -3449,19 +3475,7 @@ function switchNavbarModule(moduleName) {
 // 2. Click KPI Cards on Dashboard: SHOWS ORDER CARDS VIEW
 function openModuleCards(moduleName) {
     if (moduleName === "completed") {
-        const u = getCurrentUser();
-        const canViewTable = u && (u.role === "Admin" || u.role === "Manager");
-        if (!canViewTable) {
-            Swal.fire({
-                icon: "info",
-                title: "បានប្រគល់រួច (Completed Orders)",
-                html: `តារាងទិន្នន័យ Orders បានប្រគល់រួច (Completed Table) ត្រូវបានអនុញ្ញាតសម្រាប់តែ Role <b>Admin</b> និង <b>Manager</b> ប៉ុណ្ណោះ។`,
-                confirmButtonText: "យល់ព្រម",
-                confirmButtonColor: "#2563eb"
-            });
-            return;
-        }
-        switchNavbarModule("dashboard");
+        switchNavbarModule("dashboard", true);
         AppState.filterStatus = "COMPLETED";
         AppState.tableCurrentPage = 1;
         const filterSelect = document.getElementById("filterStatus");
@@ -11488,13 +11502,11 @@ function renderCurrentUserProfile() {
         }
     }
 
-    // 7. Role-Based Visibility: Dashboard Orders Toolbar & Master Table (Image 2)
-    // Admin & Manager: SHOW Search/Filter toolbar + Orders Table
-    // User (non-Admin & non-Manager): HIDE Search/Filter toolbar + Orders Table (leaving ONLY KPI Cards)
-    const canViewDashboardTable = user && (user.role === "Admin" || user.role === "Manager");
+    // 7. Orders Toolbar & Master Table: Visible for all authenticated users (Admin, Manager, and User)
     const dashTableSection = document.getElementById("dashboardOrdersTableSection");
     if (dashTableSection) {
-        dashTableSection.classList.toggle("hidden", !canViewDashboardTable);
+        dashTableSection.classList.remove("hidden");
+        dashTableSection.style.display = "";
     }
 
     // 8. Online Button & Modal Permission: Only Admin and Manager can open the modal to view online list
