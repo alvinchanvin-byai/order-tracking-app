@@ -7321,11 +7321,6 @@ function updateDailyDeliveryDoughnutCanvas(cSuccess, cIncomplete, cReturn, cInDe
     if (!canvas) return;
 
     if (typeof Chart !== "undefined") {
-        if (dailyDeliveryChartInstance) {
-            try { dailyDeliveryChartInstance.destroy(); } catch(e){}
-            dailyDeliveryChartInstance = null;
-        }
-
         const isZero = total === 0;
         const dataArr = isZero ? [1] : [cSuccess, cIncomplete, cReturn, cInDelivery];
         const bgColors = isZero 
@@ -7337,6 +7332,37 @@ function updateDailyDeliveryDoughnutCanvas(cSuccess, cIncomplete, cReturn, cInDe
         const labels = isZero 
             ? ["មិនទាន់មាន Order"] 
             : ["Completed (ជោគជ័យ)", "Incompleted (មិនបានជោគជ័យ)", "Return (ត្រឡប់)", "In Delivery (កំពុងដឹក)"];
+
+        // 1. If Chart instance already exists on this canvas, update directly without recreating or animating
+        if (dailyDeliveryChartInstance && dailyDeliveryChartInstance.ctx) {
+            try {
+                if (typeof dailyDeliveryChartInstance.resize === "function") {
+                    dailyDeliveryChartInstance.resize();
+                }
+                dailyDeliveryChartInstance.data.labels = labels;
+                dailyDeliveryChartInstance.data.datasets[0].data = dataArr;
+                dailyDeliveryChartInstance.data.datasets[0].backgroundColor = bgColors;
+                dailyDeliveryChartInstance.data.datasets[0].hoverBackgroundColor = hoverColors;
+                dailyDeliveryChartInstance.data.datasets[0].borderWidth = isZero ? 0 : 3;
+                dailyDeliveryChartInstance.data.datasets[0].hoverOffset = isZero ? 0 : 6;
+                if (dailyDeliveryChartInstance.options && dailyDeliveryChartInstance.options.plugins && dailyDeliveryChartInstance.options.plugins.tooltip) {
+                    dailyDeliveryChartInstance.options.plugins.tooltip.enabled = !isZero;
+                }
+                // Mode 'none' completely prevents any animation or bouncing on live sync/filter updates
+                dailyDeliveryChartInstance.update('none');
+                return;
+            } catch(e) {
+                console.warn("Failed to update existing chart instance, will recreate:", e);
+                try { dailyDeliveryChartInstance.destroy(); } catch(err){}
+                dailyDeliveryChartInstance = null;
+            }
+        }
+
+        // 2. Clean up before new instance creation
+        if (dailyDeliveryChartInstance) {
+            try { dailyDeliveryChartInstance.destroy(); } catch(e){}
+            dailyDeliveryChartInstance = null;
+        }
 
         const ctx = canvas.getContext("2d");
         dailyDeliveryChartInstance = new Chart(ctx, {
@@ -7356,12 +7382,16 @@ function updateDailyDeliveryDoughnutCanvas(cSuccess, cIncomplete, cReturn, cInDe
                 responsive: true,
                 maintainAspectRatio: false,
                 cutout: "75%",
+                // COMPLETELY DISABLE ALL ANIMATIONS
+                animation: false,
+                animations: false,
                 plugins: {
                     legend: {
                         display: false
                     },
                     tooltip: {
                         enabled: !isZero,
+                        animation: false,
                         callbacks: {
                             label: function(context) {
                                 const val = context.raw || 0;
@@ -7370,11 +7400,6 @@ function updateDailyDeliveryDoughnutCanvas(cSuccess, cIncomplete, cReturn, cInDe
                             }
                         }
                     }
-                },
-                animation: {
-                    animateRotate: true,
-                    animateScale: true,
-                    duration: 500
                 }
             }
         });
