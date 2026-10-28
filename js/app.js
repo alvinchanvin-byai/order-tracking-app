@@ -235,11 +235,11 @@ function getSuccessStatusName(attempts) {
     return `${getOrdinal(att)} Success`;
 }
 
-// Compute delivery status string: 1st attempt -> "In Delivery", 2nd attempt -> "2nd Delivery", 3rd -> "3rd Delivery"...
+// Compute delivery status string: 1st attempt -> "Delivering", 2nd attempt -> "2nd Delivering", 3rd -> "3rd Delivering"...
 function getDeliveryStatusName(attempts) {
     const att = Number(attempts) || 1;
-    if (att <= 1) return "In Delivery";
-    return `${getOrdinal(att)} Delivery`;
+    if (att <= 1) return "Delivering";
+    return `${getOrdinal(att)} Delivering`;
 }
 
 // Color styling for Document Types (SO to customer, Stock Transfer, Sample, Consignment)
@@ -317,12 +317,91 @@ function generateNextAutoSONumber() {
     return `${prefix}${seqStr}`;
 }
 
+// Helper to check if a column timestamp has valid recorded data
+function hasOrderColumnValue(val) {
+    if (val === undefined || val === null) return false;
+    const s = String(val).trim();
+    return s !== "" && s !== "-" && s !== "null" && s !== "undefined";
+}
+window.hasOrderColumnValue = hasOrderColumnValue;
+
+// Derive Order Status strictly based on column timestamp data:
+// 1. Registered: Default when new order is created (no timestamp columns filled)
+// 2. In Picking: When Picking Start Time has data
+// 3. Waiting Checking: When Picking End Time has data
+// 4. In Checking: When Checking Start Time has data
+// 5. Waiting Delivery: When Checking End Time has data
+// 6. Delivering: When Delivery Start Time has data
+// 7. Success / Incompleted / Return: When Delivery End Time has data (based on user selection)
+function deriveOrderStatusFromColumns(order) {
+    if (!order) return "Registered";
+
+    const attempts = Number(order.deliveryAttempts) || 1;
+    const rawStatus = String(order.status || "").trim();
+
+    const hasPStart = hasOrderColumnValue(order.pickingStartTime);
+    const hasPEnd   = hasOrderColumnValue(order.pickingEndTime);
+    const hasCStart = hasOrderColumnValue(order.checkingStartTime);
+    const hasCEnd   = hasOrderColumnValue(order.checkingEndTime);
+    const hasDStart = hasOrderColumnValue(order.deliveryStartTime);
+    const hasDEnd   = hasOrderColumnValue(order.deliveryEndTime);
+
+    // 7. Delivery End Time has data -> Success (or Nth Success), Incompleted, or Return
+    if (hasDEnd) {
+        const sLow = rawStatus.toLowerCase();
+        if (sLow === "return" || sLow.includes("return") || sLow.includes("ត្រឡប់") || sLow.includes("បង្វែរ")) {
+            return "Return";
+        }
+        if (sLow === "incomplete" || sLow === "incompleted" || sLow.includes("incomplete") || sLow.includes("មិនបានជោគជ័យ") || sLow.includes("មិនពេញលេញ")) {
+            return "Incompleted";
+        }
+        const sm = rawStatus.match(/^(\d+(?:st|nd|rd|th))\s+Success$/i);
+        if (sm) return `${sm[1]} Success`;
+        if (attempts > 1) return getSuccessStatusName(attempts);
+        return "Success";
+    }
+
+    // 6. Delivery Start Time has data (and no Delivery End) -> Delivering (or Nth Delivering)
+    if (hasDStart) {
+        const dm = rawStatus.match(/^(\d+(?:st|nd|rd|th))\s+Delivering$/i);
+        if (dm) return dm[0];
+        const dmLegacy = rawStatus.match(/^(\d+(?:st|nd|rd|th))\s+Delivery$/i);
+        if (dmLegacy) return `${dmLegacy[1]} Delivering`;
+        if (attempts > 1) return getDeliveryStatusName(attempts);
+        return "Delivering";
+    }
+
+    // 5. Checking End Time has data (and no Delivery Start) -> Waiting Delivery
+    if (hasCEnd) {
+        return "Waiting Delivery";
+    }
+
+    // 4. Checking Start Time has data (and no Checking End) -> In Checking
+    if (hasCStart) {
+        return "In Checking";
+    }
+
+    // 3. Picking End Time has data (and no Checking Start) -> Waiting Checking
+    if (hasPEnd) {
+        return "Waiting Checking";
+    }
+
+    // 2. Picking Start Time has data (and no Picking End) -> In Picking
+    if (hasPStart) {
+        return "In Picking";
+    }
+
+    // 1. Registered: When no column timestamps exist
+    return "Registered";
+}
+window.deriveOrderStatusFromColumns = deriveOrderStatusFromColumns;
+
 // Clean English status mapping
 function normalizeOrderStatus(status, attempts = 1) {
     if (!status) return "Registered";
     const str = String(status).trim();
     const s = str.toLowerCase();
-    if (s === "incomplete" || s.includes("incomplete") || s.includes("មិនបានជោគជ័យ") || s.includes("មិនពេញលេញ")) return "Incomplete";
+    if (s === "incomplete" || s === "incompleted" || s.includes("incomplete") || s.includes("មិនបានជោគជ័យ") || s.includes("មិនពេញលេញ")) return "Incompleted";
     if (s === "return" || s.includes("return") || s.includes("ត្រឡប់") || s.includes("បង្វែរ")) return "Return";
 
     // Support and preserve "2nd Success", "3rd Success", "Nth Success"
@@ -333,21 +412,21 @@ function normalizeOrderStatus(status, attempts = 1) {
     if (s === "2nd success" || s.includes("2nd success")) return "2nd Success";
     if (s === "3rd success" || s.includes("3rd success")) return "3rd Success";
 
-    // Support and preserve "2nd Delivery", "3rd Delivery", "Nth Delivery"
-    const delivMatch = str.match(/^(\d+(?:st|nd|rd|th))\s+Delivery$/i);
+    // Support and preserve "2nd Delivering", "3rd Delivering", "Nth Delivering"
+    const delivMatch = str.match(/^(\d+(?:st|nd|rd|th))\s+(?:Delivering|Delivery)$/i);
     if (delivMatch) {
-        return `${delivMatch[1]} Delivery`;
+        return `${delivMatch[1]} Delivering`;
     }
-    if (s === "2nd delivery" || s.includes("2nd delivery")) return "2nd Delivery";
-    if (s === "3rd delivery" || s.includes("3rd delivery")) return "3rd Delivery";
+    if (s === "2nd delivering" || s.includes("2nd delivering") || s === "2nd delivery" || s.includes("2nd delivery")) return "2nd Delivering";
+    if (s === "3rd delivering" || s.includes("3rd delivering") || s === "3rd delivery" || s.includes("3rd delivery")) return "3rd Delivering";
 
     if (s === "success" || s.includes("success") || s === "delivered" || s.includes("delivered") || s.includes("ប្រគល់") || s.includes("ជោគជ័យ") || s.includes("completed")) {
         const att = Number(attempts) || 1;
         return att > 1 ? getSuccessStatusName(att) : "Success";
     }
-    if (s.includes("in delivery") || s === "delivery" || s.includes("កំពុងដឹក")) {
+    if (s.includes("delivering") || s.includes("in delivery") || s === "delivery" || s.includes("កំពុងដឹក")) {
         const att = Number(attempts) || 1;
-        return att > 1 ? getDeliveryStatusName(att) : "In Delivery";
+        return att > 1 ? getDeliveryStatusName(att) : "Delivering";
     }
     if (s.includes("waiting delivery") || s.includes("ready for delivery") || s.includes("checking completed") || s.includes("រង់ចាំដឹក")) return "Waiting Delivery";
     if (s.includes("in checking") || s === "checking" || s.includes("កំពុងពិនិត្យ") || s.includes("កំពុងត្រួតពិនិត្យ")) return "In Checking";
@@ -585,14 +664,8 @@ function normalizeOrderDates(order) {
     const payCashCurr = order.paymentCashCurrency || (payParsed ? payParsed.cashCurrency : (rawPay.includes("៛") ? "KHR" : (order.currency || "USD")));
     const payReceiptCurr = order.paymentReceiptCurrency || (rawPay.includes("៛") ? "KHR" : (order.currency || "USD"));
 
-    let finalStatus = normalizeOrderStatus(order.status, attempts);
-    const hasDeliveryEnded = !!(order.deliveryEndTime && String(order.deliveryEndTime).trim() !== "" && String(order.deliveryEndTime).trim() !== "-");
-    if (hasDeliveryEnded) {
-        const sLow = finalStatus.toLowerCase();
-        if (sLow !== "incomplete" && sLow !== "return" && !sLow.includes("incomplete") && !sLow.includes("return")) {
-            finalStatus = attempts > 1 ? getSuccessStatusName(attempts) : "Success";
-        }
-    }
+    // Derive status strictly based on column timestamp data
+    let finalStatus = deriveOrderStatusFromColumns(order);
 
     return {
         ...order,
@@ -3659,14 +3732,14 @@ function isOrderDelivery(order) {
     if (isOrderCompleted(order)) return false;
     const s = (order.status || "").toLowerCase().trim();
     if (s === "waiting delivery" || s.includes("waiting delivery") || s.includes("ready for delivery") || s.includes("រង់ចាំដឹក")) return true;
-    if (s === "in delivery" || s.includes("in delivery") || s.includes("កំពុងដឹក") || /^(\d+(?:st|nd|rd|th))\s+delivery$/i.test(s)) return true;
+    if (s === "delivering" || s.includes("delivering") || s === "in delivery" || s.includes("in delivery") || s.includes("កំពុងដឹក") || /^(\d+(?:st|nd|rd|th))\s+(?:delivering|delivery)$/i.test(s)) return true;
     return !!(order.checkingEndTime && !order.deliveryEndTime);
 }
 
 function isOrderIncompletedDelivery(order) {
     if (!order) return false;
     const s = (order.status || "").toLowerCase().trim();
-    return (s === "incomplete" || s.includes("incomplete") || s.includes("មិនបានជោគជ័យ")) && !s.includes("delivery");
+    return (s === "incomplete" || s === "incompleted" || s.includes("incomplete") || s.includes("មិនបានជោគជ័យ")) && !s.includes("delivery") && !s.includes("delivering");
 }
 
 function isOrderCompleted(order) {
@@ -4059,21 +4132,21 @@ function getFilteredOrders() {
                 if (raw === "success" || raw.includes("success") || isOrderCompleted(order) || order.deliveryEndTime) return false;
                 if (raw !== "waiting delivery" && !(order.checkingEndTime && !order.deliveryStartTime)) return false;
             }
-            if (AppState.filterStatus === "IN_DELIVERY") {
+            if (AppState.filterStatus === "IN_DELIVERY" || AppState.filterStatus === "DELIVERING") {
                 if (raw === "success" || raw.includes("success") || isOrderCompleted(order)) return false;
                 if (!isOrderDelivery(order) || raw === "waiting delivery") return false;
             }
             if (AppState.filterStatus === "DELIVERY_1ST") {
                 const att = Number(order.deliveryAttempts) || 1;
-                if (!isOrderDelivery(order) || att > 1 || raw !== "in delivery") return false;
+                if (!isOrderDelivery(order) || att > 1 || (raw !== "delivering" && raw !== "in delivery")) return false;
             }
             if (AppState.filterStatus === "DELIVERY_2ND") {
                 const att = Number(order.deliveryAttempts) || 1;
-                if (!isOrderDelivery(order) || (att !== 2 && raw !== "2nd delivery")) return false;
+                if (!isOrderDelivery(order) || (att !== 2 && raw !== "2nd delivering" && raw !== "2nd delivery")) return false;
             }
             if (AppState.filterStatus === "DELIVERY_3RD") {
                 const att = Number(order.deliveryAttempts) || 1;
-                if (!isOrderDelivery(order) || (att !== 3 && raw !== "3rd delivery")) return false;
+                if (!isOrderDelivery(order) || (att !== 3 && raw !== "3rd delivering" && raw !== "3rd delivery")) return false;
             }
             if (AppState.filterStatus === "DELIVERY" && !isOrderDelivery(order)) return false;
             if ((AppState.filterStatus === "COMPLETED" || AppState.filterStatus === "SUCCESS") && !isOrderCompleted(order)) return false;
@@ -4596,9 +4669,9 @@ function getStatusBadgeInfo(order) {
 
     const rawStatus = (order.status || "").toLowerCase().trim();
 
-    // 1. Incomplete
-    if (rawStatus === "incomplete" || rawStatus.includes("incomplete") || rawStatus.includes("មិនបានជោគជ័យ") || rawStatus.includes("មិនពេញលេញ")) {
-        return { text: "Incomplete", class: "bg-amber-100 text-amber-800 border border-amber-300 font-bold" };
+    // 1. Incompleted
+    if (rawStatus === "incomplete" || rawStatus === "incompleted" || rawStatus.includes("incomplete") || rawStatus.includes("មិនបានជោគជ័យ") || rawStatus.includes("មិនពេញលេញ")) {
+        return { text: "Incompleted", class: "bg-amber-100 text-amber-800 border border-amber-300 font-bold" };
     }
 
     // 2. Return
@@ -4636,28 +4709,28 @@ function getStatusBadgeInfo(order) {
         return { text: badgeText, class: badgeClass };
     }
 
-    // 4. In Delivery / 2nd Delivery / 3rd Delivery
-    const isDeliveryActive = rawStatus === "in delivery" || rawStatus.includes("delivery") ||
+    // 4. Delivering / 2nd Delivering / 3rd Delivering
+    const isDeliveryActive = rawStatus === "delivering" || rawStatus === "in delivery" || rawStatus.includes("delivering") || rawStatus.includes("delivery") ||
                             rawStatus.includes("កំពុងដឹក") ||
-                            /^(\d+(?:st|nd|rd|th))\s+delivery$/i.test(rawStatus) ||
+                            /^(\d+(?:st|nd|rd|th))\s+(?:delivering|delivery)$/i.test(rawStatus) ||
                             (order.deliveryStartTime && !order.deliveryEndTime && !isOrderIncompletedDelivery(order));
 
     if (isDeliveryActive && rawStatus !== "waiting delivery" && !rawStatus.includes("waiting delivery")) {
-        let badgeText = "In Delivery";
+        let badgeText = "Delivering";
         const att = Number(order.deliveryAttempts) || 1;
 
-        const dm = (order.status || "").match(/^(\d+(?:st|nd|rd|th))\s+Delivery$/i);
+        const dm = (order.status || "").match(/^(\d+(?:st|nd|rd|th))\s+(?:Delivering|Delivery)$/i);
         if (dm) {
-            badgeText = `${dm[1]} Delivery`;
-        } else if (rawStatus.includes("2nd delivery")) {
-            badgeText = "2nd Delivery";
-        } else if (rawStatus.includes("3rd delivery")) {
-            badgeText = "3rd Delivery";
+            badgeText = `${dm[1]} Delivering`;
+        } else if (rawStatus.includes("2nd delivering") || rawStatus.includes("2nd delivery")) {
+            badgeText = "2nd Delivering";
+        } else if (rawStatus.includes("3rd delivering") || rawStatus.includes("3rd delivery")) {
+            badgeText = "3rd Delivering";
         } else if (att > 1) {
             badgeText = getDeliveryStatusName(att);
         }
 
-        const isRepeatedDelivery = badgeText !== "In Delivery";
+        const isRepeatedDelivery = badgeText !== "Delivering";
         const badgeClass = isRepeatedDelivery
             ? "bg-sky-100 text-sky-900 border border-sky-400 font-bold shadow-2xs"
             : "bg-sky-100 text-sky-800 border border-sky-200 font-bold";
@@ -5994,7 +6067,7 @@ function updateDeliveryOptionStyles(selectedStatus) {
     const optReturn = document.getElementById("optReturnLabel");
 
     const isSuccess = (selectedStatus === "Success" || selectedStatus === "Delivered");
-    const isIncomplete = (selectedStatus === "Incomplete");
+    const isIncomplete = (selectedStatus === "Incomplete" || selectedStatus === "Incompleted");
     const isReturn = (selectedStatus === "Return");
 
     if (optSuccess) {
@@ -6035,6 +6108,7 @@ async function confirmEndDelivery() {
     const selectedRadio = document.querySelector("input[name='deliveryFinalStatus']:checked");
     let statusVal = selectedRadio ? selectedRadio.value : "Success";
     if (statusVal === "Delivered") statusVal = "Success";
+    if (statusVal === "Incomplete") statusVal = "Incompleted";
 
     // Dynamic success status based on delivery attempts:
     // 1st delivery -> "Success"
