@@ -8122,7 +8122,8 @@ window.saveDailyT2ColumnPrefs = saveDailyT2ColumnPrefs;
 
 // View Full Order Details Modal
 function viewOrderDetails(soNumber) {
-    const order = AppState.orders.find(o => o.soNumber === soNumber);
+    const cleanTarget = String(soNumber || "").trim().toLowerCase();
+    const order = AppState.orders.find(o => String(o.soNumber || "").trim().toLowerCase() === cleanTarget);
     if (!order) return;
 
     const modal = document.getElementById("orderDetailsModal");
@@ -8797,15 +8798,26 @@ function initModalEscAndBackdrop() {
 // EDIT ORDER MODAL CONTROLLER
 // ========================================================
 function openEditOrderModal(soNumber) {
-    const order = AppState.orders.find(o => o.soNumber === soNumber);
-    if (!order) return;
+    const cleanTarget = String(soNumber || "").trim().toLowerCase();
+    const order = AppState.orders.find(o => String(o.soNumber || "").trim().toLowerCase() === cleanTarget);
+    if (!order) {
+        showToast("រកមិនឃើញ Order នេះដើម្បីកែប្រែឡើយ!", "error");
+        return;
+    }
+
+    // Keep direct active in-memory reference to the order being edited
+    AppState.activeEditingOrderRef = order;
 
     // SO# Input, Original SO# and Badge
     const soInput = document.getElementById("editOrderSONumber");
     const origSoInput = document.getElementById("editOrderOriginalSONumber");
+    const origTsInput = document.getElementById("editOrderOriginalTimestamp");
+    const origPlInput = document.getElementById("editOrderOriginalPackingList");
     const soBadge = document.getElementById("editModalSOBadge");
     if (soInput) soInput.value = order.soNumber;
     if (origSoInput) origSoInput.value = order.soNumber;
+    if (origTsInput) origTsInput.value = order.timestamp || "";
+    if (origPlInput) origPlInput.value = order.packingListNumber || "";
     if (soBadge) soBadge.textContent = order.soNumber;
 
     // Populate Province select
@@ -8905,6 +8917,7 @@ function openEditOrderModal(soNumber) {
 }
 
 function closeEditOrderModal() {
+    AppState.activeEditingOrderRef = null;
     const editModal = document.getElementById("editOrderModal");
     if (editModal) editModal.classList.add("hidden");
     const editCustList = document.getElementById("editCustomerSuggestionsList");
@@ -8917,6 +8930,8 @@ function closeEditOrderModal() {
 async function handleEditOrderSubmit(e) {
     e.preventDefault();
     const originalSoNumber = (document.getElementById("editOrderOriginalSONumber")?.value || "").trim();
+    const originalTimestamp = (document.getElementById("editOrderOriginalTimestamp")?.value || "").trim();
+    const originalPackingList = (document.getElementById("editOrderOriginalPackingList")?.value || "").trim();
     const newSoNumber = (document.getElementById("editOrderSONumber")?.value || "").trim();
 
     if (!newSoNumber) {
@@ -8924,20 +8939,67 @@ async function handleEditOrderSubmit(e) {
         return;
     }
 
-    const orderIndex = AppState.orders.findIndex(o => o.soNumber === (originalSoNumber || newSoNumber));
+    // Resilient order index lookup (Multi-tier resolution)
+    let orderIndex = -1;
+
+    // Tier 1: In-memory active editing reference
+    if (AppState.activeEditingOrderRef) {
+        orderIndex = AppState.orders.indexOf(AppState.activeEditingOrderRef);
+    }
+
+    // Tier 2: Match by original SO# (case-insensitive & trimmed)
+    if (orderIndex === -1 && originalSoNumber) {
+        const cleanOrig = originalSoNumber.toLowerCase().trim();
+        orderIndex = AppState.orders.findIndex(o => 
+            String(o.soNumber || "").toLowerCase().trim() === cleanOrig
+        );
+    }
+
+    // Tier 3: Match by new SO# (case-insensitive & trimmed, if user didn't change SO# or already updated)
+    if (orderIndex === -1 && newSoNumber) {
+        const cleanNew = newSoNumber.toLowerCase().trim();
+        orderIndex = AppState.orders.findIndex(o => 
+            String(o.soNumber || "").toLowerCase().trim() === cleanNew
+        );
+    }
+
+    // Tier 4: Match by original packing list and/or timestamp
+    if (orderIndex === -1 && (originalPackingList || originalTimestamp)) {
+        orderIndex = AppState.orders.findIndex(o => {
+            const pMatch = originalPackingList && String(o.packingListNumber || "").trim().toLowerCase() === originalPackingList.toLowerCase();
+            const tMatch = originalTimestamp && String(o.timestamp || "").trim() === originalTimestamp;
+            return (originalPackingList && originalTimestamp) ? (pMatch && tMatch) : (pMatch || tMatch);
+        });
+    }
+
+    // Tier 5: Fallback match by current form inputs (Packing List + Customer Name)
+    if (orderIndex === -1) {
+        const formPl = (document.getElementById("editPackingList")?.value || "").trim().toLowerCase();
+        const formCust = (document.getElementById("editCustomerName")?.value || "").trim().toLowerCase();
+        if (formPl || formCust) {
+            orderIndex = AppState.orders.findIndex(o => {
+                const pMatch = formPl && String(o.packingListNumber || "").trim().toLowerCase() === formPl;
+                const cMatch = formCust && String(o.customerName || "").trim().toLowerCase() === formCust;
+                return (formPl && formCust) ? (pMatch && cMatch) : (pMatch || cMatch);
+            });
+        }
+    }
+
     if (orderIndex === -1) {
         showToast("រកមិនឃើញ Order នេះឡើយ!", "error");
         return;
     }
 
     const order = AppState.orders[orderIndex];
-    const isSoChanged = originalSoNumber && (originalSoNumber.toLowerCase() !== newSoNumber.toLowerCase());
+    const trueOriginalSo = originalSoNumber || order.soNumber || newSoNumber;
+    const isSoChanged = trueOriginalSo.toLowerCase().trim() !== newSoNumber.toLowerCase().trim();
 
     // Check duplicate if SO# was changed
     if (isSoChanged) {
-        const duplicate = AppState.orders.find(o => 
-            o.soNumber.toLowerCase() === newSoNumber.toLowerCase() && 
-            o.soNumber.toLowerCase() !== originalSoNumber.toLowerCase()
+        const cleanNew = newSoNumber.toLowerCase().trim();
+        const duplicate = AppState.orders.find((o, idx) => 
+            idx !== orderIndex && 
+            String(o.soNumber || "").toLowerCase().trim() === cleanNew
         );
         if (duplicate) {
             Swal.fire({
@@ -8958,14 +9020,30 @@ async function handleEditOrderSubmit(e) {
 
     // Update SO#
     order.soNumber = newSoNumber;
+    order.originalSoNumber = trueOriginalSo;
 
     // Update highlights set if SO# changed
     if (isSoChanged && AppState.highlightedOrders) {
-        if (AppState.highlightedOrders.has(originalSoNumber)) {
-            AppState.highlightedOrders.delete(originalSoNumber);
+        if (AppState.highlightedOrders.has(trueOriginalSo)) {
+            AppState.highlightedOrders.delete(trueOriginalSo);
             AppState.highlightedOrders.add(newSoNumber);
             saveHighlightsToStorage();
         }
+    }
+
+    // Update daily completed set if SO# changed
+    if (isSoChanged) {
+        try {
+            const rawDaily = localStorage.getItem(STORAGE_DAILY_COMPLETED_ORDERS);
+            if (rawDaily) {
+                const set = new Set(JSON.parse(rawDaily));
+                if (set.has(trueOriginalSo)) {
+                    set.delete(trueOriginalSo);
+                    set.add(newSoNumber);
+                    localStorage.setItem(STORAGE_DAILY_COMPLETED_ORDERS, JSON.stringify(Array.from(set)));
+                }
+            }
+        } catch(e) {}
     }
 
     // Update Order fields
@@ -9026,9 +9104,9 @@ async function handleEditOrderSubmit(e) {
         viewOrderDetails(order.soNumber);
     }
 
-    // Auto sync to Google Sheets (passing originalSoNumber so row can be updated if SO# changed)
+    // Auto sync to Google Sheets (passing trueOriginalSo so row can be updated if SO# changed)
     if (SheetsSync.isConfigured()) {
-        SheetsSync.syncOrder(order, originalSoNumber).then(res => {
+        SheetsSync.syncOrder(order, trueOriginalSo).then(res => {
             if (res && res.success) {
                 showToast(`✅ Auto-synced ${order.soNumber} to Google Sheet!`, "success");
             }
@@ -9038,7 +9116,7 @@ async function handleEditOrderSubmit(e) {
     Swal.fire({
         title: "កែប្រែបានជោគជ័យ! 🎉",
         text: isSoChanged
-            ? `Order ត្រូវបានប្ដូរលេខ SO# ពី "${originalSoNumber}" ទៅជា "${order.soNumber}" និង Auto-Update ទៅ Google Sheet រួចរាល់។`
+            ? `Order ត្រូវបានប្ដូរលេខ SO# ពី "${trueOriginalSo}" ទៅជា "${order.soNumber}" និង Auto-Update ទៅ Google Sheet រួចរាល់។`
             : `Order ${order.soNumber} ត្រូវបានកែប្រែព័ត៌មាន និង Auto-Update ទៅ Google Sheet រួចរាល់។`,
         icon: "success",
         confirmButtonText: "យល់ព្រម",
