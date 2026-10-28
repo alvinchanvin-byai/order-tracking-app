@@ -41,7 +41,7 @@ const AppState = {
     },
     dailyDelivery: {
         searchQuery: "",
-        datePreset: "ALL", // "ALL", "TODAY", "YESTERDAY", "THIS_MONTH"
+        datePreset: "TODAY", // "ALL", "TODAY", "YESTERDAY", "THIS_MONTH"
         filterDate: "",
         sortColumn: "soDate",
         sortDirectionTable1: "desc",
@@ -4201,7 +4201,8 @@ function isDailyDeliveryRecentOrder(order) {
     if (order.deliveryStartTime && String(order.deliveryStartTime).trim() !== "" && String(order.deliveryStartTime).trim() !== "-") {
         return true;
     }
-    if (s === "in delivery" || s.includes("in delivery") || /^(\d+(?:st|nd|rd|th))\s+delivery$/i.test(s) || s.includes("កំពុងដឹក")) {
+    if (s === "in delivery" || s.includes("in delivery") || s === "delivering" || s.includes("delivering") || 
+        /^(\d+(?:st|nd|rd|th))\s+deliver(y|ing)$/i.test(s) || s.includes("កំពុងដឹក")) {
         return true;
     }
     return false;
@@ -4225,7 +4226,8 @@ function isDailyDeliveryCompletedOrder(order) {
         s === "waiting checking" || s.includes("waiting checking") ||
         s === "in checking" || s.includes("in checking") ||
         s === "waiting delivery" || s.includes("waiting delivery") ||
-        s === "in delivery" || s.includes("in delivery") || /^(\d+(?:st|nd|rd|th))\s+delivery$/i.test(s) ||
+        s === "in delivery" || s.includes("in delivery") || s === "delivering" || s.includes("delivering") || 
+        /^(\d+(?:st|nd|rd|th))\s+deliver(y|ing)$/i.test(s) ||
         s.includes("កំពុងដឹក") || s.includes("រៀបចំ") || s.includes("ត្រួតពិនិត្យ"))) {
         return false;
     }
@@ -7090,30 +7092,64 @@ function resetDailyT2PersonalDisplay() {
     renderDailyT2PersonalDisplayCheckboxes();
 }
 
+// Resolve the primary operational delivery date for an order in Daily Delivery Report
+function getDailyDeliveryOrderDate(order) {
+    if (!order) return null;
+    let raw = null;
+    // 1. For Completed Orders: the primary operational date is when delivery ended (deliveryEndTime)
+    if (isDailyDeliveryCompletedOrder(order)) {
+        raw = order.deliveryEndTime || order.deliveryStartTime || order.timestamp || order.soDate || order.so_date || order.date;
+    } else if (isDailyDeliveryRecentOrder(order)) {
+        // 2. For Recent Orders (currently in delivery): the primary operational date is when delivery started (deliveryStartTime)
+        raw = order.deliveryStartTime || order.deliveryEndTime || order.timestamp || order.soDate || order.so_date || order.date;
+    } else {
+        raw = order.deliveryEndTime || order.deliveryStartTime || order.timestamp || order.soDate || order.so_date || order.date;
+    }
+
+    if (!raw || raw === "-" || String(raw).trim() === "") return null;
+
+    if (typeof parseAppDateTime === "function") {
+        const d = parseAppDateTime(raw);
+        if (d && !isNaN(d.getTime())) return d;
+    }
+
+    const s = String(raw).trim();
+    const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+    if (m) {
+        let day = parseInt(m[1], 10);
+        let month = parseInt(m[2], 10) - 1;
+        let year = parseInt(m[3], 10);
+        if (year < 100) year += 2000;
+        return new Date(year, month, day);
+    }
+    const mIso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (mIso) {
+        return new Date(parseInt(mIso[1], 10), parseInt(mIso[2], 10) - 1, parseInt(mIso[3], 10));
+    }
+    const dFallback = new Date(s);
+    return isNaN(dFallback.getTime()) ? null : dFallback;
+}
+
 function getOrderDatesList(order) {
-    if (!order) return [];
-    const rawDates = [
-        order.deliveryEndTime,
-        order.deliveryStartTime,
-        order.lastUpdated,
-        order.soDate,
-        order.so_date,
-        order.timestamp,
-        order.date,
-        order.registeredDate,
-        order.pickingEndTime,
-        order.checkingEndTime
-    ];
-    const parsedList = [];
-    rawDates.forEach(r => {
-        if (r && r !== "-" && String(r).trim() !== "") {
-            const d = parseAppDateTime(r);
-            if (d && !isNaN(d.getTime())) {
-                parsedList.push(d);
+    const d = getDailyDeliveryOrderDate(order);
+    return d ? [d] : [];
+}
+
+// Sync active preset buttons styling with AppState.dailyDelivery
+function syncDailyDeliveryPresetButtonsUI() {
+    const curPreset = (AppState.dailyDelivery && AppState.dailyDelivery.datePreset) || "TODAY";
+    const customDate = (AppState.dailyDelivery && AppState.dailyDelivery.filterDate) || "";
+    const presets = ["ALL", "TODAY", "YESTERDAY", "THIS_MONTH"];
+    presets.forEach(p => {
+        const btn = document.getElementById(`dailyPresetBtn-${p}`);
+        if (btn) {
+            if (!customDate && p === curPreset) {
+                btn.className = "daily-date-preset-btn px-2.5 py-1 text-xs font-bold rounded-lg transition bg-white text-emerald-700 shadow-xs whitespace-nowrap";
+            } else {
+                btn.className = "daily-date-preset-btn px-2.5 py-1 text-xs font-semibold rounded-lg transition text-slate-600 hover:text-emerald-700 whitespace-nowrap";
             }
         }
     });
-    return parsedList;
 }
 
 function matchesDailyDeliveryFilter(order) {
@@ -7144,60 +7180,38 @@ function matchesDailyDeliveryFilter(order) {
     }
 
     // 2. Date Filter
-    const preset = dd.datePreset || "ALL";
+    const preset = dd.datePreset || "TODAY";
     const customDate = dd.filterDate || "";
 
     if (customDate) {
         // Custom Date matching (YYYY-MM-DD)
-        const dates = getOrderDatesList(order);
-        if (dates.length === 0) return false;
+        const d = getDailyDeliveryOrderDate(order);
+        if (!d) return false;
         const pad = n => String(n).padStart(2, '0');
-        const matchesCustom = dates.some(d => {
-            const orderDateIso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-            return orderDateIso === customDate;
-        });
-        if (!matchesCustom) return false;
-    } else if (preset !== "ALL") {
-        const dates = getOrderDatesList(order);
-        const now = new Date();
-        const pad = n => String(n).padStart(2, '0');
-        const todayStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
-        const todayShort = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${String(now.getFullYear()).slice(-2)}`;
+        const orderDateIso = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+        return orderDateIso === customDate;
+    }
 
-        if (preset === "TODAY") {
-            const matchesToday = dates.some(d => {
-                const dayStr = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
-                return dayStr === todayStr;
-            });
-            if (matchesToday) return true;
+    if (preset === "ALL") {
+        return true;
+    }
 
-            // Fast string check for DD/MM/YY (e.g. 27/10/26) across timestamps
-            const rawDates = [order.deliveryEndTime, order.deliveryStartTime, order.lastUpdated, order.soDate, order.so_date, order.timestamp, order.date];
-            if (rawDates.some(s => s && String(s).includes(todayShort))) return true;
+    const d = getDailyDeliveryOrderDate(order);
+    if (!d) return false;
+    const now = new Date();
 
-            return false;
-        } else if (preset === "YESTERDAY") {
-            const yesterday = new Date(now);
-            yesterday.setDate(now.getDate() - 1);
-            const yestStr = `${pad(yesterday.getDate())}/${pad(yesterday.getMonth() + 1)}/${yesterday.getFullYear()}`;
-            const yestShort = `${pad(yesterday.getDate())}/${pad(yesterday.getMonth() + 1)}/${String(yesterday.getFullYear()).slice(-2)}`;
-            const matchesYesterday = dates.some(d => {
-                const dayStr = `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
-                return dayStr === yestStr;
-            });
-            if (matchesYesterday) return true;
-
-            const rawDates = [order.deliveryEndTime, order.deliveryStartTime, order.lastUpdated, order.soDate, order.so_date, order.timestamp, order.date];
-            if (rawDates.some(s => s && String(s).includes(yestShort))) return true;
-
-            return false;
-        } else if (preset === "THIS_MONTH") {
-            if (dates.length === 0) return false;
-            const matchesThisMonth = dates.some(d => {
-                return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-            });
-            if (!matchesThisMonth) return false;
-        }
+    if (preset === "TODAY") {
+        return d.getFullYear() === now.getFullYear() &&
+               d.getMonth() === now.getMonth() &&
+               d.getDate() === now.getDate();
+    } else if (preset === "YESTERDAY") {
+        const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+        return d.getFullYear() === yesterday.getFullYear() &&
+               d.getMonth() === yesterday.getMonth() &&
+               d.getDate() === yesterday.getDate();
+    } else if (preset === "THIS_MONTH") {
+        return d.getFullYear() === now.getFullYear() &&
+               d.getMonth() === now.getMonth();
     }
 
     return true;
@@ -7437,7 +7451,7 @@ function renderDailyDeliveryView() {
     if (!AppState.dailyDelivery) {
         AppState.dailyDelivery = {
             searchQuery: "",
-            datePreset: "ALL",
+            datePreset: "TODAY",
             filterDate: "",
             sortColumn: "soDate",
             sortDirectionTable1: "desc",
@@ -7445,7 +7459,12 @@ function renderDailyDeliveryView() {
             pageTable2: 1,
             pageSizeTable2: 15
         };
+    } else if (!AppState.dailyDelivery.datePreset) {
+        AppState.dailyDelivery.datePreset = "TODAY";
     }
+
+    // Keep UI preset buttons in sync with active filter
+    syncDailyDeliveryPresetButtonsUI();
 
     // Guard against unwanted browser credential autofill ("csp" or "ksp") in search input
     const searchInput = document.getElementById("dailyDeliverySearchInput");
@@ -7984,7 +8003,7 @@ function resetDailyDeliveryFilters() {
     if (AppState.dailyDelivery) {
         AppState.dailyDelivery.searchQuery = "";
         AppState.dailyDelivery.filterDate = "";
-        AppState.dailyDelivery.datePreset = "ALL";
+        AppState.dailyDelivery.datePreset = "TODAY";
         AppState.dailyDelivery.pageTable2 = 1;
     }
 
@@ -7992,7 +8011,7 @@ function resetDailyDeliveryFilters() {
     presets.forEach(p => {
         const btn = document.getElementById(`dailyPresetBtn-${p}`);
         if (btn) {
-            if (p === "ALL") {
+            if (p === "TODAY") {
                 btn.className = "daily-date-preset-btn px-2.5 py-1 text-xs font-bold rounded-lg transition bg-white text-emerald-700 shadow-xs";
             } else {
                 btn.className = "daily-date-preset-btn px-2.5 py-1 text-xs font-semibold rounded-lg transition text-slate-600 hover:text-emerald-700";
