@@ -5311,7 +5311,7 @@ function renderRegisterView() {
                     <p class="text-xs text-slate-500 mt-1 mb-4">រាល់ Order ថ្មីដែលបាន Register នឹងបង្ហាញនៅទីនេះ រួមជាមួយប៊ូតុង "Start Picking"</p>
                     <button type="button" onclick="openCreateOrderModal()" class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition inline-flex items-center gap-1.5 shadow-sm cursor-pointer">
                         <i data-lucide="plus" class="w-4 h-4"></i>
-                        <span>+ ចុះឈ្មោះ Order ថ្មី</span>
+                        <span>ចុះឈ្មោះ Order ថ្មី</span>
                     </button>
                 </div>
             `;
