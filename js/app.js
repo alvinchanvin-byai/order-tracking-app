@@ -5339,7 +5339,7 @@ function renderRegisterView() {
                 <div class="grid grid-cols-2 gap-2 text-xs text-slate-600 bg-slate-50/80 p-3 rounded-xl border border-slate-100 mb-4">
                     <div><b>Invoice#:</b> ${escapeHtml(order.invoiceNumber || "-")}</div>
                     <div><b>Invoice Amount:</b> <span class="font-semibold text-emerald-700">${order.currency === "USD" ? "$" : "៛"}${Number(order.invoiceAmount || 0).toLocaleString()}</span></div>
-                    <div><b>Packing list:</b> ${escapeHtml(order.packingListNumber || "-")}</div>
+                    <div><b>Packing List#:</b> <span class="font-mono text-slate-800 font-medium">${escapeHtml(order.packingListNumber || "-")}</span></div>
                     <div><b>Location:</b> ${escapeHtml(order.khan || order.cityProvince || "-")}</div>
                 </div>
 
@@ -5509,7 +5509,7 @@ function renderPickingView() {
                 <div class="grid grid-cols-2 gap-2 text-xs text-slate-600 bg-white/80 p-3 rounded-xl border border-slate-100 mb-4">
                     <div><b>Invoice#:</b> ${escapeHtml(order.invoiceNumber || "-")}</div>
                     <div><b>Invoice Amount:</b> <span class="font-semibold text-emerald-700">${order.currency === "USD" ? "$" : "៛"}${Number(order.invoiceAmount || 0).toLocaleString()}</span></div>
-                    <div><b>Packing list:</b> ${escapeHtml(order.packingListNumber || "-")}</div>
+                    <div><b>Packing List#:</b> <span class="font-mono text-slate-800 font-medium">${escapeHtml(order.packingListNumber || "-")}</span></div>
                     <div><b>Location:</b> ${escapeHtml(order.khan || order.cityProvince || "-")}</div>
                 </div>
 
@@ -5723,7 +5723,7 @@ function renderCheckingView() {
 
                 <div class="grid grid-cols-2 gap-2 text-xs text-slate-600 bg-white/80 p-3 rounded-xl border border-slate-100 mb-4">
                     <div><b>ចំនួនកញ្ចប់:</b> ${hasOrderTotalPackage(order) ? `${order.totalPackage} ${escapeHtml(order.packageUnit || "")}` : '<span class="text-slate-400 font-normal">-</span>'}</div>
-                    <div><b>Packing List:</b> ${escapeHtml(order.packingListNumber || "-")}</div>
+                    <div><b>Packing List#:</b> <span class="font-mono text-slate-800 font-medium">${escapeHtml(order.packingListNumber || "-")}</span></div>
                     <div><b>Invoice#:</b> ${escapeHtml(order.invoiceNumber || "-")}</div>
                     <div><b>Invoice Amount:</b> <span class="font-semibold text-emerald-700">${order.currency === "USD" ? "$" : "៛"}${Number(order.invoiceAmount || 0).toLocaleString()}</span></div>
                 </div>
@@ -6076,6 +6076,7 @@ function renderDeliveryView() {
                 <div class="grid grid-cols-2 gap-2 text-xs text-slate-600 bg-white/80 p-3 rounded-xl border border-slate-100 mb-4">
                     <div><b>ចំនួនកញ្ចប់:</b> ${hasOrderTotalPackage(order) ? `${order.totalPackage} ${escapeHtml(order.packageUnit || "")}` : '<span class="text-slate-400 font-normal">-</span>'}</div>
                     <div><b>Invoice#:</b> ${escapeHtml(order.invoiceNumber || "-")}</div>
+                    <div class="col-span-2"><b>Packing List#:</b> <span class="font-mono text-slate-800 font-medium">${escapeHtml(order.packingListNumber || "-")}</span></div>
                     <div class="col-span-2 flex items-center gap-1.5 text-slate-700 pt-1.5 border-t border-slate-100/80">
                         <i data-lucide="map-pin" class="w-3.5 h-3.5 text-red-500 shrink-0"></i>
                         <b>ទិសដៅ:</b> <span>${escapeHtml(order.khan || "-")}, ${escapeHtml(order.cityProvince || "-")}</span>
@@ -6639,7 +6640,7 @@ function renderIncompletedDeliveryView() {
                 <div class="grid grid-cols-2 gap-2 text-xs text-slate-600 bg-white/90 p-3 rounded-xl border border-amber-100 mb-3 shadow-2xs">
                     <div><b>ចំនួនកញ្ចប់:</b> ${hasOrderTotalPackage(order) ? `${order.totalPackage} ${escapeHtml(order.packageUnit || "")}` : '<span class="text-slate-400 font-normal">-</span>'}</div>
                     <div><b>Invoice#:</b> ${escapeHtml(order.invoiceNumber || "-")}</div>
-                    <div><b>Packing List:</b> ${escapeHtml(order.packingListNumber || "-")}</div>
+                    <div><b>Packing List#:</b> <span class="font-mono text-slate-800 font-medium">${escapeHtml(order.packingListNumber || "-")}</span></div>
                     <div><b>Location:</b> ${escapeHtml(order.khan || order.cityProvince || "-")}</div>
                 </div>
 
