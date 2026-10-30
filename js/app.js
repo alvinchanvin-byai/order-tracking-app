@@ -6073,13 +6073,17 @@ function renderDeliveryView() {
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-2 text-xs text-slate-600 bg-white/80 p-3 rounded-xl border border-slate-100 mb-4">
-                    <div><b>ចំនួនកញ្ចប់:</b> ${hasOrderTotalPackage(order) ? `${order.totalPackage} ${escapeHtml(order.packageUnit || "")}` : '<span class="text-slate-400 font-normal">-</span>'}</div>
-                    <div><b>Invoice#:</b> ${escapeHtml(order.invoiceNumber || "-")}</div>
-                    <div class="col-span-2"><b>Packing List#:</b> <span class="font-mono text-slate-800 font-medium">${escapeHtml(order.packingListNumber || "-")}</span></div>
-                    <div class="col-span-2 flex items-center gap-1.5 text-slate-700 pt-1.5 border-t border-slate-100/80">
-                        <i data-lucide="map-pin" class="w-3.5 h-3.5 text-red-500 shrink-0"></i>
-                        <b>ទិសដៅ:</b> <span>${escapeHtml(order.khan || "-")}, ${escapeHtml(order.cityProvince || "-")}</span>
+                <div class="space-y-2 text-xs text-slate-600 bg-white/80 p-3 sm:p-3.5 rounded-xl border border-slate-100 mb-4">
+                    <div><b>Packing List#:</b> <span class="font-mono text-slate-800 font-medium">${escapeHtml(order.packingListNumber || "-")}</span></div>
+                    <div><b>Invoice#:</b> <span class="font-mono text-slate-800 font-medium">${escapeHtml(order.invoiceNumber || "-")}</span></div>
+                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                        <div class="flex items-center gap-1.5 text-slate-700 min-w-0">
+                            <i data-lucide="map-pin" class="w-3.5 h-3.5 text-red-500 shrink-0"></i>
+                            <b>ទិសដៅ:</b> <span>${escapeHtml(order.khan || "-")}, ${escapeHtml(order.cityProvince || "-")}</span>
+                        </div>
+                        <div class="shrink-0 text-slate-700 text-right">
+                            <b>ចំនួនកញ្ចប់:</b> ${hasOrderTotalPackage(order) ? `${order.totalPackage} ${escapeHtml(order.packageUnit || "")}` : '<span class="text-slate-400 font-normal">-</span>'}
+                        </div>
                     </div>
                 </div>
 
