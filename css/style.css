@@ -304,6 +304,19 @@ body {
     background: #94a3b8;
 }
 
+/* Hide native spinner on payment amount inputs so they don't crop input on mobile */
+#amountPaymentAccount::-webkit-inner-spin-button,
+#amountPaymentAccount::-webkit-outer-spin-button,
+#amountPaymentCash::-webkit-inner-spin-button,
+#amountPaymentCash::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+#amountPaymentAccount,
+#amountPaymentCash {
+    -moz-appearance: textfield;
+}
+
 /* Sidebar Mini / Slim Collapsed Mode (Matches Image 2 Example) */
 #appSidebar {
     transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
