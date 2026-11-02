@@ -2922,28 +2922,29 @@
     <!-- ======================================================== -->
     <!-- MODAL: END DELIVERY STATUS SELECTION                     -->
     <!-- ======================================================== -->
-    <div id="endDeliveryModal" class="fixed inset-0 z-[60] modal-backdrop flex items-center justify-center p-3 sm:p-4 hidden">
-        <div class="glass-panel w-full max-w-lg rounded-3xl p-6 sm:p-7 shadow-2xl relative border border-white/60 bg-white/95 backdrop-blur-xl">
-            <div class="absolute top-4 right-4 flex items-center gap-1.5 z-20">
-                <button type="button" onclick="closeEndDeliveryModal()" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition" title="បិទ (Close)">
+    <div id="endDeliveryModal" class="fixed inset-0 z-[60] modal-backdrop flex items-center justify-center p-2.5 sm:p-4 overflow-y-auto hidden">
+        <div class="glass-panel w-full max-w-lg rounded-3xl shadow-2xl relative border border-white/60 bg-white/95 backdrop-blur-xl max-h-[92vh] sm:max-h-[90vh] flex flex-col overflow-hidden my-auto">
+            <!-- Pinned Header -->
+            <div class="p-4 sm:p-5 pb-3 sm:pb-4 border-b border-slate-100 flex items-start justify-between gap-3 bg-white/95 backdrop-blur-md shrink-0">
+                <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                    <div class="w-10 h-10 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center font-bold shrink-0 shadow-2xs">
+                        <i data-lucide="truck" class="w-5 h-5"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h3 class="text-sm sm:text-base md:text-lg font-bold text-slate-900 flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                            <span>បញ្ចប់ការដឹកជញ្ជូន (End Delivery)</span>
+                            <span id="endDeliverySOBadge" class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800 shrink-0">SO#</span>
+                        </h3>
+                        <p class="text-[11px] sm:text-xs text-slate-500 truncate sm:whitespace-normal">សូមជ្រើសរើសលទ្ធផលនៃការដឹកជញ្ជូនទំនិញជូនអតិថិជន</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeEndDeliveryModal()" class="p-2 -mr-1 -mt-1 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition shrink-0" title="បិទ (Close)">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
 
-            <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100">
-                <div class="w-10 h-10 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center font-bold">
-                    <i data-lucide="truck" class="w-5 h-5"></i>
-                </div>
-                <div>
-                    <h3 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-                        <span>បញ្ចប់ការដឹកជញ្ជូន (End Delivery)</span>
-                        <span id="endDeliverySOBadge" class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-blue-100 text-blue-800">SO#</span>
-                    </h3>
-                    <p class="text-xs text-slate-500">សូមជ្រើសរើសលទ្ធផលនៃការដឹកជញ្ជូនទំនិញជូនអតិថិជន</p>
-                </div>
-            </div>
-
-            <div class="space-y-4">
+            <!-- Scrollable Content Body -->
+            <div class="p-4 sm:p-6 space-y-3.5 sm:space-y-4 overflow-y-auto flex-1 custom-scroll overscroll-contain">
                 <input type="hidden" id="endDeliverySONumber">
 
                 <!-- 3 Selectable Status Option Cards -->
@@ -3069,17 +3070,17 @@
                     </label>
                     <textarea id="endDeliveryNotes" rows="2" placeholder="ឧ. អតិថិជនសុំពន្យារពេលទទួល, មិនមានអ្នកចាំទទួលទំនិញ, ទំនិញខូចខាត..." class="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"></textarea>
                 </div>
+            </div>
 
-                <!-- Actions -->
-                <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
-                    <button type="button" onclick="closeEndDeliveryModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-semibold transition">
-                        បោះបង់ (Cancel)
-                    </button>
-                    <button type="button" onclick="confirmEndDelivery()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5">
-                        <i data-lucide="check" class="w-4 h-4"></i>
-                        <span>យល់ព្រម & រក្សាទុក</span>
-                    </button>
-                </div>
+            <!-- Pinned Footer Actions -->
+            <div class="p-3 sm:p-4 px-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-end gap-2.5 shrink-0 rounded-b-3xl">
+                <button type="button" onclick="closeEndDeliveryModal()" class="px-4 py-2 sm:py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-white text-xs font-semibold transition active:scale-95 shadow-2xs">
+                    បោះបង់ (Cancel)
+                </button>
+                <button type="button" onclick="confirmEndDelivery()" class="px-5 py-2 sm:py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5 active:scale-95">
+                    <i data-lucide="check" class="w-4 h-4"></i>
+                    <span>យល់ព្រម & រក្សាទុក</span>
+                </button>
             </div>
         </div>
     </div>
@@ -3087,29 +3088,29 @@
     <!-- ======================================================== -->
     <!-- MODAL: END CHECKING (CONFIRM TOTAL PACKAGE)              -->
     <!-- ======================================================== -->
-    <div id="endCheckingModal" class="fixed inset-0 z-[60] modal-backdrop flex items-center justify-center p-3 sm:p-4 hidden">
-        <div class="glass-panel w-full max-w-lg rounded-3xl p-6 sm:p-7 shadow-2xl relative border border-white/60 bg-white/95 backdrop-blur-xl">
-            <div class="absolute top-4 right-4 flex items-center gap-1.5 z-20">
-                <button type="button" onclick="closeEndCheckingModal()" class="p-2 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition" title="បិទ (Close)">
+    <div id="endCheckingModal" class="fixed inset-0 z-[60] modal-backdrop flex items-center justify-center p-2.5 sm:p-4 overflow-y-auto hidden">
+        <div class="glass-panel w-full max-w-lg rounded-3xl shadow-2xl relative border border-white/60 bg-white/95 backdrop-blur-xl max-h-[92vh] sm:max-h-[90vh] flex flex-col overflow-hidden my-auto">
+            <!-- Pinned Header -->
+            <div class="p-4 sm:p-5 pb-3 sm:pb-4 border-b border-slate-100 flex items-start justify-between gap-3 bg-white/95 backdrop-blur-md shrink-0">
+                <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                    <div class="w-10 h-10 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold shrink-0 shadow-2xs">
+                        <i data-lucide="clipboard-check" class="w-5 h-5"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h3 class="text-sm sm:text-base md:text-lg font-bold text-slate-900 flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                            <span>បញ្ចប់ការត្រួតពិនិត្យ (End Checking)</span>
+                            <span id="endCheckingSOBadge" class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-purple-100 text-purple-800 shrink-0">SO#</span>
+                        </h3>
+                        <p class="text-[11px] sm:text-xs text-slate-500 truncate sm:whitespace-normal">សូមពិនិត្យ និងបំពេញចំនួនកញ្ចប់ជាក់ស្តែង (Total Package) មុនពេលបញ្ចប់ការ QC</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeEndCheckingModal()" class="p-2 -mr-1 -mt-1 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition shrink-0" title="បិទ (Close)">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
 
-            <!-- Header -->
-            <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100">
-                <div class="w-10 h-10 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
-                    <i data-lucide="clipboard-check" class="w-5 h-5"></i>
-                </div>
-                <div>
-                    <h3 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
-                        <span>បញ្ចប់ការត្រួតពិនិត្យ (End Checking)</span>
-                        <span id="endCheckingSOBadge" class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-purple-100 text-purple-800">SO#</span>
-                    </h3>
-                    <p class="text-xs text-slate-500">សូមពិនិត្យ និងបំពេញចំនួនកញ្ចប់ជាក់ស្តែង (Total Package) មុនពេលបញ្ចប់ការ QC</p>
-                </div>
-            </div>
-
-            <div class="space-y-4">
+            <!-- Scrollable Content Body -->
+            <div class="p-4 sm:p-6 space-y-3.5 sm:space-y-4 overflow-y-auto flex-1 custom-scroll overscroll-contain">
                 <input type="hidden" id="endCheckingSONumber">
 
                 <!-- Order Info Summary Box -->
@@ -3185,17 +3186,17 @@
                     </label>
                     <textarea id="endCheckingNotes" rows="2" placeholder="ឧ. ទំនិញត្រួតពិនិត្យរួចរាល់ គ្មានការខូចខាត, បិទស្កុត និងឡាប៊ែលត្រឹមត្រូវ..." class="w-full px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500"></textarea>
                 </div>
+            </div>
 
-                <!-- Actions -->
-                <div class="pt-3 border-t border-slate-100 flex items-center justify-end gap-2.5">
-                    <button type="button" onclick="closeEndCheckingModal()" class="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-semibold transition">
-                        បោះបង់ (Cancel)
-                    </button>
-                    <button type="button" onclick="confirmEndChecking()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5">
-                        <i data-lucide="check-circle" class="w-4 h-4"></i>
-                        <span>យល់ព្រម & បញ្ចប់ Checking</span>
-                    </button>
-                </div>
+            <!-- Pinned Footer Actions -->
+            <div class="p-3 sm:p-4 px-4 sm:px-6 border-t border-slate-100 bg-slate-50/90 flex items-center justify-end gap-2.5 shrink-0 rounded-b-3xl">
+                <button type="button" onclick="closeEndCheckingModal()" class="px-4 py-2 sm:py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-white text-xs font-semibold transition active:scale-95 shadow-2xs">
+                    បោះបង់ (Cancel)
+                </button>
+                <button type="button" onclick="confirmEndChecking()" class="px-5 py-2 sm:py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-sm transition flex items-center gap-1.5 active:scale-95">
+                    <i data-lucide="check-circle" class="w-4 h-4"></i>
+                    <span>យល់ព្រម & បញ្ចប់ Checking</span>
+                </button>
             </div>
         </div>
     </div>
@@ -3921,9 +3922,9 @@
 
     <!-- App Core Scripts -->
     <script src="js/paho-mqtt.min.js"></script>
-    <script src="js/data.js?v=live-v5.1.5"></script>
-    <script src="js/sheets-sync.js?v=live-v5.1.5"></script>
-    <script src="js/telegram-notify.js?v=live-v5.1.5"></script>
-    <script src="js/app.js?v=live-v5.1.5"></script>
+    <script src="js/data.js?v=live-v5.1.6"></script>
+    <script src="js/sheets-sync.js?v=live-v5.1.6"></script>
+    <script src="js/telegram-notify.js?v=live-v5.1.6"></script>
+    <script src="js/app.js?v=live-v5.1.6"></script>
 </body>
 </html>
