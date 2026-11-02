@@ -46,7 +46,7 @@
     <link rel="dns-prefetch" href="https://script.google.com">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css?v=live-v5.1.7">
+    <link rel="stylesheet" href="css/style.css?v=live-v5.1.8">
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -592,8 +592,8 @@
             <!-- Dashboard Orders Toolbar & Master Table (Visible only for Admin & Manager) -->
             <div id="dashboardOrdersTableSection" class="space-y-6">
                 <!-- Search, Filter & Actions Bar -->
-            <div class="glass-panel-elevated p-1.5 sm:p-2 rounded-2xl flex flex-row items-center justify-between gap-1.5 sm:gap-2 relative z-30 w-full max-w-full">
-                <div class="relative flex-1 min-w-[80px] sm:min-w-[120px]">
+            <div class="glass-panel-elevated p-2 sm:p-2.5 rounded-2xl flex flex-col lg:flex-row lg:items-center justify-between gap-2 sm:gap-2.5 relative z-30 w-full max-w-full">
+                <div class="relative w-full lg:flex-1 lg:min-w-[140px]">
                     <i data-lucide="search" class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2"></i>
                     <input type="text" id="searchOrderInput" placeholder="ស្វែងរកតាម SO#, អតិថិជន, BU..." class="w-full pl-8 sm:pl-9 pr-12 sm:pr-16 py-1.5 sm:py-2 text-xs bg-slate-50/80 hover:bg-slate-50 focus:bg-white border border-slate-200/90 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition font-medium">
                     <div class="absolute right-1.5 sm:right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -606,7 +606,7 @@
                     </div>
                 </div>
 
-                <div class="flex items-center gap-1 sm:gap-1.5 flex-nowrap shrink-0">
+                <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap lg:flex-nowrap shrink-0 w-full lg:w-auto">
                     <select id="filterStatus" class="py-1.5 sm:py-2 px-2 sm:px-2.5 text-xs bg-slate-50 border border-slate-200/90 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 font-semibold text-slate-700 shadow-2xs w-auto max-w-[115px] sm:max-w-[130px] xl:max-w-[150px] truncate shrink-0 cursor-pointer">
                         <option value="ALL">All Statuses (គ្រប់ស្ថានភាព)</option>
                         <option value="REGISTERED">Registered</option>
@@ -640,7 +640,7 @@
                         </button>
                         
                         <!-- Popover Menu -->
-                        <div id="personalDisplayMenu" class="hidden absolute right-0 top-full mt-2 w-80 sm:w-96 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 p-4 z-50 space-y-3 ring-1 ring-slate-900/10">
+                        <div id="personalDisplayMenu" class="hidden absolute right-0 top-full mt-2 w-80 sm:w-96 max-w-[calc(100vw-2rem)] bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 p-4 z-50 space-y-3 ring-1 ring-slate-900/10">
                             <div class="flex items-center justify-between pb-2 border-b border-slate-100">
                                 <div class="flex items-center gap-2">
                                     <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -690,7 +690,7 @@
                         </button>
                         
                         <!-- Popover Menu -->
-                        <div id="highlightColorMenu" class="hidden absolute right-0 top-full mt-2 w-72 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 p-4 z-50 space-y-3 ring-1 ring-slate-900/10">
+                        <div id="highlightColorMenu" class="hidden absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-2rem)] bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 p-4 z-50 space-y-3 ring-1 ring-slate-900/10">
                             <div class="flex items-center justify-between pb-2 border-b border-slate-100">
                                 <div class="flex items-center gap-2">
                                     <div class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
@@ -3926,9 +3926,9 @@
 
     <!-- App Core Scripts -->
     <script src="js/paho-mqtt.min.js"></script>
-    <script src="js/data.js?v=live-v5.1.7"></script>
-    <script src="js/sheets-sync.js?v=live-v5.1.7"></script>
-    <script src="js/telegram-notify.js?v=live-v5.1.7"></script>
-    <script src="js/app.js?v=live-v5.1.7"></script>
+    <script src="js/data.js?v=live-v5.1.8"></script>
+    <script src="js/sheets-sync.js?v=live-v5.1.8"></script>
+    <script src="js/telegram-notify.js?v=live-v5.1.8"></script>
+    <script src="js/app.js?v=live-v5.1.8"></script>
 </body>
 </html>
