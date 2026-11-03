@@ -336,7 +336,8 @@ const DEFAULT_SETUP_DOC_TYPES = [
     { id: "DOC-007", name: "Delivery Order / DO (ប័ណ្ណប្រគល់ទំនិញ)" },
     { id: "DOC-008", name: "Packing List (បញ្ជីរាយទំនិញ)" },
     { id: "DOC-009", name: "Inter-Warehouse Transfer (ប័ណ្ណផ្ទេរឃ្លាំង)" },
-    { id: "DOC-010", name: "Cash Sale Slip (វិក្កយបត្រលក់សាច់ប្រាក់)" }
+    { id: "DOC-010", name: "Cash Sale Slip (វិក្កយបត្រលក់សាច់ប្រាក់)" },
+    { id: "DOC-011", name: "Deposit" }
 ];
 
 // Available App Modules & Permission Identifiers
