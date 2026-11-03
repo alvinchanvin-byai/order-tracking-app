@@ -7477,21 +7477,21 @@ function toggleDailyDeliveryChartCard() {
 function toggleDailyRecentOrdersCollapse() {
     const body = document.getElementById("dailyRecentOrdersBody");
     const header = document.getElementById("dailyRecentOrdersHeader");
-    const icons = [document.getElementById("iconToggleDailyRecentOrders"), document.getElementById("iconToggleDailyRecentOrdersMobile")];
-    const texts = [document.getElementById("spanToggleDailyRecentOrders"), document.getElementById("spanToggleDailyRecentOrdersMobile")];
+    const icon = document.getElementById("iconToggleDailyRecentOrders");
+    const text = document.getElementById("spanToggleDailyRecentOrders");
     if (!body) return;
     const isHidden = body.classList.contains("hidden");
     if (isHidden) {
         body.classList.remove("hidden");
         if (header) header.classList.remove("rounded-b-2xl");
-        icons.forEach(ic => { if (ic) ic.classList.remove("rotate-180"); });
-        texts.forEach(sp => { if (sp) sp.textContent = "បង្រួម"; });
+        if (icon) icon.classList.remove("rotate-180");
+        if (text) text.textContent = "បង្រួម";
         try { localStorage.setItem("dailyRecentOrdersCollapsed", "false"); } catch(e){}
     } else {
         body.classList.add("hidden");
         if (header) header.classList.add("rounded-b-2xl");
-        icons.forEach(ic => { if (ic) ic.classList.add("rotate-180"); });
-        texts.forEach(sp => { if (sp) sp.textContent = "ពន្លាត"; });
+        if (icon) icon.classList.add("rotate-180");
+        if (text) text.textContent = "ពន្លាត";
         try { localStorage.setItem("dailyRecentOrdersCollapsed", "true"); } catch(e){}
     }
     if (typeof scheduleLucideIcons === "function") scheduleLucideIcons();
@@ -7500,21 +7500,21 @@ function toggleDailyRecentOrdersCollapse() {
 function toggleDailyCompletedOrdersCollapse() {
     const body = document.getElementById("dailyCompletedOrdersBody");
     const header = document.getElementById("dailyCompletedOrdersHeader");
-    const icons = [document.getElementById("iconToggleDailyCompletedOrders"), document.getElementById("iconToggleDailyCompletedOrdersMobile")];
-    const texts = [document.getElementById("spanToggleDailyCompletedOrders"), document.getElementById("spanToggleDailyCompletedOrdersMobile")];
+    const icon = document.getElementById("iconToggleDailyCompletedOrders");
+    const text = document.getElementById("spanToggleDailyCompletedOrders");
     if (!body) return;
     const isHidden = body.classList.contains("hidden");
     if (isHidden) {
         body.classList.remove("hidden");
         if (header) header.classList.remove("rounded-b-2xl");
-        icons.forEach(ic => { if (ic) ic.classList.remove("rotate-180"); });
-        texts.forEach(sp => { if (sp) sp.textContent = "បង្រួម"; });
+        if (icon) icon.classList.remove("rotate-180");
+        if (text) text.textContent = "បង្រួម";
         try { localStorage.setItem("dailyCompletedOrdersCollapsed", "false"); } catch(e){}
     } else {
         body.classList.add("hidden");
         if (header) header.classList.add("rounded-b-2xl");
-        icons.forEach(ic => { if (ic) ic.classList.add("rotate-180"); });
-        texts.forEach(sp => { if (sp) sp.textContent = "ពន្លាត"; });
+        if (icon) icon.classList.add("rotate-180");
+        if (text) text.textContent = "ពន្លាត";
         try { localStorage.setItem("dailyCompletedOrdersCollapsed", "true"); } catch(e){}
     }
     if (typeof scheduleLucideIcons === "function") scheduleLucideIcons();
@@ -7747,9 +7747,6 @@ function renderDailyDeliveryView() {
         }
     }
 
-    const summaryText = document.getElementById("table2SummaryText");
-    if (summaryText) summaryText.textContent = `សរុប: ${filteredCompleted.length} Orders (ជោគជ័យ: ${successOrders.length}, មិនជោគជ័យ: ${strictlyIncompleteOrders.length}, ត្រឡប់: ${returnOrders.length})`;
-
     // 6. Render Table 1 and Table 2
     renderDailyDeliveryTable1(displayedRecent);
     renderDailyDeliveryTable2(displayedCompleted);
@@ -7785,13 +7782,13 @@ function renderDailyDeliveryView() {
         const isT1Collapsed = localStorage.getItem("dailyRecentOrdersCollapsed") === "true";
         const body1 = document.getElementById("dailyRecentOrdersBody");
         const header1 = document.getElementById("dailyRecentOrdersHeader");
-        const icons1 = [document.getElementById("iconToggleDailyRecentOrders"), document.getElementById("iconToggleDailyRecentOrdersMobile")];
-        const texts1 = [document.getElementById("spanToggleDailyRecentOrders"), document.getElementById("spanToggleDailyRecentOrdersMobile")];
+        const icon1 = document.getElementById("iconToggleDailyRecentOrders");
+        const text1 = document.getElementById("spanToggleDailyRecentOrders");
         if (body1 && isT1Collapsed && !body1.classList.contains("hidden")) {
             body1.classList.add("hidden");
             if (header1) header1.classList.add("rounded-b-2xl");
-            icons1.forEach(ic => { if (ic) ic.classList.add("rotate-180"); });
-            texts1.forEach(sp => { if (sp) sp.textContent = "ពន្លាត"; });
+            if (icon1) icon1.classList.add("rotate-180");
+            if (text1) text1.textContent = "ពន្លាត";
         }
     } catch(e){}
 
@@ -7799,13 +7796,13 @@ function renderDailyDeliveryView() {
         const isT2Collapsed = localStorage.getItem("dailyCompletedOrdersCollapsed") === "true";
         const body2 = document.getElementById("dailyCompletedOrdersBody");
         const header2 = document.getElementById("dailyCompletedOrdersHeader");
-        const icons2 = [document.getElementById("iconToggleDailyCompletedOrders"), document.getElementById("iconToggleDailyCompletedOrdersMobile")];
-        const texts2 = [document.getElementById("spanToggleDailyCompletedOrders"), document.getElementById("spanToggleDailyCompletedOrdersMobile")];
+        const icon2 = document.getElementById("iconToggleDailyCompletedOrders");
+        const text2 = document.getElementById("spanToggleDailyCompletedOrders");
         if (body2 && isT2Collapsed && !body2.classList.contains("hidden")) {
             body2.classList.add("hidden");
             if (header2) header2.classList.add("rounded-b-2xl");
-            icons2.forEach(ic => { if (ic) ic.classList.add("rotate-180"); });
-            texts2.forEach(sp => { if (sp) sp.textContent = "ពន្លាត"; });
+            if (icon2) icon2.classList.add("rotate-180");
+            if (text2) text2.textContent = "ពន្លាត";
         }
     } catch(e){}
 
