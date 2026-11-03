@@ -1341,22 +1341,6 @@ function doGet(e) {
           trackSheet.getRange(2, cStatus + 1, data.length, 1).setValues(statusColVals);
         } catch(eSt) {}
       }
-          pickingStartTime: formatDateTimeGAS(row[cPStart]),
-          pickingEndTime: formatDateTimeGAS(row[cPEnd]),
-          pickingDuration: formatDurationGAS(row[cPDur], row[cPStart], row[cPEnd]),
-          checkingStartTime: formatDateTimeGAS(row[cCStart]),
-          checkingEndTime: formatDateTimeGAS(row[cCEnd]),
-          checkingDuration: formatDurationGAS(row[cCDur], row[cCStart], row[cCEnd]),
-          deliveryStartTime: formatDateTimeGAS(row[cDStart]),
-          deliveryEndTime: formatDateTimeGAS(row[cDEnd]),
-          deliveryDuration: formatDurationGAS(row[cDDur], row[cDStart], row[cDEnd]),
-          lastUpdated: formatDateTimeGAS(row[cUpdated]),
-          createdBy: String(row[cCreated] || ""),
-          pickerBy: String(row[cPicker] || ""),
-          checkerBy: String(row[cChecker] || ""),
-          deliveryBy: String(row[cDriver] || "")
-        };
-      });
     }
     
     // 2. Fetch Customers from "Customer Information"
