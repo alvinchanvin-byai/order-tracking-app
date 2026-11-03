@@ -320,6 +320,117 @@ function ensureTrackingHeaders(sheet) {
 }
 
 /**
+ * គណនា Status ដោយផ្អែកលើទិន្នន័យ Start/End Time នៃ Stage នីមួយៗ (ត្រូវគ្នា 100% ជាមួយ Web App)
+ */
+function deriveOrderStatusGAS(rawStatus, pStart, pEnd, cStart, cEnd, dStart, dEnd) {
+  var hasDEnd = dEnd && dEnd !== "-" && dEnd !== "null" && dEnd !== "undefined" && String(dEnd).trim() !== "";
+  var hasDStart = dStart && dStart !== "-" && dStart !== "null" && dStart !== "undefined" && String(dStart).trim() !== "";
+  var hasCEnd = cEnd && cEnd !== "-" && cEnd !== "null" && cEnd !== "undefined" && String(cEnd).trim() !== "";
+  var hasCStart = cStart && cStart !== "-" && cStart !== "null" && cStart !== "undefined" && String(cStart).trim() !== "";
+  var hasPEnd = pEnd && pEnd !== "-" && pEnd !== "null" && pEnd !== "undefined" && String(pEnd).trim() !== "";
+  var hasPStart = pStart && pStart !== "-" && pStart !== "null" && pStart !== "undefined" && String(pStart).trim() !== "";
+
+  var rawSt = String(rawStatus || "").trim();
+
+  // 7. Delivery End Time មានទិន្នន័យ -> Success (ឬ Nth Success), Incompleted, ឬ Return
+  if (hasDEnd) {
+    var lowSt = rawSt.toLowerCase();
+    if (lowSt === "return" || lowSt.indexOf("return") !== -1 || lowSt.indexOf("ត្រឡប់") !== -1) return "Return";
+    if (lowSt === "incomplete" || lowSt === "incompleted" || lowSt.indexOf("incomplete") !== -1 || lowSt.indexOf("មិនបានជោគជ័យ") !== -1) return "Incompleted";
+    var sm = rawSt.match(/^(\d+(?:st|nd|rd|th))\s+Success$/i);
+    return sm ? sm[0] : "Success";
+  }
+
+  // 6. Delivery Start Time មានទិន្នន័យ (ហើយមិនទាន់មាន End Time) -> Delivering (ឬ Nth Delivering)
+  if (hasDStart) {
+    var dm = rawSt.match(/^(\d+(?:st|nd|rd|th))\s+Delivering$/i);
+    if (dm) return dm[0];
+    var dmLegacy = rawSt.match(/^(\d+(?:st|nd|rd|th))\s+Delivery$/i);
+    if (dmLegacy) return dmLegacy[1] + " Delivering";
+    return "Delivering";
+  }
+
+  // 5. Checking End Time មានទិន្នន័យ (ហើយមិនទាន់មាន Delivery Start) -> Waiting Delivery
+  if (hasCEnd) {
+    return "Waiting Delivery";
+  }
+
+  // 4. Checking Start Time មានទិន្នន័យ (ហើយមិនទាន់មាន Checking End) -> In Checking
+  if (hasCStart) {
+    return "In Checking";
+  }
+
+  // 3. Picking End Time មានទិន្នន័យ (ហើយមិនទាន់មាន Checking Start) -> Waiting Checking
+  if (hasPEnd) {
+    return "Waiting Checking";
+  }
+
+  // 2. Picking Start Time មានទិន្នន័យ (ហើយមិនទាន់មាន Picking End) -> In Picking
+  if (hasPStart) {
+    return "In Picking";
+  }
+
+  // 1. គ្មាន Timestamp ណាមួយ -> Registered
+  return "Registered";
+}
+
+/**
+ * ពិនិត្យ និងកែតម្រឹម Overall Status ក្នុង Tracking Sheet ឱ្យត្រូវគ្នា 100% ជាមួយ Stages Timestamps
+ */
+function fixAllSheetStatuses() {
+  var ss = getSpreadsheet();
+  var trackSheet = ss.getSheetByName(SHEET_TRACKING);
+  if (!trackSheet) return 0;
+  var lastRow = trackSheet.getLastRow();
+  if (lastRow <= 1) return 0;
+
+  var numRows = lastRow - 1;
+  var numCols = trackSheet.getLastColumn();
+  var hRow = trackSheet.getRange(1, 1, 1, numCols).getValues()[0];
+  var colMap = {};
+  for (var hi = 0; hi < hRow.length; hi++) {
+    var hn = String(hRow[hi] || "").trim().toLowerCase();
+    if (hn) colMap[hn] = hi + 1;
+  }
+
+  var cStatus = colMap["overall status"] || colMap["status"] || 16;
+  var cPStart = colMap["picking start time"] || 17;
+  var cPEnd = colMap["picking end time"] || 18;
+  var cCStart = colMap["checking start time"] || 20;
+  var cCEnd = colMap["checking end time"] || 21;
+  var cDStart = colMap["delivery start time"] || 23;
+  var cDEnd = colMap["delivery end time"] || 24;
+
+  var allData = trackSheet.getRange(2, 1, numRows, numCols).getValues();
+  var statusVals = [];
+  var changed = false;
+  var updatedCount = 0;
+
+  for (var r = 0; r < numRows; r++) {
+    var curSt = String(allData[r][cStatus - 1] || "").trim();
+    var pStart = allData[r][cPStart - 1];
+    var pEnd = allData[r][cPEnd - 1];
+    var cStart = allData[r][cCStart - 1];
+    var cEnd = allData[r][cCEnd - 1];
+    var dStart = allData[r][cDStart - 1];
+    var dEnd = allData[r][cDEnd - 1];
+
+    var derived = deriveOrderStatusGAS(curSt, pStart, pEnd, cStart, cEnd, dStart, dEnd);
+    statusVals.push([derived]);
+    if (curSt !== derived) {
+      changed = true;
+      updatedCount++;
+    }
+  }
+
+  if (changed) {
+    trackSheet.getRange(2, cStatus, numRows, 1).setValues(statusVals);
+    markDataUpdated();
+  }
+  return updatedCount;
+}
+
+/**
  * កំណត់ Locale en_GB (dd/MM/yyyy) និង TimeZone Asia/Phnom_Penh លើ Spreadsheet ទាំងមូល
  * និង Format រាល់ Date Column ទាំងអស់ក្នុង Tracking Sheet ទៅជា dd/MM/yy HH:mm ឬ dd/MM/yy
  * ព្រមទាំងជួសជុលរាល់កាលបរិច្ឆេទដែលច្រឡំរវាងថ្ងៃនិងខែ (Swapped MM/DD vs DD/MM)
@@ -501,12 +612,16 @@ function cleanAndFormatAllHeadersAndDurations() {
   // 3. Fix and enforce strict dd/MM/yy HH:mm date format on all date columns
   var fixedDates = fixAllSheetDateFormats();
 
+  // 4. Fix and synchronize Overall Status 100% with stage timestamps
+  var fixedStatuses = fixAllSheetStatuses();
+
   markDataUpdated();
   return {
     status: "success",
-    message: "Headers cleaned, Durations formatted to hh:mm, and Dates strictly formatted to dd/MM/yy HH:mm",
+    message: "Headers cleaned, Durations formatted to hh:mm, Dates formatted to dd/MM/yy HH:mm, and Statuses synchronized 100%",
     updatedDurations: updatedCount,
-    fixedDates: fixedDates
+    fixedDates: fixedDates,
+    fixedStatuses: fixedStatuses
   };
 }
 
@@ -1042,6 +1157,16 @@ function doGet(e) {
       });
     }
 
+    // Explicit Fix & Sync Status Action (តម្រឹម Overall Status ក្នុង Sheet ឱ្យដូច Web App 100%)
+    if (action === "fix_status") {
+      var fixedStatusCount = fixAllSheetStatuses();
+      return createJsonResponse({
+        status: "success",
+        message: "All sheet statuses synchronized 100% with stage timestamps",
+        fixedStatuses: fixedStatusCount
+      });
+    }
+
     var ss = getSpreadsheet();
     // Only execute heavy setup if explicitly requested or if Tracking sheet is missing
     if (action === "setup" || !ss.getSheetByName(SHEET_TRACKING)) {
@@ -1109,8 +1234,26 @@ function doGet(e) {
       var cDNotes = getColIdx(["delivery notes"], hasPayCol ? 30 : 29);
 
       var data = trackSheet.getRange(2, 1, lastRow - 1, numCols).getValues();
+      var statusColChanged = false;
+      var statusColVals = [];
+
       orders = data.map(function(row) {
         var rawCheckingEnd = String(row[cCEnd] || "").trim();
+        var rawSt = String(row[cStatus] || "").trim();
+        var dEnd = (cDEnd !== -1) ? String(row[cDEnd] || "").trim() : "";
+        var dStart = (cDStart !== -1) ? String(row[cDStart] || "").trim() : "";
+        var cEnd = (cCEnd !== -1) ? String(row[cCEnd] || "").trim() : "";
+        var cStart = (cCStart !== -1) ? String(row[cCStart] || "").trim() : "";
+        var pEnd = (cPEnd !== -1) ? String(row[cPEnd] || "").trim() : "";
+        var pStart = (cPStart !== -1) ? String(row[cPStart] || "").trim() : "";
+
+        var correctSt = deriveOrderStatusGAS(rawSt, pStart, pEnd, cStart, cEnd, dStart, dEnd);
+        if (rawSt !== correctSt) {
+          statusColChanged = true;
+          row[cStatus] = correctSt;
+        }
+        statusColVals.push([correctSt]);
+
         return {
           timestamp: formatDateTimeGAS(row[cTs]),
           soNumber: String(row[cSo] || ""),
@@ -1165,65 +1308,9 @@ function doGet(e) {
             }
             return "";
           })(),
-          status: (function() {
-            var rawSt = String(row[cStatus] || "").trim();
-            var dEnd = (cDEnd !== -1) ? String(row[cDEnd] || "").trim() : "";
-            var dStart = (cDStart !== -1) ? String(row[cDStart] || "").trim() : "";
-            var cEnd = (cCEnd !== -1) ? String(row[cCEnd] || "").trim() : "";
-            var cStart = (cCStart !== -1) ? String(row[cCStart] || "").trim() : "";
-            var pEnd = (cPEnd !== -1) ? String(row[cPEnd] || "").trim() : "";
-            var pStart = (cPStart !== -1) ? String(row[cPStart] || "").trim() : "";
-
-            var hasDEnd = dEnd !== "" && dEnd !== "-" && dEnd !== "null" && dEnd !== "undefined";
-            var hasDStart = dStart !== "" && dStart !== "-" && dStart !== "null" && dStart !== "undefined";
-            var hasCEnd = cEnd !== "" && cEnd !== "-" && cEnd !== "null" && cEnd !== "undefined";
-            var hasCStart = cStart !== "" && cStart !== "-" && cStart !== "null" && cStart !== "undefined";
-            var hasPEnd = pEnd !== "" && pEnd !== "-" && pEnd !== "null" && pEnd !== "undefined";
-            var hasPStart = pStart !== "" && pStart !== "-" && pStart !== "null" && pStart !== "undefined";
-
-            // 7. Delivery End Time has data -> Success (or Nth Success), Incompleted, or Return
-            if (hasDEnd) {
-              var lowSt = rawSt.toLowerCase();
-              if (lowSt === "return" || lowSt.indexOf("return") !== -1 || lowSt.indexOf("ត្រឡប់") !== -1) return "Return";
-              if (lowSt === "incomplete" || lowSt === "incompleted" || lowSt.indexOf("incomplete") !== -1 || lowSt.indexOf("មិនបានជោគជ័យ") !== -1) return "Incompleted";
-              var sm = rawSt.match(/^(\d+(?:st|nd|rd|th))\s+Success$/i);
-              return sm ? sm[0] : "Success";
-            }
-
-            // 6. Delivery Start Time has data (and no End Time) -> Delivering (or Nth Delivering)
-            if (hasDStart) {
-              var dm = rawSt.match(/^(\d+(?:st|nd|rd|th))\s+Delivering$/i);
-              if (dm) return dm[0];
-              var dmLegacy = rawSt.match(/^(\d+(?:st|nd|rd|th))\s+Delivery$/i);
-              if (dmLegacy) return dmLegacy[1] + " Delivering";
-              return "Delivering";
-            }
-
-            // 5. Checking End Time has data (and no Delivery Start) -> Waiting Delivery
-            if (hasCEnd) {
-              return "Waiting Delivery";
-            }
-
-            // 4. Checking Start Time has data (and no Checking End) -> In Checking
-            if (hasCStart) {
-              return "In Checking";
-            }
-
-            // 3. Picking End Time has data (and no Checking Start) -> Waiting Checking
-            if (hasPEnd) {
-              return "Waiting Checking";
-            }
-
-            // 2. Picking Start Time has data (and no Picking End) -> In Picking
-            if (hasPStart) {
-              return "In Picking";
-            }
-
-            // 1. No timestamp column data -> Registered
-            return "Registered";
-          })(),
+          status: correctSt,
           deliveryAttempts: (function() {
-            var st = String(row[cStatus] || "");
+            var st = String(correctSt || row[cStatus] || "");
             var m = st.match(/^(\d+)(?:st|nd|rd|th)\s+(?:Success|Delivering|Delivery)/i);
             if (m) return parseInt(m[1], 10);
             var notes = String(row[cSpec] || "") + " " + String((cDNotes !== -1 ? row[cDNotes] : "") || "");
@@ -1231,6 +1318,29 @@ function doGet(e) {
             if (nm) return parseInt(nm[1], 10);
             return 1;
           })(),
+          pickingStartTime: formatDateTimeGAS(row[cPStart]),
+          pickingEndTime: formatDateTimeGAS(row[cPEnd]),
+          pickingDuration: formatDurationGAS(row[cPDur], row[cPStart], row[cPEnd]),
+          checkingStartTime: formatDateTimeGAS(row[cCStart]),
+          checkingEndTime: formatDateTimeGAS(row[cCEnd]),
+          checkingDuration: formatDurationGAS(row[cCDur], row[cCStart], row[cCEnd]),
+          deliveryStartTime: formatDateTimeGAS(row[cDStart]),
+          deliveryEndTime: formatDateTimeGAS(row[cDEnd]),
+          deliveryDuration: formatDurationGAS(row[cDDur], row[cDStart], row[cDEnd]),
+          lastUpdated: formatDateTimeGAS(row[cUpdated]),
+          createdBy: String(row[cCreated] || ""),
+          pickerBy: String(row[cPicker] || ""),
+          checkerBy: String(row[cChecker] || ""),
+          deliveryBy: String(row[cDriver] || "")
+        };
+      });
+
+      // Auto-reconcile Sheet Column P whenever a status divergence is detected
+      if (statusColChanged && cStatus !== -1 && data.length > 0) {
+        try {
+          trackSheet.getRange(2, cStatus + 1, data.length, 1).setValues(statusColVals);
+        } catch(eSt) {}
+      }
           pickingStartTime: formatDateTimeGAS(row[cPStart]),
           pickingEndTime: formatDateTimeGAS(row[cPEnd]),
           pickingDuration: formatDurationGAS(row[cPDur], row[cPStart], row[cPEnd]),
@@ -1534,7 +1644,15 @@ function doPost(e) {
         order.documentType || "",
         order.specialNotes || "",
         order.paymentReceipt || "",
-        order.status || "Registered",
+        deriveOrderStatusGAS(
+          order.status || "Registered",
+          order.pickingStartTime || "",
+          order.pickingEndTime || "",
+          order.checkingStartTime || "",
+          order.checkingEndTime || "",
+          order.deliveryStartTime || "",
+          order.deliveryEndTime || ""
+        ),
         asTextDate(order.pickingStartTime || ""),
         asTextDate(order.pickingEndTime || ""),
         order.pickingDuration && order.pickingDuration !== "-" ? asTextDate(formatDurationGAS(order.pickingDuration, order.pickingStartTime, order.pickingEndTime)) : "-",
@@ -1684,6 +1802,19 @@ function doPost(e) {
       if (payload.checkerBy && stage !== "CHECKING_START" && stage !== "CHECKING_END" && colChecker > 0) rowVals[colChecker - 1] = payload.checkerBy;
       if (payload.deliveryBy && stage !== "DELIVERY_START" && stage !== "DELIVERY_END" && colDriver > 0) rowVals[colDriver - 1] = payload.deliveryBy;
       
+      // Ensure colStatus in Google Sheet is 100% synchronized with timestamp columns
+      if (colStatus > 0) {
+        rowVals[colStatus - 1] = deriveOrderStatusGAS(
+          newStatus || rowVals[colStatus - 1],
+          rowVals[colPStart - 1],
+          rowVals[colPEnd - 1],
+          rowVals[colCStart - 1],
+          rowVals[colCEnd - 1],
+          rowVals[colDStart - 1],
+          rowVals[colDEnd - 1]
+        );
+      }
+
       rowVals[colUpdated - 1] = asTextDate(nowFormatted);
       sheet.getRange(rowIndex, 1, 1, rowVals.length).setValues([rowVals]);
 
@@ -2029,4 +2160,53 @@ function findRowByKey(sheet, colIndex, keyValue) {
 function createJsonResponse(data) {
   return ContentService.createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Simple Trigger: onEdit ដំណើរការស្វ័យប្រវត្តពេល User កែប្រែទិន្នន័យលើ Google Sheet ដោយផ្ទាល់
+ * ធានាថា Overall Status ក្នុង Column P គឺត្រូវគ្នា 100% ជាមួយ timestamps ជានិច្ច
+ */
+function onEdit(e) {
+  try {
+    if (!e || !e.range) return;
+    var sheet = e.range.getSheet();
+    if (sheet.getName() !== SHEET_TRACKING) return;
+    var row = e.range.getRow();
+    if (row <= 1) return;
+
+    var col = e.range.getColumn();
+    // Only process edits in timestamp columns (Picking, Checking, Delivery) or Status column (Cols 15 to 26)
+    if (col < 15 || col > 26) return;
+
+    var numCols = Math.max(sheet.getLastColumn(), HEADERS_TRACKING.length);
+    var hRow = sheet.getRange(1, 1, 1, numCols).getValues()[0];
+    var colMap = {};
+    for (var i = 0; i < hRow.length; i++) {
+      var hn = String(hRow[i] || "").trim().toLowerCase();
+      if (hn) colMap[hn] = i + 1;
+    }
+
+    var cStatus = colMap["overall status"] || colMap["status"] || 16;
+    var cPStart = colMap["picking start time"] || 17;
+    var cPEnd = colMap["picking end time"] || 18;
+    var cCStart = colMap["checking start time"] || 20;
+    var cCEnd = colMap["checking end time"] || 21;
+    var cDStart = colMap["delivery start time"] || 23;
+    var cDEnd = colMap["delivery end time"] || 24;
+
+    var rowVals = sheet.getRange(row, 1, 1, numCols).getValues()[0];
+    var curSt = String(rowVals[cStatus - 1] || "").trim();
+    var pStart = rowVals[cPStart - 1];
+    var pEnd = rowVals[cPEnd - 1];
+    var cStart = rowVals[cCStart - 1];
+    var cEnd = rowVals[cCEnd - 1];
+    var dStart = rowVals[cDStart - 1];
+    var dEnd = rowVals[cDEnd - 1];
+
+    var derived = deriveOrderStatusGAS(curSt, pStart, pEnd, cStart, cEnd, dStart, dEnd);
+    if (curSt !== derived) {
+      sheet.getRange(row, cStatus).setValue(derived);
+      markDataUpdated();
+    }
+  } catch(err) {}
 }
