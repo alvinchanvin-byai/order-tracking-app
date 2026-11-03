@@ -654,7 +654,7 @@ ${pkgLine}${locLine}${paymentLine}${notesLine}⏰ <b>ម៉ោងបញ្ចប
         }
         if (!driverListText) driverListText = "• មិនទាន់មានទិន្នន័យអ្នកដឹក\n";
 
-        const displayDate = filterDate || (typeof formatAppDateTime === "function" ? formatAppDateTime() : new Date().toLocaleDateString());
+        const displayDate = (typeof formatAppDate === "function") ? formatAppDate() : (filterDate || (typeof formatAppDateTime === "function" ? formatAppDateTime().split(" ")[0] : new Date().toLocaleDateString()));
 
         const reportHtml = 
 `📊 <b>របាយការណ៍ដឹកជញ្ជូនប្រចាំថ្ងៃ (Daily Delivery Report)</b>
