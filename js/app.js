@@ -7474,6 +7474,165 @@ function toggleDailyDeliveryChartCard() {
     if (typeof scheduleLucideIcons === "function") scheduleLucideIcons();
 }
 
+function toggleDailyRecentOrdersCollapse() {
+    const body = document.getElementById("dailyRecentOrdersBody");
+    const header = document.getElementById("dailyRecentOrdersHeader");
+    const icons = [document.getElementById("iconToggleDailyRecentOrders"), document.getElementById("iconToggleDailyRecentOrdersMobile")];
+    const texts = [document.getElementById("spanToggleDailyRecentOrders"), document.getElementById("spanToggleDailyRecentOrdersMobile")];
+    if (!body) return;
+    const isHidden = body.classList.contains("hidden");
+    if (isHidden) {
+        body.classList.remove("hidden");
+        if (header) header.classList.remove("rounded-b-2xl");
+        icons.forEach(ic => { if (ic) ic.classList.remove("rotate-180"); });
+        texts.forEach(sp => { if (sp) sp.textContent = "បង្រួម"; });
+        try { localStorage.setItem("dailyRecentOrdersCollapsed", "false"); } catch(e){}
+    } else {
+        body.classList.add("hidden");
+        if (header) header.classList.add("rounded-b-2xl");
+        icons.forEach(ic => { if (ic) ic.classList.add("rotate-180"); });
+        texts.forEach(sp => { if (sp) sp.textContent = "ពន្លាត"; });
+        try { localStorage.setItem("dailyRecentOrdersCollapsed", "true"); } catch(e){}
+    }
+    if (typeof scheduleLucideIcons === "function") scheduleLucideIcons();
+}
+
+function toggleDailyCompletedOrdersCollapse() {
+    const body = document.getElementById("dailyCompletedOrdersBody");
+    const header = document.getElementById("dailyCompletedOrdersHeader");
+    const icons = [document.getElementById("iconToggleDailyCompletedOrders"), document.getElementById("iconToggleDailyCompletedOrdersMobile")];
+    const texts = [document.getElementById("spanToggleDailyCompletedOrders"), document.getElementById("spanToggleDailyCompletedOrdersMobile")];
+    if (!body) return;
+    const isHidden = body.classList.contains("hidden");
+    if (isHidden) {
+        body.classList.remove("hidden");
+        if (header) header.classList.remove("rounded-b-2xl");
+        icons.forEach(ic => { if (ic) ic.classList.remove("rotate-180"); });
+        texts.forEach(sp => { if (sp) sp.textContent = "បង្រួម"; });
+        try { localStorage.setItem("dailyCompletedOrdersCollapsed", "false"); } catch(e){}
+    } else {
+        body.classList.add("hidden");
+        if (header) header.classList.add("rounded-b-2xl");
+        icons.forEach(ic => { if (ic) ic.classList.add("rotate-180"); });
+        texts.forEach(sp => { if (sp) sp.textContent = "ពន្លាត"; });
+        try { localStorage.setItem("dailyCompletedOrdersCollapsed", "true"); } catch(e){}
+    }
+    if (typeof scheduleLucideIcons === "function") scheduleLucideIcons();
+}
+
+function matchesDailyTableSearch(order, query) {
+    if (!order) return false;
+    const q = (query || "").toLowerCase().trim();
+    if (!q) return true;
+    const so = String(order.soNumber || "").toLowerCase();
+    const cust = String(order.customerName || "").toLowerCase();
+    const bu = String(order.bu || order.businessUnit || "").toLowerCase();
+    const inv = String(order.invoiceNumber || "").toLowerCase();
+    const pkg = String(order.packingListNumber || "").toLowerCase();
+    const driver = String(order.deliveryBy || "").toLowerCase();
+    const city = String(order.cityProvince || "").toLowerCase();
+    const khan = String(order.khan || "").toLowerCase();
+    const status = String(order.status || "").toLowerCase();
+    const phone = String(order.phone || "").toLowerCase();
+    const notes = String(order.notes || order.specialNotes || "").toLowerCase();
+    return so.includes(q) || cust.includes(q) || bu.includes(q) || inv.includes(q) || 
+           pkg.includes(q) || driver.includes(q) || city.includes(q) || khan.includes(q) || 
+           status.includes(q) || phone.includes(q) || notes.includes(q);
+}
+
+function onDailyT1SearchInput(event) {
+    const val = (event && event.target) ? event.target.value : "";
+    if (!AppState.dailyDelivery) AppState.dailyDelivery = {};
+    AppState.dailyDelivery.searchTable1 = val;
+    const clearBtn = document.getElementById("dailyT1ClearSearchBtn");
+    if (clearBtn) {
+        if (val.trim()) clearBtn.classList.remove("hidden");
+        else clearBtn.classList.add("hidden");
+    }
+    renderDailyDeliveryView();
+}
+
+function clearDailyT1Search() {
+    const input = document.getElementById("dailyT1SearchInput");
+    if (input) input.value = "";
+    if (!AppState.dailyDelivery) AppState.dailyDelivery = {};
+    AppState.dailyDelivery.searchTable1 = "";
+    const clearBtn = document.getElementById("dailyT1ClearSearchBtn");
+    if (clearBtn) clearBtn.classList.add("hidden");
+    renderDailyDeliveryView();
+}
+
+function onDailyT2SearchInput(event) {
+    const val = (event && event.target) ? event.target.value : "";
+    if (!AppState.dailyDelivery) AppState.dailyDelivery = {};
+    AppState.dailyDelivery.searchTable2 = val;
+    AppState.dailyDelivery.pageTable2 = 1;
+    const clearBtn = document.getElementById("dailyT2ClearSearchBtn");
+    if (clearBtn) {
+        if (val.trim()) clearBtn.classList.remove("hidden");
+        else clearBtn.classList.add("hidden");
+    }
+    renderDailyDeliveryView();
+}
+
+function clearDailyT2Search() {
+    const input = document.getElementById("dailyT2SearchInput");
+    if (input) input.value = "";
+    if (!AppState.dailyDelivery) AppState.dailyDelivery = {};
+    AppState.dailyDelivery.searchTable2 = "";
+    AppState.dailyDelivery.pageTable2 = 1;
+    const clearBtn = document.getElementById("dailyT2ClearSearchBtn");
+    if (clearBtn) clearBtn.classList.add("hidden");
+    renderDailyDeliveryView();
+}
+
+function toggleDailyT1HighlightMenu(event) {
+    if (event) event.stopPropagation();
+    const menu = document.getElementById("dailyT1HighlightMenu");
+    if (!menu) return;
+    const isHidden = menu.classList.contains("hidden");
+    const otherMenu = document.getElementById("dailyT2HighlightMenu");
+    if (otherMenu) otherMenu.classList.add("hidden");
+    const mainHlMenu = document.getElementById("highlightColorMenu");
+    if (mainHlMenu) mainHlMenu.classList.add("hidden");
+
+    if (isHidden) {
+        menu.classList.remove("hidden");
+    } else {
+        menu.classList.add("hidden");
+    }
+}
+
+function toggleDailyT2HighlightMenu(event) {
+    if (event) event.stopPropagation();
+    const menu = document.getElementById("dailyT2HighlightMenu");
+    if (!menu) return;
+    const isHidden = menu.classList.contains("hidden");
+    const otherMenu = document.getElementById("dailyT1HighlightMenu");
+    if (otherMenu) otherMenu.classList.add("hidden");
+    const mainHlMenu = document.getElementById("highlightColorMenu");
+    if (mainHlMenu) mainHlMenu.classList.add("hidden");
+
+    if (isHidden) {
+        menu.classList.remove("hidden");
+    } else {
+        menu.classList.add("hidden");
+    }
+}
+
+function onDailyCustomColorChange(event) {
+    if (!event || !event.target) return;
+    const hex = event.target.value;
+    const customObj = {
+        id: "custom",
+        name: "Custom",
+        hex: hex,
+        bg: hexToLightRgba(hex, 0.40),
+        border: hex
+    };
+    applyHighlightColor(customObj, true);
+}
+
 function renderDailyDeliveryView() {
     if (typeof sanitizeDailyCompletedOrders === "function") {
         sanitizeDailyCompletedOrders();
@@ -7555,11 +7714,6 @@ function renderDailyDeliveryView() {
     if (elCompletedAmt) elCompletedAmt.textContent = `$${completedTotalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     if (elSuccessCount) elSuccessCount.textContent = successOrders.length;
     if (elIncompleteCount) elIncompleteCount.textContent = (strictlyIncompleteOrders.length + returnOrders.length);
-    if (elBadge1) elBadge1.textContent = `${filteredRecent.length} Orders`;
-    if (elBadge2) elBadge2.textContent = `${filteredCompleted.length} Orders`;
-
-    const summaryText = document.getElementById("table2SummaryText");
-    if (summaryText) summaryText.textContent = `សរុប: ${filteredCompleted.length} Orders (ជោគជ័យ: ${successOrders.length}, មិនជោគជ័យ: ${strictlyIncompleteOrders.length}, ត្រឡប់: ${returnOrders.length})`;
 
     // 4. Update the New Modern Analytics Chart Card (Donut Chart & Percentages)
     if (typeof renderDailyDeliveryAnalyticsChart === "function") {
@@ -7571,15 +7725,40 @@ function renderDailyDeliveryView() {
         });
     }
 
-    // 5. Render Table 1 and Table 2
-    renderDailyDeliveryTable1(filteredRecent);
-    renderDailyDeliveryTable2(filteredCompleted);
+    // 5. Filter for Table 1 and Table 2 specific search
+    const q1 = (AppState.dailyDelivery.searchTable1 || "").toLowerCase().trim();
+    const displayedRecent = q1 ? filteredRecent.filter(o => matchesDailyTableSearch(o, q1)) : filteredRecent;
+
+    const q2 = (AppState.dailyDelivery.searchTable2 || "").toLowerCase().trim();
+    const displayedCompleted = q2 ? filteredCompleted.filter(o => matchesDailyTableSearch(o, q2)) : filteredCompleted;
+
+    if (elBadge1) {
+        if (q1 && displayedRecent.length !== filteredRecent.length) {
+            elBadge1.textContent = `${displayedRecent.length} / ${filteredRecent.length} Orders`;
+        } else {
+            elBadge1.textContent = `${filteredRecent.length} Orders`;
+        }
+    }
+    if (elBadge2) {
+        if (q2 && displayedCompleted.length !== filteredCompleted.length) {
+            elBadge2.textContent = `${displayedCompleted.length} / ${filteredCompleted.length} Orders`;
+        } else {
+            elBadge2.textContent = `${filteredCompleted.length} Orders`;
+        }
+    }
+
+    const summaryText = document.getElementById("table2SummaryText");
+    if (summaryText) summaryText.textContent = `សរុប: ${filteredCompleted.length} Orders (ជោគជ័យ: ${successOrders.length}, មិនជោគជ័យ: ${strictlyIncompleteOrders.length}, ត្រឡប់: ${returnOrders.length})`;
+
+    // 6. Render Table 1 and Table 2
+    renderDailyDeliveryTable1(displayedRecent);
+    renderDailyDeliveryTable2(displayedCompleted);
 
     // Apply column visibility preferences for each table individually
     applyDailyT1ColumnVisibility();
     applyDailyT2ColumnVisibility();
 
-    // 5. Sync Clear Search Button state
+    // Sync Clear Search Button states
     const clearBtn = document.getElementById("dailyDeliveryClearSearchBtn");
     if (clearBtn) {
         if (AppState.dailyDelivery.searchQuery) {
@@ -7587,6 +7766,56 @@ function renderDailyDeliveryView() {
         } else {
             clearBtn.classList.add("hidden");
         }
+    }
+
+    const clearT1 = document.getElementById("dailyT1ClearSearchBtn");
+    if (clearT1) {
+        if (q1) clearT1.classList.remove("hidden");
+        else clearT1.classList.add("hidden");
+    }
+
+    const clearT2 = document.getElementById("dailyT2ClearSearchBtn");
+    if (clearT2) {
+        if (q2) clearT2.classList.remove("hidden");
+        else clearT2.classList.add("hidden");
+    }
+
+    // Restore saved collapse state for Recent and Completed tables
+    try {
+        const isT1Collapsed = localStorage.getItem("dailyRecentOrdersCollapsed") === "true";
+        const body1 = document.getElementById("dailyRecentOrdersBody");
+        const header1 = document.getElementById("dailyRecentOrdersHeader");
+        const icons1 = [document.getElementById("iconToggleDailyRecentOrders"), document.getElementById("iconToggleDailyRecentOrdersMobile")];
+        const texts1 = [document.getElementById("spanToggleDailyRecentOrders"), document.getElementById("spanToggleDailyRecentOrdersMobile")];
+        if (body1 && isT1Collapsed && !body1.classList.contains("hidden")) {
+            body1.classList.add("hidden");
+            if (header1) header1.classList.add("rounded-b-2xl");
+            icons1.forEach(ic => { if (ic) ic.classList.add("rotate-180"); });
+            texts1.forEach(sp => { if (sp) sp.textContent = "ពន្លាត"; });
+        }
+    } catch(e){}
+
+    try {
+        const isT2Collapsed = localStorage.getItem("dailyCompletedOrdersCollapsed") === "true";
+        const body2 = document.getElementById("dailyCompletedOrdersBody");
+        const header2 = document.getElementById("dailyCompletedOrdersHeader");
+        const icons2 = [document.getElementById("iconToggleDailyCompletedOrders"), document.getElementById("iconToggleDailyCompletedOrdersMobile")];
+        const texts2 = [document.getElementById("spanToggleDailyCompletedOrders"), document.getElementById("spanToggleDailyCompletedOrdersMobile")];
+        if (body2 && isT2Collapsed && !body2.classList.contains("hidden")) {
+            body2.classList.add("hidden");
+            if (header2) header2.classList.add("rounded-b-2xl");
+            icons2.forEach(ic => { if (ic) ic.classList.add("rotate-180"); });
+            texts2.forEach(sp => { if (sp) sp.textContent = "ពន្លាត"; });
+        }
+    } catch(e){}
+
+    // Update Highlight swatches and badges
+    updateHighlightCountBadge();
+    if (AppState.highlightColor) {
+        ["dailyT1HighlightColorSwatchPreview", "dailyT2HighlightColorSwatchPreview"].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.style.backgroundColor = AppState.highlightColor.hex;
+        });
     }
 
     scheduleLucideIcons();
@@ -7626,12 +7855,13 @@ function renderDailyDeliveryTable1(orders) {
     `;
 
     if (orders.length === 0) {
+        const q1 = (AppState.dailyDelivery && AppState.dailyDelivery.searchTable1 || "").trim();
         tbody.innerHTML = `
             <tr>
                 <td colspan="100%" class="text-center py-12 text-slate-400 bg-white">
                     <i data-lucide="truck" class="w-10 h-10 mx-auto stroke-1 mb-2 text-slate-300"></i>
-                    <p class="font-medium text-slate-600">មិនមាន Order កំពុងដឹកជញ្ជូន (In Delivery) ទេ</p>
-                    <p class="text-xs text-slate-400 mt-1">រាល់ពេលចុច Start Delivery លើ Order ណាមួយ វានឹងបង្ហាញក្នុង Recent Order នេះភ្លាមៗ</p>
+                    <p class="font-medium text-slate-600">${q1 ? `មិនមាន Order ណាត្រូវនឹង "${escapeHtml(q1)}" ក្នុង Recent Order ទេ` : 'មិនមាន Order កំពុងដឹកជញ្ជូន (In Delivery) ទេ'}</p>
+                    <p class="text-xs text-slate-400 mt-1">${q1 ? 'សូមសាកល្បងស្វែងរក SO# ឬឈ្មោះអតិថិជនផ្សេងទៀត ឬចុចប៊ូតុង X ដើម្បីសម្អាត' : 'រាល់ពេលចុច Start Delivery លើ Order ណាមួយ វានឹងបង្ហាញក្នុង Recent Order នេះភ្លាមៗ'}</p>
                 </td>
             </tr>
         `;
@@ -7644,9 +7874,14 @@ function renderDailyDeliveryTable1(orders) {
         const amtStr = formatInvoiceAmountWithCurrency(order.invoiceAmount, order.currency);
         const pkgStr = formatPackageWithUnit(order.totalPackage, order.packageUnit);
         const startTimeStr = order.deliveryStartTime ? formatDateTimeDisplay(order.deliveryStartTime) : "-";
+        const isHighlighted = AppState.highlightedOrders && AppState.highlightedOrders.has(order.soNumber);
 
         return `
-            <tr class="hover:bg-sky-50/40 transition border-b border-slate-100 text-xs">
+            <tr id="daily-t1-row-${escapeHtml(order.soNumber)}"
+                data-so="${escapeHtml(order.soNumber)}"
+                onclick="toggleOrderRowHighlight('${escapeHtml(order.soNumber)}', event)"
+                class="order-table-row transition-all border-b border-slate-100 text-xs cursor-pointer select-none ${isHighlighted ? 'order-row-highlighted' : 'hover:bg-sky-50/40'}"
+                title="ចុចដើម្បី Highlight (ចុច Shift ឬ Ctrl ជាមួយគ្នាសម្រាប់ Multi-select)">
                 <!-- 1. Status -->
                 <td data-daily-t1-col="status" class="py-3 px-3 text-center whitespace-nowrap">
                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${badge.class}">
@@ -7661,7 +7896,7 @@ function renderDailyDeliveryTable1(orders) {
 
                 <!-- 3. SO# -->
                 <td data-daily-t1-col="soNumber" class="py-3 px-3 font-bold font-mono text-blue-700 whitespace-nowrap">
-                    <span class="cursor-pointer hover:underline" onclick="viewOrderDetails('${escapeHtml(order.soNumber)}')">
+                    <span class="cursor-pointer hover:underline" onclick="event.stopPropagation(); viewOrderDetails('${escapeHtml(order.soNumber)}')">
                         ${escapeHtml(order.soNumber || "-")}
                     </span>
                 </td>
@@ -7717,7 +7952,7 @@ function renderDailyDeliveryTable1(orders) {
                 <!-- 13. Action: End Delivery Button -->
                 <td data-daily-t1-col="actions" class="py-3 px-3 text-center whitespace-nowrap">
                     <button type="button" 
-                        onclick="openEndDeliveryModal('${escapeHtml(order.soNumber)}')" 
+                        onclick="event.stopPropagation(); openEndDeliveryModal('${escapeHtml(order.soNumber)}')" 
                         class="py-1 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-2xs transition flex items-center justify-center gap-1 active:scale-95 cursor-pointer whitespace-nowrap mx-auto"
                         title="បញ្ចប់ការដឹកជញ្ជូន (Success, Incompleted, ឬ Return)">
                         <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
@@ -7766,12 +8001,13 @@ function renderDailyDeliveryTable2(orders) {
     `;
 
     if (orders.length === 0) {
+        const q2 = (AppState.dailyDelivery && AppState.dailyDelivery.searchTable2 || "").trim();
         tbody.innerHTML = `
             <tr>
                 <td colspan="100%" class="text-center py-12 text-slate-400 bg-white">
                     <i data-lucide="check-check" class="w-10 h-10 mx-auto stroke-1 mb-2 text-slate-300"></i>
-                    <p class="font-medium text-slate-600">មិនមាន Order ដែលបានបញ្ចប់ការដឹកជញ្ជូនទេ</p>
-                    <p class="text-xs text-slate-400 mt-1">ពេល Order ក្នុង Recent Order បញ្ចប់ការដឹកជញ្ជូន វានឹងត្រូវផ្លាស់ទីមកកាន់ Completed Order នេះ</p>
+                    <p class="font-medium text-slate-600">${q2 ? `មិនមាន Order ណាត្រូវនឹង "${escapeHtml(q2)}" ក្នុង Completed Order ទេ` : 'មិនមាន Order ដែលបានបញ្ចប់ការដឹកជញ្ជូនទេ'}</p>
+                    <p class="text-xs text-slate-400 mt-1">${q2 ? 'សូមសាកល្បងស្វែងរក SO# ឬឈ្មោះអតិថិជនផ្សេងទៀត ឬចុចប៊ូតុង X ដើម្បីសម្អាត' : 'ពេល Order ក្នុង Recent Order បញ្ចប់ការដឹកជញ្ជូន វានឹងត្រូវផ្លាស់ទីមកកាន់ Completed Order នេះ'}</p>
                 </td>
             </tr>
         `;
@@ -7800,9 +8036,14 @@ function renderDailyDeliveryTable2(orders) {
         const endTimeStr = order.deliveryEndTime ? formatDateTimeDisplay(order.deliveryEndTime) : "-";
         const durationStr = order.deliveryDuration || calculateDurationHhMm(order.deliveryStartTime, order.deliveryEndTime);
         const isIncomplete = isOrderIncompletedDelivery(order) || (order.status || "").toLowerCase().includes("incomplete");
+        const isHighlighted = AppState.highlightedOrders && AppState.highlightedOrders.has(order.soNumber);
 
         return `
-            <tr class="hover:bg-emerald-50/40 transition border-b border-slate-100 text-xs">
+            <tr id="daily-t2-row-${escapeHtml(order.soNumber)}"
+                data-so="${escapeHtml(order.soNumber)}"
+                onclick="toggleOrderRowHighlight('${escapeHtml(order.soNumber)}', event)"
+                class="order-table-row transition-all border-b border-slate-100 text-xs cursor-pointer select-none ${isHighlighted ? 'order-row-highlighted' : 'hover:bg-emerald-50/40'}"
+                title="ចុចដើម្បី Highlight (ចុច Shift ឬ Ctrl ជាមួយគ្នាសម្រាប់ Multi-select)">
                 <!-- 1. Status -->
                 <td data-daily-t2-col="status" class="py-3 px-3 text-center whitespace-nowrap">
                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${badge.class}">
@@ -7817,7 +8058,7 @@ function renderDailyDeliveryTable2(orders) {
 
                 <!-- 3. SO# -->
                 <td data-daily-t2-col="soNumber" class="py-3 px-3 font-bold font-mono text-blue-700 whitespace-nowrap">
-                    <span class="cursor-pointer hover:underline" onclick="viewOrderDetails('${escapeHtml(order.soNumber)}')">
+                    <span class="cursor-pointer hover:underline" onclick="event.stopPropagation(); viewOrderDetails('${escapeHtml(order.soNumber)}')">
                         ${escapeHtml(order.soNumber || "-")}
                     </span>
                 </td>
@@ -7882,14 +8123,14 @@ function renderDailyDeliveryTable2(orders) {
                     ${isIncomplete ? `
                         <div class="flex items-center justify-center gap-1.5">
                             <button type="button" 
-                                onclick="startSecondDelivery('${escapeHtml(order.soNumber)}')" 
+                                onclick="event.stopPropagation(); startSecondDelivery('${escapeHtml(order.soNumber)}')" 
                                 class="py-1 px-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold text-xs shadow-2xs transition flex items-center gap-1 cursor-pointer whitespace-nowrap active:scale-95"
                                 title="ដឹកជញ្ជូនម្ដងទៀត (រត់ត្រឡប់ទៅ Recent Order)">
                                 <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
                                 <span>Start 2nd</span>
                             </button>
                             <button type="button" 
-                                onclick="viewOrderDetails('${escapeHtml(order.soNumber)}')" 
+                                onclick="event.stopPropagation(); viewOrderDetails('${escapeHtml(order.soNumber)}')" 
                                 class="p-1 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition cursor-pointer" 
                                 title="មើលព័ត៌មានលម្អិត">
                                 <i data-lucide="eye" class="w-4 h-4"></i>
@@ -7897,7 +8138,7 @@ function renderDailyDeliveryTable2(orders) {
                         </div>
                     ` : `
                         <button type="button" 
-                            onclick="viewOrderDetails('${escapeHtml(order.soNumber)}')" 
+                            onclick="event.stopPropagation(); viewOrderDetails('${escapeHtml(order.soNumber)}')" 
                             class="py-1 px-2.5 rounded-xl bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-700 font-bold text-xs transition flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap mx-auto"
                             title="មើលព័ត៌មានលម្អិត">
                             <i data-lucide="eye" class="w-3.5 h-3.5"></i>
@@ -8133,6 +8374,16 @@ window.changeDailyTable2Page = changeDailyTable2Page;
 window.exportDailyDeliveryToExcel = exportDailyDeliveryToExcel;
 window.isDailyDeliveryRecentOrder = isDailyDeliveryRecentOrder;
 window.isDailyDeliveryCompletedOrder = isDailyDeliveryCompletedOrder;
+window.toggleDailyRecentOrdersCollapse = toggleDailyRecentOrdersCollapse;
+window.toggleDailyCompletedOrdersCollapse = toggleDailyCompletedOrdersCollapse;
+window.matchesDailyTableSearch = matchesDailyTableSearch;
+window.onDailyT1SearchInput = onDailyT1SearchInput;
+window.clearDailyT1Search = clearDailyT1Search;
+window.onDailyT2SearchInput = onDailyT2SearchInput;
+window.clearDailyT2Search = clearDailyT2Search;
+window.toggleDailyT1HighlightMenu = toggleDailyT1HighlightMenu;
+window.toggleDailyT2HighlightMenu = toggleDailyT2HighlightMenu;
+window.onDailyCustomColorChange = onDailyCustomColorChange;
 window.toggleDailyT1PersonalDisplayMenu = toggleDailyT1PersonalDisplayMenu;
 window.closeDailyT1PersonalDisplayMenu = closeDailyT1PersonalDisplayMenu;
 window.setDailyT1PersonalDisplayAll = setDailyT1PersonalDisplayAll;
@@ -9354,21 +9605,27 @@ function applyHighlightColor(colorObj, save = true) {
         }
     `;
 
-    // Update UI elements in the menu and button
-    const swatchPreview = document.getElementById("highlightColorSwatchPreview");
-    if (swatchPreview) {
-        swatchPreview.style.backgroundColor = colorObj.hex;
-    }
+    // Update UI elements in the menu and button across all tables
+    ["highlightColorSwatchPreview", "dailyT1HighlightColorSwatchPreview", "dailyT2HighlightColorSwatchPreview"].forEach(id => {
+        const swatchPreview = document.getElementById(id);
+        if (swatchPreview) {
+            swatchPreview.style.backgroundColor = colorObj.hex;
+        }
+    });
 
-    const hexLabel = document.getElementById("customColorHex");
-    if (hexLabel) {
-        hexLabel.textContent = colorObj.hex.toUpperCase();
-    }
+    ["customColorHex", "dailyT1CustomColorHex", "dailyT2CustomColorHex"].forEach(id => {
+        const hexLabel = document.getElementById(id);
+        if (hexLabel) {
+            hexLabel.textContent = colorObj.hex.toUpperCase();
+        }
+    });
 
-    const customInput = document.getElementById("customColorInput");
-    if (customInput && customInput.value.toLowerCase() !== colorObj.hex.toLowerCase()) {
-        customInput.value = colorObj.hex;
-    }
+    ["customColorInput", "dailyT1CustomColorInput", "dailyT2CustomColorInput"].forEach(id => {
+        const customInput = document.getElementById(id);
+        if (customInput && customInput.value.toLowerCase() !== colorObj.hex.toLowerCase()) {
+            customInput.value = colorObj.hex;
+        }
+    });
 
     // Update active ring on swatches
     document.querySelectorAll(".preset-color-btn").forEach(btn => {
@@ -9383,6 +9640,10 @@ function applyHighlightColor(colorObj, save = true) {
 
 function toggleOrderRowHighlight(soNumber, event) {
     if (!soNumber) return;
+
+    if (event && event.target && event.target.closest("button, a, input, select, textarea, .prevent-row-click")) {
+        return;
+    }
 
     if (!AppState.highlightedOrders) {
         AppState.highlightedOrders = new Set();
@@ -9410,15 +9671,21 @@ function toggleOrderRowHighlight(soNumber, event) {
         }
     }
 
-    // Synchronize highlight visual styling across all visible table rows
+    // Synchronize highlight visual styling across all visible table rows (Dashboard, Recent Order, Completed Order)
     document.querySelectorAll("tr.order-table-row").forEach(row => {
         const rowSo = row.getAttribute("data-so");
         if (rowSo && AppState.highlightedOrders.has(rowSo)) {
             row.classList.add("order-row-highlighted");
-            row.classList.remove("hover:bg-slate-50/80");
+            row.classList.remove("hover:bg-slate-50/80", "hover:bg-sky-50/40", "hover:bg-emerald-50/40");
         } else {
             row.classList.remove("order-row-highlighted");
-            row.classList.add("hover:bg-slate-50/80");
+            if (row.id && row.id.startsWith("daily-t1-")) {
+                row.classList.add("hover:bg-sky-50/40");
+            } else if (row.id && row.id.startsWith("daily-t2-")) {
+                row.classList.add("hover:bg-emerald-50/40");
+            } else {
+                row.classList.add("hover:bg-slate-50/80");
+            }
         }
     });
 
@@ -9442,7 +9709,13 @@ function clearAllHighlights() {
 
     document.querySelectorAll("tr.order-row-highlighted").forEach(row => {
         row.classList.remove("order-row-highlighted");
-        row.classList.add("hover:bg-slate-50/80");
+        if (row.id && row.id.startsWith("daily-t1-")) {
+            row.classList.add("hover:bg-sky-50/40");
+        } else if (row.id && row.id.startsWith("daily-t2-")) {
+            row.classList.add("hover:bg-emerald-50/40");
+        } else {
+            row.classList.add("hover:bg-slate-50/80");
+        }
     });
 
     updateHighlightCountBadge();
@@ -9450,15 +9723,17 @@ function clearAllHighlights() {
 }
 
 function updateHighlightCountBadge() {
-    const badge = document.getElementById("highlightCountBadge");
-    if (!badge) return;
     const count = AppState.highlightedOrders ? AppState.highlightedOrders.size : 0;
-    if (count > 0) {
-        badge.textContent = count;
-        badge.classList.remove("hidden");
-    } else {
-        badge.classList.add("hidden");
-    }
+    ["highlightCountBadge", "dailyT1HighlightCountBadge", "dailyT2HighlightCountBadge"].forEach(id => {
+        const badge = document.getElementById(id);
+        if (!badge) return;
+        if (count > 0) {
+            badge.textContent = count;
+            badge.classList.remove("hidden");
+        } else {
+            badge.classList.add("hidden");
+        }
+    });
 }
 
 function selectHighlightPreset(presetId) {
@@ -9472,24 +9747,24 @@ function setupHighlightColorMenu() {
     const btnToggle = document.getElementById("btnHighlightColor");
     const menu = document.getElementById("highlightColorMenu");
     const container = document.getElementById("highlightColorDropdownContainer");
-    const presetsContainer = document.getElementById("presetColorsList");
     const customInput = document.getElementById("customColorInput");
     const clearBtn = document.getElementById("btnClearHighlights");
 
-    if (!btnToggle || !menu) return;
-
-    // Render preset buttons
-    if (presetsContainer) {
-        presetsContainer.innerHTML = HIGHLIGHT_COLOR_PRESETS.map(p => `
-            <button type="button"
-                data-preset-id="${p.id}"
-                onclick="selectHighlightPreset('${p.id}')"
-                class="preset-color-btn w-8 h-8 rounded-xl border border-black/10 transition-transform hover:scale-110 flex items-center justify-center shadow-2xs cursor-pointer ${AppState.highlightColor && AppState.highlightColor.id === p.id ? 'ring-2 ring-offset-2 ring-blue-600 scale-110' : ''}"
-                style="background-color: ${p.hex};"
-                title="${p.name}">
-            </button>
-        `).join("");
-    }
+    // Populate preset swatches across all 3 tables (Dashboard, Recent Orders, Completed Orders)
+    ["presetColorsList", "dailyT1PresetColorsList", "dailyT2PresetColorsList"].forEach(cid => {
+        const presetsContainer = document.getElementById(cid);
+        if (presetsContainer) {
+            presetsContainer.innerHTML = HIGHLIGHT_COLOR_PRESETS.map(p => `
+                <button type="button"
+                    data-preset-id="${p.id}"
+                    onclick="selectHighlightPreset('${p.id}')"
+                    class="preset-color-btn w-8 h-8 rounded-xl border border-black/10 transition-transform hover:scale-110 flex items-center justify-center shadow-2xs cursor-pointer ${AppState.highlightColor && AppState.highlightColor.id === p.id ? 'ring-2 ring-offset-2 ring-blue-600 scale-110' : ''}"
+                    style="background-color: ${p.hex};"
+                    title="${p.name}">
+                </button>
+            `).join("");
+        }
+    });
 
     // Custom color input listener
     if (customInput) {
@@ -9515,15 +9790,31 @@ function setupHighlightColorMenu() {
     }
 
     // Dropdown toggle
-    btnToggle.addEventListener("click", (e) => {
-        e.stopPropagation();
-        menu.classList.toggle("hidden");
-    });
+    if (btnToggle && menu) {
+        btnToggle.addEventListener("click", (e) => {
+            e.stopPropagation();
+            menu.classList.toggle("hidden");
+            const m1 = document.getElementById("dailyT1HighlightMenu");
+            if (m1) m1.classList.add("hidden");
+            const m2 = document.getElementById("dailyT2HighlightMenu");
+            if (m2) m2.classList.add("hidden");
+        });
+    }
 
     // Close when clicking outside
     document.addEventListener("click", (e) => {
-        if (container && !container.contains(e.target)) {
+        if (container && !container.contains(e.target) && menu) {
             menu.classList.add("hidden");
+        }
+        const dailyT1HlContainer = document.getElementById("dailyT1HighlightDropdownContainer");
+        const dailyT1HlMenu = document.getElementById("dailyT1HighlightMenu");
+        if (dailyT1HlContainer && dailyT1HlMenu && !dailyT1HlContainer.contains(e.target)) {
+            dailyT1HlMenu.classList.add("hidden");
+        }
+        const dailyT2HlContainer = document.getElementById("dailyT2HighlightDropdownContainer");
+        const dailyT2HlMenu = document.getElementById("dailyT2HighlightMenu");
+        if (dailyT2HlContainer && dailyT2HlMenu && !dailyT2HlContainer.contains(e.target)) {
+            dailyT2HlMenu.classList.add("hidden");
         }
         const dailyT1Container = document.getElementById("dailyT1PersonalDisplayDropdownContainer");
         const dailyT1Menu = document.getElementById("dailyT1PersonalDisplayMenu");
