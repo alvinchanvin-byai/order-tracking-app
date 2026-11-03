@@ -567,7 +567,14 @@ function formatDateDisplay(dateVal) {
  */
 function parseAppDateTime(dateStr) {
     if (!dateStr || dateStr === "-") return null;
-    if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? null : dateStr;
+    if (dateStr instanceof Date) {
+        if (isNaN(dateStr.getTime())) return null;
+        const d = dateStr.getDate();
+        const mo = dateStr.getMonth() + 1;
+        const yr = dateStr.getFullYear();
+        const norm = normalizeDateParts(d, mo, yr);
+        return new Date(norm.year, norm.month - 1, norm.day, dateStr.getHours(), dateStr.getMinutes(), dateStr.getSeconds());
+    }
 
     let s = String(dateStr).trim();
     if (s.startsWith("'")) s = s.substring(1).trim();
@@ -599,7 +606,13 @@ function calculateDuration(startStr, endStr) {
     const endDate = parseAppDateTime(endStr);
     if (!startDate || !endDate) return "-";
     
-    const diffMs = endDate.getTime() - startDate.getTime();
+    let diffMs = endDate.getTime() - startDate.getTime();
+    // If diffMs > 24 hours (e.g. 5688 hours = 237 days from month swap), calculate direct time-of-day diff
+    if (diffMs > 86400000 && diffMs > 100 * 3600000) {
+        const t1 = (startDate.getHours() * 60 + startDate.getMinutes()) * 60 * 1000 + startDate.getSeconds() * 1000;
+        const t2 = (endDate.getHours() * 60 + endDate.getMinutes()) * 60 * 1000 + endDate.getSeconds() * 1000;
+        diffMs = t2 >= t1 ? (t2 - t1) : ((t2 + 86400000) - t1);
+    }
     if (diffMs < 0) return "-";
     
     let totalMinutes = Math.floor(diffMs / (1000 * 60));
@@ -621,13 +634,16 @@ function formatDurationHhMm(val, startStr, endStr) {
         if (calculated && calculated !== "-") return calculated;
     }
     if (!val || val === "-" || String(val).trim() === "") return "-";
-    const str = String(val).trim();
+    let str = String(val).trim();
+    if (str.startsWith("'")) str = str.substring(1).trim();
     
-    // Check if already in hh:mm format (e.g. 00:10, 02:14)
-    const m = str.match(/^(\d{1,3}):(\d{2})(?::\d{2})?$/);
+    // Check if in hh:mm or hh:mm:ss format (also handle 5688:14:00, 5688:06, 0:07, etc.)
+    const m = str.match(/^(\d+):(\d{2})(?::\d{2})?$/);
     if (m) {
-        const h = String(parseInt(m[1], 10)).padStart(2, '0');
+        let rawH = parseInt(m[1], 10);
         const min = String(parseInt(m[2], 10)).padStart(2, '0');
+        if (rawH >= 5000) rawH = rawH % 24; // clean up 5688 month-swap bug
+        const h = String(rawH).padStart(2, '0');
         return `${h}:${min}`;
     }
     
