@@ -11822,6 +11822,28 @@ async function fixGoogleSheetDatesNow() {
 }
 window.fixGoogleSheetDatesNow = fixGoogleSheetDatesNow;
 
+// Fix Google Sheet Statuses to match Web App 100%
+async function fixGoogleSheetStatusesNow() {
+    if (!SheetsSync.isConfigured()) {
+        showToast("Google Sheet មិនទាន់ភ្ជាប់ទេ!", "warning");
+        return;
+    }
+    showToast("កំពុងតម្រឹម Status (100% ដូច Web App) ក្នុង Google Sheet...", "info");
+    try {
+        const res = await SheetsSync.fixSheetStatuses();
+        if (res.success) {
+            const count = (res.result && res.result.fixedStatuses !== undefined) ? res.result.fixedStatuses : 0;
+            showToast(`✅ បានតម្រឹម Status ក្នុង Sheet ចំនួន ${count} Orders ឱ្យដូច Web App 100%!`, "success");
+            syncFromGoogleSheet();
+        } else {
+            showToast("❌ បរាជ័យក្នុងការ Fix Statuses: " + (res.error || res.message || ""), "error");
+        }
+    } catch(e) {
+        showToast("❌ បរាជ័យ: " + e.message, "error");
+    }
+}
+window.fixGoogleSheetStatusesNow = fixGoogleSheetStatusesNow;
+
 // ========================================================
 // USER MANAGEMENT & PERMISSION ACCESS RIGHT CONTROLLER
 // ========================================================
