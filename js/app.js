@@ -257,6 +257,9 @@ function getDocumentTypeBadgeClass(docType) {
     if (raw.includes("consignment")) {
         return "bg-amber-50 text-amber-800 border-amber-200/90";
     }
+    if (raw.includes("deposit")) {
+        return "bg-cyan-50 text-cyan-800 border-cyan-200/90";
+    }
     return "bg-slate-50 text-slate-700 border-slate-200/90";
 }
 
@@ -6783,7 +6786,7 @@ async function startSecondDelivery(soNumber) {
 // Table 2: Completed Order (15 Columns)
 // ========================================================
 
-// Table 1: Recent Order Columns (13 Columns)
+// Table 1: Recent Order Columns (14 Columns)
 const DAILY_T1_COLUMNS = [
     { key: "status", label: "Status" },
     { key: "soDate", label: "SO Date" },
@@ -6794,13 +6797,14 @@ const DAILY_T1_COLUMNS = [
     { key: "packingList", label: "Packing List#" },
     { key: "invoiceNumber", label: "Invoice#" },
     { key: "invoiceAmount", label: "Invoice Amount" },
+    { key: "documentType", label: "Document Type" },
     { key: "totalPackage", label: "Total Packages" },
     { key: "driver", label: "អ្នកដឹក (Driver)" },
     { key: "startTime", label: "ពេលចេញ (Start)" },
     { key: "actions", label: "សកម្មភាព (Action)" }
 ];
 
-// Table 2: Completed Order Columns (15 Columns)
+// Table 2: Completed Order Columns (16 Columns)
 const DAILY_T2_COLUMNS = [
     { key: "status", label: "Status" },
     { key: "soDate", label: "SO Date" },
@@ -6811,6 +6815,7 @@ const DAILY_T2_COLUMNS = [
     { key: "packingList", label: "Packing List#" },
     { key: "invoiceNumber", label: "Invoice#" },
     { key: "invoiceAmount", label: "Invoice Amount" },
+    { key: "documentType", label: "Document Type" },
     { key: "driver", label: "អ្នកដឹក (Driver)" },
     { key: "startTime", label: "ពេលចេញ (Start)" },
     { key: "endTime", label: "ពេលដល់ (End)" },
@@ -6824,17 +6829,17 @@ const STORAGE_DAILY_T2_COL_PREFS = "order_tracker_daily_t2_col_prefs_v1";
 
 // --- TABLE 1 (Recent Order) PERSONAL DISPLAY FUNCTIONS ---
 function getDailyT1ColumnPrefs() {
+    const defaults = {};
+    DAILY_T1_COLUMNS.forEach(c => { defaults[c.key] = true; });
     try {
         const raw = localStorage.getItem(STORAGE_DAILY_T1_COL_PREFS);
         if (raw) {
             const prefs = JSON.parse(raw);
-            if (prefs && typeof prefs === "object") return prefs;
+            if (prefs && typeof prefs === "object") return Object.assign(defaults, prefs);
         }
     } catch (e) {
         console.warn("Error reading daily T1 column prefs:", e);
     }
-    const defaults = {};
-    DAILY_T1_COLUMNS.forEach(c => { defaults[c.key] = true; });
     return defaults;
 }
 
@@ -6962,17 +6967,17 @@ function resetDailyT1PersonalDisplay() {
 
 // --- TABLE 2 (Completed Order) PERSONAL DISPLAY FUNCTIONS ---
 function getDailyT2ColumnPrefs() {
+    const defaults = {};
+    DAILY_T2_COLUMNS.forEach(c => { defaults[c.key] = true; });
     try {
         const raw = localStorage.getItem(STORAGE_DAILY_T2_COL_PREFS);
         if (raw) {
             const prefs = JSON.parse(raw);
-            if (prefs && typeof prefs === "object") return prefs;
+            if (prefs && typeof prefs === "object") return Object.assign(defaults, prefs);
         }
     } catch (e) {
         console.warn("Error reading daily T2 column prefs:", e);
     }
-    const defaults = {};
-    DAILY_T2_COLUMNS.forEach(c => { defaults[c.key] = true; });
     return defaults;
 }
 
@@ -7535,9 +7540,10 @@ function matchesDailyTableSearch(order, query) {
     const status = String(order.status || "").toLowerCase();
     const phone = String(order.phone || "").toLowerCase();
     const notes = String(order.notes || order.specialNotes || "").toLowerCase();
+    const docType = String(order.documentType || "").toLowerCase();
     return so.includes(q) || cust.includes(q) || bu.includes(q) || inv.includes(q) || 
            pkg.includes(q) || driver.includes(q) || city.includes(q) || khan.includes(q) || 
-           status.includes(q) || phone.includes(q) || notes.includes(q);
+           status.includes(q) || phone.includes(q) || notes.includes(q) || docType.includes(q);
 }
 
 function onDailyT1SearchInput(event) {
@@ -7844,6 +7850,7 @@ function renderDailyDeliveryTable1(orders) {
             <th data-daily-t1-col="packingList" class="py-3.5 px-3 text-left whitespace-nowrap">Packing List#</th>
             <th data-daily-t1-col="invoiceNumber" class="py-3.5 px-3 text-left whitespace-nowrap">Invoice#</th>
             <th data-daily-t1-col="invoiceAmount" class="py-3.5 px-3 text-right whitespace-nowrap">Invoice Amount</th>
+            <th data-daily-t1-col="documentType" class="py-3.5 px-3 text-center whitespace-nowrap">Document Type</th>
             <th data-daily-t1-col="totalPackage" class="py-3.5 px-3 text-center whitespace-nowrap">Total Packages</th>
             <th data-daily-t1-col="driver" class="py-3.5 px-3 text-left whitespace-nowrap">អ្នកដឹក (Driver)</th>
             <th data-daily-t1-col="startTime" class="py-3.5 px-3 text-center whitespace-nowrap">ពេលចេញ (Start)</th>
@@ -7928,6 +7935,11 @@ function renderDailyDeliveryTable1(orders) {
                     ${amtStr}
                 </td>
 
+                <!-- Document Type -->
+                <td data-daily-t1-col="documentType" class="py-3 px-3 text-center whitespace-nowrap">
+                    ${renderDocumentTypeBadge(order.documentType)}
+                </td>
+
                 <!-- 10. Total Packages -->
                 <td data-daily-t1-col="totalPackage" class="py-3 px-3 text-center whitespace-nowrap">
                     ${pkgStr !== "-" ? `<span class="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-bold text-xs">${pkgStr}</span>` : '<span class="text-slate-300 font-semibold">-</span>'}
@@ -7988,6 +8000,7 @@ function renderDailyDeliveryTable2(orders) {
             <th data-daily-t2-col="packingList" class="py-3.5 px-3 text-left whitespace-nowrap">Packing List#</th>
             <th data-daily-t2-col="invoiceNumber" class="py-3.5 px-3 text-left whitespace-nowrap">Invoice#</th>
             <th data-daily-t2-col="invoiceAmount" class="py-3.5 px-3 text-right whitespace-nowrap">Invoice Amount</th>
+            <th data-daily-t2-col="documentType" class="py-3.5 px-3 text-center whitespace-nowrap">Document Type</th>
             <th data-daily-t2-col="driver" class="py-3.5 px-3 text-left whitespace-nowrap">អ្នកដឹក (Driver)</th>
             <th data-daily-t2-col="startTime" class="py-3.5 px-3 text-center whitespace-nowrap">ពេលចេញ (Start)</th>
             <th data-daily-t2-col="endTime" class="py-3.5 px-3 text-center whitespace-nowrap">ពេលដល់ (End)</th>
@@ -8088,6 +8101,11 @@ function renderDailyDeliveryTable2(orders) {
                 <!-- 9. Invoice Amount -->
                 <td data-daily-t2-col="invoiceAmount" class="py-3 px-3 text-right font-mono font-bold text-emerald-700 whitespace-nowrap">
                     ${amtStr}
+                </td>
+
+                <!-- Document Type -->
+                <td data-daily-t2-col="documentType" class="py-3 px-3 text-center whitespace-nowrap">
+                    ${renderDocumentTypeBadge(order.documentType)}
                 </td>
 
                 <!-- 10. Driver -->
