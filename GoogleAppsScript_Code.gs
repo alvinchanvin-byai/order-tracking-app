@@ -320,8 +320,79 @@ function ensureTrackingHeaders(sheet) {
 }
 
 /**
+ * កំណត់ Locale en_GB (dd/MM/yyyy) និង TimeZone Asia/Phnom_Penh លើ Spreadsheet ទាំងមូល
+ * និង Format រាល់ Date Column ទាំងអស់ក្នុង Tracking Sheet ទៅជា dd/MM/yy HH:mm ឬ dd/MM/yy
+ * ព្រមទាំងជួសជុលរាល់កាលបរិច្ឆេទដែលច្រឡំរវាងថ្ងៃនិងខែ (Swapped MM/DD vs DD/MM)
+ */
+function fixAllSheetDateFormats() {
+  var ss = getSpreadsheet();
+  try {
+    ss.setSpreadsheetLocale("en_GB"); // en_GB ប្រើទម្រង់ DD/MM/YYYY ជាស្តង់ដារ មិនច្រឡំថ្ងៃខែ
+    ss.setSpreadsheetTimeZone("Asia/Phnom_Penh");
+  } catch(eLoc) {}
+
+  var trackSheet = ss.getSheetByName(SHEET_TRACKING);
+  var fixedCount = 0;
+  if (!trackSheet) return fixedCount;
+
+  var lastRow = trackSheet.getLastRow();
+  if (lastRow <= 1) return fixedCount;
+
+  var numRows = lastRow - 1;
+  var numCols = trackSheet.getLastColumn();
+  var hRow = trackSheet.getRange(1, 1, 1, numCols).getValues()[0];
+  var colMap = {};
+  for (var hi = 0; hi < hRow.length; hi++) {
+    var hn = String(hRow[hi] || "").trim().toLowerCase();
+    if (hn) colMap[hn] = hi + 1;
+  }
+
+  // Identify all date columns in Tracking Sheet
+  var dateCols = [
+    colMap["timestamp"] || 1,
+    colMap["picking start"] || 17,
+    colMap["picking end"] || 18,
+    colMap["checking start"] || 20,
+    colMap["checking end"] || 21,
+    colMap["delivery start"] || 23,
+    colMap["delivery end"] || 24,
+    colMap["last updated"] || (colMap["payment receipt"] ? 27 : 26)
+  ].filter(function(c) { return c && c > 0 && c <= numCols; });
+
+  dateCols.forEach(function(c) {
+    try {
+      var rng = trackSheet.getRange(2, c, numRows, 1);
+      var vals = rng.getValues();
+      var colChanged = false;
+      for (var r = 0; r < numRows; r++) {
+        var v = vals[r][0];
+        if (v !== "" && v !== null && v !== undefined && String(v).trim() !== "-") {
+          var formatted = formatDateTimeGAS(v);
+          if (formatted && formatted !== "-") {
+            var asTxt = asTextDate(formatted);
+            if (asTxt !== String(v)) {
+              vals[r][0] = asTxt;
+              colChanged = true;
+              fixedCount++;
+            }
+          }
+        }
+      }
+      if (colChanged) {
+        rng.setValues(vals);
+      }
+      // Force Plain Text format so Google Sheets never mangles or swaps DD and MM
+      rng.setNumberFormat("@");
+    } catch(eCol) {}
+  });
+
+  return fixedCount;
+}
+
+/**
  * បង្កើត និង កែសម្រួល Header គ្រប់ Sheet ទាំងអស់ទៅជាភាសាអង់គ្លេសសុទ្ធ (ដកអក្សរខ្មែរ)
- * និង កែសម្រួលទិន្នន័យ Duration ក្នុង Tracking Sheet ទៅជាទម្រង់ hh:mm (00:10, 00:01, 02:14...)
+ * កែសម្រួលទិន្នន័យ Duration ក្នុង Tracking Sheet ទៅជាទម្រង់ hh:mm (00:10, 00:01, 02:14...)
+ * និង Format រាល់ Date Column ទាំងអស់ទៅជា dd/MM/yy HH:mm (Strict Date & Time)
  */
 function cleanAndFormatAllHeadersAndDurations() {
   var ss = getSpreadsheet();
@@ -427,11 +498,36 @@ function cleanAndFormatAllHeadersAndDurations() {
     }
   }
 
+  // 3. Fix and enforce strict dd/MM/yy HH:mm date format on all date columns
+  var fixedDates = fixAllSheetDateFormats();
+
   markDataUpdated();
   return {
     status: "success",
-    message: "Headers cleaned to pure English & Durations formatted to hh:mm",
-    updatedDurations: updatedCount
+    message: "Headers cleaned, Durations formatted to hh:mm, and Dates strictly formatted to dd/MM/yy HH:mm",
+    updatedDurations: updatedCount,
+    fixedDates: fixedDates
+  };
+}
+
+/**
+ * Normalizes day, month, year from potentially swapped US locale (MM/DD vs DD/MM)
+ */
+function normalizeDatePartsGAS(p1, p2, yr) {
+  var d = parseInt(p1, 10);
+  var mo = parseInt(p2, 10);
+  var y = parseInt(yr, 10);
+  if (y < 100) y += 2000;
+  
+  if (mo > 12 && d <= 12) {
+    var tmp = d; d = mo; mo = tmp;
+  } else if ((d === 10 || d === 11 || d === 12) && mo < d && (y === 2026 || y === 2027)) {
+    var tmp = d; d = mo; mo = tmp;
+  }
+  return {
+    day: d < 10 ? "0" + d : "" + d,
+    month: mo < 10 ? "0" + mo : "" + mo,
+    year: String(y).slice(-2)
   };
 }
 
@@ -442,14 +538,15 @@ function parseDateTimeGAS(dateStr) {
   if (!dateStr || dateStr === "-") return null;
   if (dateStr instanceof Date) return dateStr;
   var s = String(dateStr).trim();
-  if (s.charAt(0) === "'") s = s.substring(1);
+  if (s.charAt(0) === "'") s = s.substring(1).trim();
+  if (!s || s === "-") return null;
   
   var m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
   if (m) {
-    var day = parseInt(m[1], 10);
-    var month = parseInt(m[2], 10) - 1;
-    var year = parseInt(m[3], 10);
-    if (year < 100) year += 2000;
+    var norm = normalizeDatePartsGAS(m[1], m[2], m[3]);
+    var day = parseInt(norm.day, 10);
+    var month = parseInt(norm.month, 10) - 1;
+    var year = parseInt(norm.year, 10) + 2000;
     var hours = m[4] ? parseInt(m[4], 10) : 0;
     var mins = m[5] ? parseInt(m[5], 10) : 0;
     var secs = m[6] ? parseInt(m[6], 10) : 0;
@@ -514,35 +611,78 @@ function formatDurationGAS(val, startStr, endStr) {
 }
 
 /**
- * Helper ជំនួយការ Convert Date ទៅជាទម្រង់ dd/MM/yy HH:mm
+ * Helper ជំនួយការ Convert Date ទៅជាទម្រង់ dd/MM/yy HH:mm (Strict Date & Time)
+ * ឧទាហរណ៍៖ 03/11/26 13:23
  */
 function formatDateTimeGAS(val) {
-  if (!val) return "";
+  if (!val || val === "-" || String(val).trim() === "") return "";
   if (val instanceof Date) {
-    var formatted = Utilities.formatDate(val, Session.getScriptTimeZone() || "Asia/Phnom_Penh", "dd/MM/yy HH:mm");
-    // Protection against Google Sheets US locale day/month swap:
-    // If Day=10 and Month is 4 or 5 in 2026, it was parsed as MM/dd/yy (10/05/26) instead of dd/MM/yy (05/10/26)
-    var m = formatted.match(/^(\d{2})\/(\d{2})\/(\d{2})\s+(\d{2}:\d{2})$/);
-    if (m) {
-      var d = parseInt(m[1], 10);
-      var mo = parseInt(m[2], 10);
-      var yr = m[3];
-      var tm = m[4];
-      if (d === 10 && (mo === 4 || mo === 5) && yr === "26") {
-        return (mo < 10 ? "0" + mo : mo) + "/" + (d < 10 ? "0" + d : d) + "/" + yr + " " + tm;
-      }
-    }
-    return formatted;
+    if (isNaN(val.getTime())) return "";
+    var d = val.getDate();
+    var mo = val.getMonth() + 1;
+    var yr = String(val.getFullYear()).slice(-2);
+    var hh = val.getHours();
+    var mm = val.getMinutes();
+    var norm = normalizeDatePartsGAS(d, mo, yr);
+    var hhStr = hh < 10 ? "0" + hh : "" + hh;
+    var mmStr = mm < 10 ? "0" + mm : "" + mm;
+    return norm.day + "/" + norm.month + "/" + norm.year + " " + hhStr + ":" + mmStr;
   }
+  
   var str = String(val).trim();
-  if (str.charAt(0) === "'") str = str.substring(1);
-  if (str.length > 16 || str.indexOf("GMT") > -1 || str.indexOf("-") > -1) {
+  if (str.charAt(0) === "'") str = str.substring(1).trim();
+  if (!str || str === "-") return "";
+  
+  // Match dd/mm/yy or mm/dd/yy with time
+  var mTime = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?/);
+  if (mTime) {
+    var norm = normalizeDatePartsGAS(mTime[1], mTime[2], mTime[3]);
+    var hh = parseInt(mTime[4], 10);
+    var mm = parseInt(mTime[5], 10);
+    var hhStr = hh < 10 ? "0" + hh : "" + hh;
+    var mmStr = mm < 10 ? "0" + mm : "" + mm;
+    return norm.day + "/" + norm.month + "/" + norm.year + " " + hhStr + ":" + mmStr;
+  }
+  
+  // Match dd/mm/yy or mm/dd/yy WITHOUT time
+  var mNoTime = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (mNoTime) {
+    var norm = normalizeDatePartsGAS(mNoTime[1], mNoTime[2], mNoTime[3]);
+    return norm.day + "/" + norm.month + "/" + norm.year;
+  }
+  
+  // Match ISO yyyy-mm-dd
+  var iso = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T\s](\d{1,2}):(\d{1,2}))?/);
+  if (iso) {
+    var yr = iso[1].slice(-2);
+    var mo = parseInt(iso[2], 10) < 10 ? "0" + parseInt(iso[2], 10) : iso[2];
+    var dy = parseInt(iso[3], 10) < 10 ? "0" + parseInt(iso[3], 10) : iso[3];
+    if (iso[4] !== undefined && iso[5] !== undefined) {
+      var hh = parseInt(iso[4], 10) < 10 ? "0" + parseInt(iso[4], 10) : iso[4];
+      var mm = parseInt(iso[5], 10) < 10 ? "0" + parseInt(iso[5], 10) : iso[5];
+      return dy + "/" + mo + "/" + yr + " " + hh + ":" + mm;
+    }
+    return dy + "/" + mo + "/" + yr;
+  }
+  
+  if (str.length > 16 || str.indexOf("GMT") > -1) {
     var parsed = new Date(str.indexOf("-") > -1 ? str.replace(" ", "T") : str);
     if (!isNaN(parsed.getTime())) {
-      return Utilities.formatDate(parsed, Session.getScriptTimeZone() || "Asia/Phnom_Penh", "dd/MM/yy HH:mm");
+      return formatDateTimeGAS(parsed);
     }
   }
   return str;
+}
+
+/**
+ * Helper ជំនួយការ Convert Date ទៅជាទម្រង់ dd/MM/yy (Strict Date only)
+ * ឧទាហរណ៍៖ 03/11/26
+ */
+function formatDateGAS(val) {
+  if (!val || val === "-" || String(val).trim() === "") return "-";
+  var dtStr = formatDateTimeGAS(val);
+  if (!dtStr || dtStr === "-") return "-";
+  return dtStr.split(" ")[0];
 }
 
 function asTextDate(val) {
@@ -554,6 +694,10 @@ function asTextDate(val) {
 
 function getNowString() {
   return Utilities.formatDate(new Date(), Session.getScriptTimeZone() || "Asia/Phnom_Penh", "dd/MM/yy HH:mm");
+}
+
+function getNowDateString() {
+  return Utilities.formatDate(new Date(), Session.getScriptTimeZone() || "Asia/Phnom_Penh", "dd/MM/yy");
 }
 
 /**
@@ -882,10 +1026,20 @@ function doGet(e) {
       });
     }
 
-    // Explicit Clean Sheet Action (សម្អាត Header ដកអក្សរខ្មែរ & Format Duration ទៅជា hh:mm)
+    // Explicit Clean Sheet Action (សម្អាត Header ដកអក្សរខ្មែរ & Format Duration ទៅជា hh:mm & Fix Dates)
     if (action === "clean_sheet") {
       var cleanRes = cleanAndFormatAllHeadersAndDurations();
       return createJsonResponse(cleanRes);
+    }
+
+    // Explicit Fix Sheet Dates Action (ជួសជុលទម្រង់ dd/MM/yy HH:mm គ្រប់ Date columns)
+    if (action === "fix_dates") {
+      var fixedCount = fixAllSheetDateFormats();
+      return createJsonResponse({
+        status: "success",
+        message: "Sheet date formats fixed to dd/MM/yy HH:mm",
+        fixedDates: fixedCount
+      });
     }
 
     var ss = getSpreadsheet();
