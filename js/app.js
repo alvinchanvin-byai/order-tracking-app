@@ -676,6 +676,7 @@ function normalizeOrderDates(order) {
         packageUnit: cleanPackageUnit,
         specialNotes: order.specialNotes || "",
         deliveryNotes: order.deliveryNotes || "",
+        soDate: (typeof formatDateDisplay === "function") ? formatDateDisplay(order.soDate || order.so_date || order.timestamp || order.date) : (order.soDate || ""),
         timestamp: formatDateTimeDisplay(order.timestamp),
         pickingStartTime: order.pickingStartTime ? formatDateTimeDisplay(order.pickingStartTime) : "",
         pickingEndTime: order.pickingEndTime ? formatDateTimeDisplay(order.pickingEndTime) : "",
@@ -9657,9 +9658,12 @@ function calculateDurationHhMm(startStr, endStr) {
 }
 window.calculateDurationHhMm = calculateDurationHhMm;
 
-// Format SO Date as dd/mm/yy
+// Format SO Date strictly as dd/mm/yy (e.g. 03/11/26)
 function formatSoDateDisplay(dateVal) {
     if (!dateVal || dateVal === "-" || String(dateVal).trim() === "") return "-";
+    if (typeof formatDateDisplay === "function") {
+        return formatDateDisplay(dateVal);
+    }
     const d = parseAppDateTime(dateVal);
     const pad = n => String(n).padStart(2, '0');
     if (d && !isNaN(d.getTime())) {
@@ -9670,10 +9674,10 @@ function formatSoDateDisplay(dateVal) {
     const raw = String(dateVal).trim().split(" ")[0];
     const slashParts = raw.split("/");
     if (slashParts.length === 3) {
-        const dd = pad(slashParts[0]);
-        const mm = pad(slashParts[1]);
-        const yy = slashParts[2].length === 4 ? slashParts[2].slice(-2) : pad(slashParts[2]);
-        return `${dd}/${mm}/${yy}`;
+        const norm = (typeof normalizeDateParts === "function") 
+            ? normalizeDateParts(slashParts[0], slashParts[1], slashParts[2])
+            : { dayPad: pad(slashParts[0]), monthPad: pad(slashParts[1]), yy: pad(slashParts[2]).slice(-2) };
+        return `${norm.dayPad}/${norm.monthPad}/${norm.yy}`;
     }
     const dashParts = raw.split("-");
     if (dashParts.length === 3) {
@@ -11785,7 +11789,7 @@ async function cleanGoogleSheetNow() {
     try {
         const res = await SheetsSync.cleanSheetHeadersAndDurations();
         if (res.success) {
-            showToast("✅ បានសម្អាត Headers និង Format Duration ទៅជា hh:mm ជោគជ័យ!", "success");
+            showToast("✅ បានសម្អាត Headers, Format Duration hh:mm និង Date dd/mm/yy ជោគជ័យ!", "success");
             syncFromGoogleSheet();
         } else {
             showToast("❌ បរាជ័យក្នុងការ Clean Sheet: " + (res.error || res.message || ""), "error");
@@ -11795,6 +11799,28 @@ async function cleanGoogleSheetNow() {
     }
 }
 window.cleanGoogleSheetNow = cleanGoogleSheetNow;
+
+// Fix Google Sheet Dates to strict dd/mm/yy hh:mm and dd/mm/yy
+async function fixGoogleSheetDatesNow() {
+    if (!SheetsSync.isConfigured()) {
+        showToast("Google Sheet មិនទាន់ភ្ជាប់ទេ!", "warning");
+        return;
+    }
+    showToast("កំពុង Fix Formats Date (dd/mm/yy) ក្នុង Google Sheet...", "info");
+    try {
+        const res = await SheetsSync.fixSheetDateFormats();
+        if (res.success) {
+            const count = (res.result && res.result.fixedDates !== undefined) ? res.result.fixedDates : 0;
+            showToast(`✅ បានជួសជុល Date Format ក្នុង Sheet ចំនួន ${count} cells ជោគជ័យ!`, "success");
+            syncFromGoogleSheet();
+        } else {
+            showToast("❌ បរាជ័យក្នុងការ Fix Dates: " + (res.error || res.message || ""), "error");
+        }
+    } catch(e) {
+        showToast("❌ បរាជ័យ: " + e.message, "error");
+    }
+}
+window.fixGoogleSheetDatesNow = fixGoogleSheetDatesNow;
 
 // ========================================================
 // USER MANAGEMENT & PERMISSION ACCESS RIGHT CONTROLLER
