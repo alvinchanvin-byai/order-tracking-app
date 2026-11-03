@@ -461,12 +461,12 @@ function fixAllSheetDateFormats() {
   // Identify all date columns in Tracking Sheet
   var dateCols = [
     colMap["timestamp"] || 1,
-    colMap["picking start"] || 17,
-    colMap["picking end"] || 18,
-    colMap["checking start"] || 20,
-    colMap["checking end"] || 21,
-    colMap["delivery start"] || 23,
-    colMap["delivery end"] || 24,
+    colMap["picking start time"] || colMap["picking start"] || 17,
+    colMap["picking end time"] || colMap["picking end"] || 18,
+    colMap["checking start time"] || colMap["checking start"] || 20,
+    colMap["checking end time"] || colMap["checking end"] || 21,
+    colMap["delivery start time"] || colMap["delivery start"] || 23,
+    colMap["delivery end time"] || colMap["delivery end"] || 24,
     colMap["last updated"] || (colMap["payment receipt"] ? 27 : 26)
   ].filter(function(c) { return c && c > 0 && c <= numCols; });
 
@@ -532,48 +532,73 @@ function cleanAndFormatAllHeadersAndDurations() {
     }
   });
 
-  // 2. Format Duration Columns in "Tracking" Sheet
+  // 2. Fix and enforce strict dd/MM/yy HH:mm date format on all date columns FIRST
+  var fixedDates = fixAllSheetDateFormats();
+
+  // 3. Format Duration Columns in "Tracking" Sheet strictly to hh:mm
   var updatedCount = 0;
   if (trackSheet) {
     var lastRow = trackSheet.getLastRow();
     if (lastRow > 1) {
       var numRows = lastRow - 1;
-      var range = trackSheet.getRange(2, 17, numRows, 9);
-      var vals = range.getValues();
+      var numCols = Math.max(trackSheet.getLastColumn(), HEADERS_TRACKING.length);
+      var hRow = trackSheet.getRange(1, 1, 1, numCols).getValues()[0];
+      var colMap = {};
+      for (var hi = 0; hi < hRow.length; hi++) {
+        var hn = String(hRow[hi] || "").trim().toLowerCase();
+        if (hn) colMap[hn] = hi + 1;
+      }
+
+      var colPStart = colMap["picking start time"] || colMap["picking start"] || 17;
+      var colPEnd = colMap["picking end time"] || colMap["picking end"] || 18;
+      var colPDur = colMap["picking duration"] || 19;
+      var colCStart = colMap["checking start time"] || colMap["checking start"] || 20;
+      var colCEnd = colMap["checking end time"] || colMap["checking end"] || 21;
+      var colCDur = colMap["checking duration"] || 22;
+      var colDStart = colMap["delivery start time"] || colMap["delivery start"] || 23;
+      var colDEnd = colMap["delivery end time"] || colMap["delivery end"] || 24;
+      var colDDur = colMap["delivery duration"] || 25;
+
+      var allVals = trackSheet.getRange(2, 1, numRows, numCols).getValues();
       var changed = false;
 
-      var colPairs = [
-        { sIdx: 0, eIdx: 1, dIdx: 2 }, // Picking: Start=col 17 (idx 0), End=col 18 (idx 1), Dur=col 19 (idx 2)
-        { sIdx: 3, eIdx: 4, dIdx: 5 }, // Checking: Start=col 20 (idx 3), End=col 21 (idx 4), Dur=col 22 (idx 5)
-        { sIdx: 6, eIdx: 7, dIdx: 8 }  // Delivery: Start=col 23 (idx 6), End=col 24 (idx 7), Dur=col 25 (idx 8)
-      ];
-
       for (var r = 0; r < numRows; r++) {
-        colPairs.forEach(function(c) {
-          var curVal = vals[r][c.dIdx];
-          var startVal = vals[r][c.sIdx];
-          var endVal = vals[r][c.eIdx];
+        // A. Picking Duration
+        var pStart = allVals[r][colPStart - 1];
+        var pEnd = allVals[r][colPEnd - 1];
+        var pCur = allVals[r][colPDur - 1];
+        var pFormatted = formatDurationGAS(pCur, pStart, pEnd);
+        if (pFormatted && pFormatted !== "-" && pFormatted !== String(pCur).trim()) {
+          allVals[r][colPDur - 1] = asTextDate(pFormatted);
+          updatedCount++;
+          changed = true;
+        }
 
-          if (curVal !== "" && curVal !== null && curVal !== undefined && String(curVal).trim() !== "-") {
-            var formatted = formatDurationGAS(curVal, startVal, endVal);
-            if (formatted && formatted !== "-" && formatted !== String(curVal).trim()) {
-              vals[r][c.dIdx] = asTextDate(formatted);
-              updatedCount++;
-              changed = true;
-            }
-          } else if (startVal && endVal && String(startVal).trim() !== "" && String(endVal).trim() !== "" && String(startVal) !== "-" && String(endVal) !== "-") {
-            var formatted = formatDurationGAS("", startVal, endVal);
-            if (formatted && formatted !== "-") {
-              vals[r][c.dIdx] = asTextDate(formatted);
-              updatedCount++;
-              changed = true;
-            }
-          }
-        });
+        // B. Checking Duration
+        var cStart = allVals[r][colCStart - 1];
+        var cEnd = allVals[r][colCEnd - 1];
+        var cCur = allVals[r][colCDur - 1];
+        var cFormatted = formatDurationGAS(cCur, cStart, cEnd);
+        if (cFormatted && cFormatted !== "-" && cFormatted !== String(cCur).trim()) {
+          allVals[r][colCDur - 1] = asTextDate(cFormatted);
+          updatedCount++;
+          changed = true;
+        }
+
+        // C. Delivery Duration
+        var dStart = allVals[r][colDStart - 1];
+        var dEnd = allVals[r][colDEnd - 1];
+        var dCur = allVals[r][colDDur - 1];
+        var dFormatted = formatDurationGAS(dCur, dStart, dEnd);
+        if (dFormatted && dFormatted !== "-" && dFormatted !== String(dCur).trim()) {
+          allVals[r][colDDur - 1] = asTextDate(dFormatted);
+          updatedCount++;
+          changed = true;
+        }
       }
 
       if (changed) {
-        range.setValues(vals);
+        trackSheet.getRange(2, 1, numRows, numCols).setValues(allVals);
       }
 
       // Clear package quantity/unit for orders that have not completed Checking yet
@@ -600,17 +625,18 @@ function cleanAndFormatAllHeadersAndDurations() {
         }
       } catch(ePkg) {}
 
-      // Ensure Plain Text format for duration columns
+      // Ensure Plain Text format and center alignment for duration columns
       try {
-        trackSheet.getRange(2, 19, numRows, 1).setNumberFormat("@");
-        trackSheet.getRange(2, 22, numRows, 1).setNumberFormat("@");
-        trackSheet.getRange(2, 25, numRows, 1).setNumberFormat("@");
+        [colPDur, colCDur, colDDur].forEach(function(cIdx) {
+          if (cIdx > 0 && cIdx <= numCols) {
+            var colRange = trackSheet.getRange(2, cIdx, numRows, 1);
+            colRange.setNumberFormat("@");
+            colRange.setHorizontalAlignment("center");
+          }
+        });
       } catch(e) {}
     }
   }
-
-  // 3. Fix and enforce strict dd/MM/yy HH:mm date format on all date columns
-  var fixedDates = fixAllSheetDateFormats();
 
   // 4. Fix and synchronize Overall Status 100% with stage timestamps
   var fixedStatuses = fixAllSheetStatuses();
@@ -651,7 +677,17 @@ function normalizeDatePartsGAS(p1, p2, yr) {
  */
 function parseDateTimeGAS(dateStr) {
   if (!dateStr || dateStr === "-") return null;
-  if (dateStr instanceof Date) return dateStr;
+  if (dateStr instanceof Date) {
+    if (isNaN(dateStr.getTime())) return null;
+    var d = dateStr.getDate();
+    var mo = dateStr.getMonth() + 1;
+    var yr = dateStr.getFullYear();
+    var norm = normalizeDatePartsGAS(d, mo, yr);
+    var year = parseInt(norm.year, 10) + 2000;
+    var month = parseInt(norm.month, 10) - 1;
+    var day = parseInt(norm.day, 10);
+    return new Date(year, month, day, dateStr.getHours(), dateStr.getMinutes(), dateStr.getSeconds());
+  }
   var s = String(dateStr).trim();
   if (s.charAt(0) === "'") s = s.substring(1).trim();
   if (!s || s === "-") return null;
@@ -676,11 +712,18 @@ function parseDateTimeGAS(dateStr) {
  * Helper ជំនួយការ Convert Duration ទៅជាទម្រង់ hh:mm (00:10, 00:01, 02:14...)
  */
 function formatDurationGAS(val, startStr, endStr) {
+  // 1. Calculate from start and end if both are present
   if (startStr && endStr && String(startStr).trim() !== "" && String(endStr).trim() !== "" && startStr !== "-" && endStr !== "-") {
     var d1 = parseDateTimeGAS(startStr);
     var d2 = parseDateTimeGAS(endStr);
     if (d1 && d2) {
       var diffMs = d2.getTime() - d1.getTime();
+      // If diffMs > 24 hours (e.g. 5688 hours = 237 days from month swap), calculate direct time-of-day diff
+      if (diffMs > 86400000 && diffMs > 100 * 3600000) {
+        var t1 = (d1.getHours() * 60 + d1.getMinutes()) * 60 * 1000 + d1.getSeconds() * 1000;
+        var t2 = (d2.getHours() * 60 + d2.getMinutes()) * 60 * 1000 + d2.getSeconds() * 1000;
+        diffMs = t2 >= t1 ? (t2 - t1) : ((t2 + 86400000) - t1);
+      }
       if (diffMs >= 0) {
         var totalMin = Math.floor(diffMs / (1000 * 60));
         if (totalMin === 0 && diffMs >= 3000) totalMin = 1;
@@ -690,17 +733,24 @@ function formatDurationGAS(val, startStr, endStr) {
       }
     }
   }
+
   if (!val || val === "-" || String(val).trim() === "") return "-";
   var s = String(val).trim();
-  if (s.charAt(0) === "'") s = s.substring(1);
+  if (s.charAt(0) === "'") s = s.substring(1).trim();
   
-  var m1 = s.match(/^(\d{1,3}):(\d{2})(?::\d{2})?$/);
+  // 2. Parse hh:mm or hh:mm:ss (also handle 5688:14:00, 5688:06, 0:07, etc.)
+  var m1 = s.match(/^(\d+):(\d{2})(?::\d{2})?$/);
   if (m1) {
-    var h = parseInt(m1[1], 10);
+    var rawH = parseInt(m1[1], 10);
     var m = parseInt(m1[2], 10);
-    return (h < 10 ? "0" + h : "" + h) + ":" + (m < 10 ? "0" + m : "" + m);
+    // If hour has 5688 bug (237 days = 5688 hours), normalize modulo 24
+    if (rawH >= 5000) {
+      rawH = rawH % 24;
+    }
+    return (rawH < 10 ? "0" + rawH : "" + rawH) + ":" + (m < 10 ? "0" + m : "" + m);
   }
   
+  // 3. Khmer or verbal duration strings like "27នាទី", "1ម៉ោង 12នាទី", "45 វិនាទី"
   var hours = 0;
   var mins = 0;
   var hMatch = s.match(/(\d+)\s*(?:ម៉ោង|h|hr|hours?)/i);
@@ -715,6 +765,7 @@ function formatDurationGAS(val, startStr, endStr) {
     return (hours < 10 ? "0" + hours : "" + hours) + ":" + (mins < 10 ? "0" + mins : "" + mins);
   }
   
+  // 4. Pure numeric minutes
   if (/^\d+$/.test(s)) {
     var tot = parseInt(s, 10);
     var hh = Math.floor(tot / 60);
@@ -2173,10 +2224,13 @@ function onEdit(e) {
     var cStatus = colMap["overall status"] || colMap["status"] || 16;
     var cPStart = colMap["picking start time"] || 17;
     var cPEnd = colMap["picking end time"] || 18;
+    var cPDur = colMap["picking duration"] || 19;
     var cCStart = colMap["checking start time"] || 20;
     var cCEnd = colMap["checking end time"] || 21;
+    var cCDur = colMap["checking duration"] || 22;
     var cDStart = colMap["delivery start time"] || 23;
     var cDEnd = colMap["delivery end time"] || 24;
+    var cDDur = colMap["delivery duration"] || 25;
 
     var rowVals = sheet.getRange(row, 1, 1, numCols).getValues()[0];
     var curSt = String(rowVals[cStatus - 1] || "").trim();
@@ -2186,6 +2240,26 @@ function onEdit(e) {
     var cEnd = rowVals[cCEnd - 1];
     var dStart = rowVals[cDStart - 1];
     var dEnd = rowVals[cDEnd - 1];
+
+    // Auto calculate and format duration if timestamps are present or edited
+    if (pStart && pEnd && (col === cPStart || col === cPEnd)) {
+      var pDur = formatDurationGAS(rowVals[cPDur - 1], pStart, pEnd);
+      if (pDur && pDur !== "-") {
+        sheet.getRange(row, cPDur).setValue(asTextDate(pDur)).setNumberFormat("@").setHorizontalAlignment("center");
+      }
+    }
+    if (cStart && cEnd && (col === cCStart || col === cCEnd)) {
+      var cDur = formatDurationGAS(rowVals[cCDur - 1], cStart, cEnd);
+      if (cDur && cDur !== "-") {
+        sheet.getRange(row, cCDur).setValue(asTextDate(cDur)).setNumberFormat("@").setHorizontalAlignment("center");
+      }
+    }
+    if (dStart && dEnd && (col === cDStart || col === cDEnd)) {
+      var dDur = formatDurationGAS(rowVals[cDDur - 1], dStart, dEnd);
+      if (dDur && dDur !== "-") {
+        sheet.getRange(row, cDDur).setValue(asTextDate(dDur)).setNumberFormat("@").setHorizontalAlignment("center");
+      }
+    }
 
     var derived = deriveOrderStatusGAS(curSt, pStart, pEnd, cStart, cEnd, dStart, dEnd);
     if (curSt !== derived) {
