@@ -425,7 +425,7 @@ const BUSINESS_UNITS = DEFAULT_SETUP_BU.map((b, idx) => ({ id: b.id, name: b.nam
 const DOCUMENT_TYPES = DEFAULT_SETUP_DOC_TYPES.map(d => d.name);
 const PACKAGE_UNITS = DEFAULT_SETUP_PACKAGE_TYPES.map(p => ({ id: p.name.split(" ")[0], nameKh: p.name, short: p.short }));
 
-// Helper to format date-time strictly in dd/mm/yy hh:mm (e.g. 04/10/26 22:53)
+// Helper to format date-time strictly in dd/mm/yy hh:mm (e.g. 03/11/26 13:23)
 function formatAppDateTime(date = new Date()) {
     const d = new Date(date);
     const pad = (n) => String(n).padStart(2, '0');
@@ -437,105 +437,157 @@ function formatAppDateTime(date = new Date()) {
     return `${day}/${month}/${yy} ${hours}:${minutes}`;
 }
 
-// Convert any input date string (including Google Sheets raw format) to dd/mm/yy hh:mm
+// Helper to format date strictly in dd/mm/yy (e.g. 03/11/26)
+function formatAppDate(date = new Date()) {
+    const d = new Date(date);
+    const pad = (n) => String(n).padStart(2, '0');
+    const day = pad(d.getDate());
+    const month = pad(d.getMonth() + 1);
+    const yy = String(d.getFullYear()).slice(-2);
+    return `${day}/${month}/${yy}`;
+}
+
+/**
+ * Normalizes day, month, and 2-digit year parts.
+ * Automatically detects and fixes swapped MM/DD/YY dates produced by US locale spreadsheets.
+ * Example: 11/03/26 -> day=03, month=11, yy=26 (03/11/26)
+ * Example: 11/02/26 -> day=02, month=11, yy=26 (02/11/26)
+ */
+function normalizeDateParts(p1, p2, rawYy) {
+    let day = parseInt(p1, 10);
+    let month = parseInt(p2, 10);
+    let year = parseInt(rawYy, 10);
+    if (year < 100) year += 2000;
+
+    const pad = (n) => String(n).padStart(2, '0');
+
+    // 1. If month > 12 and day <= 12, month is definitely the day and day is the month!
+    if (month > 12 && day <= 12) {
+        const tmp = day; day = month; month = tmp;
+    }
+    // 2. In 2026/2027, if day is 10, 11, or 12 and month < day:
+    // This happens when Google Sheets US-locale parsed e.g. 02/11/26 (Nov 2) as Month 2, Day 11 (11/02/26),
+    // or 03/11/26 (Nov 3) as Month 3, Day 11 (11/03/26),
+    // or 04/10/26 (Oct 4) as Month 4, Day 10 (10/04/26), etc.
+    else if ((day === 10 || day === 11 || day === 12) && month < day && (year === 2026 || year === 2027)) {
+        const tmp = day; day = month; month = tmp;
+    }
+
+    const yy = String(year).slice(-2);
+    return {
+        day,
+        month,
+        year,
+        dayPad: pad(day),
+        monthPad: pad(month),
+        yy
+    };
+}
+
+/**
+ * Convert any input date string or Date object strictly to dd/mm/yy hh:mm (or dd/mm/yy if no time component).
+ * Example: 03/11/26 13:23
+ */
 function formatDateTimeDisplay(dateVal) {
     if (!dateVal || dateVal === "-" || String(dateVal).trim() === "") return "-";
-    if (dateVal instanceof Date) {
-        return formatAppDateTime(dateVal);
-    }
-    
-    const str = String(dateVal).trim();
     const pad = (n) => String(n).padStart(2, '0');
-    
-    // Check if already in dd/mm/yy hh:mm format (e.g. 04/10/26 22:53)
-    const ddmmyyRegex = /^(\d{1,2})\/(\d{1,2})\/(\d{2})\s+(\d{1,2}):(\d{1,2})$/;
-    const m2 = str.match(ddmmyyRegex);
-    if (m2) {
-        let p1 = parseInt(m2[1], 10);
-        let p2 = parseInt(m2[2], 10);
-        let yy = m2[3];
-        let hh = pad(m2[4]);
-        let mm = pad(m2[5]);
 
-        // Correction for swapped dates (MM/DD/YY vs DD/MM/YY):
-        // In Cambodia, today is October 5, 2026 (05/10/26).
-        // If p1 is 10 and p2 is 5 (or 4) in 2026, it was parsed by US-locale as MM/DD/YY (10/05/26) instead of DD/MM/YY (05/10/26).
-        // Also if p2 > 12, p2 must be the day, so swap!
-        if (p2 > 12 && p1 <= 12) {
-            const tmp = p1; p1 = p2; p2 = tmp;
-        } else if (p1 === 10 && (p2 === 4 || p2 === 5) && yy === "26") {
-            const tmp = p1; p1 = p2; p2 = tmp;
-        }
-
-        return `${pad(p1)}/${pad(p2)}/${yy} ${hh}:${mm}`;
-    }
-    
-    // Check if in dd/mm/yyyy hh:mm(:ss) format (e.g. 04/10/2026 22:53)
-    const ddmmyyyyRegex = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{1,2}))?/;
-    const m4 = str.match(ddmmyyyyRegex);
-    if (m4) {
-        let p1 = parseInt(m4[1], 10);
-        let p2 = parseInt(m4[2], 10);
-        let yy = m4[3].slice(-2);
-        let hh = m4[4] ? pad(m4[4]) : "00";
-        let mm = m4[5] ? pad(m4[5]) : "00";
-
-        if (p2 > 12 && p1 <= 12) {
-            const tmp = p1; p1 = p2; p2 = tmp;
-        } else if (p1 === 10 && (p2 === 4 || p2 === 5) && yy === "26") {
-            const tmp = p1; p1 = p2; p2 = tmp;
-        }
-
-        return `${pad(p1)}/${pad(p2)}/${yy} ${hh}:${mm}`;
+    if (dateVal instanceof Date) {
+        if (isNaN(dateVal.getTime())) return "-";
+        const d = dateVal.getDate();
+        const mo = dateVal.getMonth() + 1;
+        const yr = dateVal.getFullYear();
+        const norm = normalizeDateParts(d, mo, yr);
+        const hh = pad(dateVal.getHours());
+        const mm = pad(dateVal.getMinutes());
+        return `${norm.dayPad}/${norm.monthPad}/${norm.yy} ${hh}:${mm}`;
     }
 
-    // Check if in ISO or YYYY-MM-DD format (e.g. 2026-10-05 09:35 or 2026-10-05T09:35:00)
+    let str = String(dateVal).trim();
+    if (str.startsWith("'")) str = str.substring(1).trim();
+    if (!str || str === "-") return "-";
+
+    // Match dd/mm/yy or mm/dd/yy with time: dd/mm/yy hh:mm(:ss)
+    const ddmmyyWithTimeRegex = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?/;
+    const mTime = str.match(ddmmyyWithTimeRegex);
+    if (mTime) {
+        const norm = normalizeDateParts(mTime[1], mTime[2], mTime[3]);
+        const hh = pad(mTime[4]);
+        const mm = pad(mTime[5]);
+        return `${norm.dayPad}/${norm.monthPad}/${norm.yy} ${hh}:${mm}`;
+    }
+
+    // Match dd/mm/yy or mm/dd/yy WITHOUT time: dd/mm/yy or dd/mm/yyyy
+    const ddmmyyNoTimeRegex = /^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/;
+    const mNoTime = str.match(ddmmyyNoTimeRegex);
+    if (mNoTime) {
+        const norm = normalizeDateParts(mNoTime[1], mNoTime[2], mNoTime[3]);
+        return `${norm.dayPad}/${norm.monthPad}/${norm.yy}`;
+    }
+
+    // Match ISO or YYYY-MM-DD format (e.g. 2026-11-03 13:23 or 2026-11-03T13:23:00)
     const isoMatch = str.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[T\s](\d{1,2}):(\d{1,2}))?/);
     if (isoMatch) {
         const yy = isoMatch[1].slice(-2);
         const mm = pad(isoMatch[2]);
         const dd = pad(isoMatch[3]);
-        const hh = isoMatch[4] ? pad(isoMatch[4]) : "00";
-        const min = isoMatch[5] ? pad(isoMatch[5]) : "00";
-        return `${dd}/${mm}/${yy} ${hh}:${min}`;
+        if (isoMatch[4] !== undefined && isoMatch[5] !== undefined) {
+            const hh = pad(isoMatch[4]);
+            const min = pad(isoMatch[5]);
+            return `${dd}/${mm}/${yy} ${hh}:${min}`;
+        }
+        return `${dd}/${mm}/${yy}`;
     }
 
-    // Try parsing standard Date (handles "Sun Oct 04 2026 22:53:08 GMT+0700...", etc.)
+    // Standard Date parsing fallback
     const cleanStr = str.includes("-") ? str.replace(" ", "T") : str;
     const d = new Date(cleanStr);
     if (!isNaN(d.getTime())) {
-        return formatAppDateTime(d);
+        return formatDateTimeDisplay(d);
     }
-    
+
     return str;
 }
 
-// Parse dd/mm/yy hh:mm or any date string to Date object
+/**
+ * Convert any input date string or Date object strictly to dd/mm/yy (Date only).
+ * Example: 03/11/26
+ */
+function formatDateDisplay(dateVal) {
+    if (!dateVal || dateVal === "-" || String(dateVal).trim() === "") return "-";
+    const dt = formatDateTimeDisplay(dateVal);
+    if (!dt || dt === "-") return "-";
+    return dt.split(" ")[0];
+}
+
+/**
+ * Parse dd/mm/yy, dd/mm/yy hh:mm, or any date string to JavaScript Date object.
+ * Applies swap-correction so US-locale swapped dates resolve to the intended date.
+ */
 function parseAppDateTime(dateStr) {
     if (!dateStr || dateStr === "-") return null;
-    const s = String(dateStr).trim();
-    
-    // Match dd/mm/yy hh:mm or dd/mm/yyyy hh:mm(:ss)
+    if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? null : dateStr;
+
+    let s = String(dateStr).trim();
+    if (s.startsWith("'")) s = s.substring(1).trim();
+    if (!s || s === "-") return null;
+
+    // Match dd/mm/yy hh:mm or dd/mm/yyyy hh:mm(:ss) or dd/mm/yy
     const match = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
     if (match) {
-        let day = parseInt(match[1], 10);
-        let month = parseInt(match[2], 10) - 1;
-        let year = parseInt(match[3], 10);
-        if (year < 100) year += 2000;
-
-        // Auto-correct if month > 12 (swapped mm/dd/yy)
-        if (parseInt(match[2], 10) > 12 && day <= 12) {
-            month = day - 1;
-            day = parseInt(match[2], 10);
-        }
+        const norm = normalizeDateParts(match[1], match[2], match[3]);
+        const day = norm.day;
+        const month = norm.month - 1; // 0-based for Date constructor
+        const year = norm.year;
 
         const hours = match[4] ? parseInt(match[4], 10) : 0;
         const mins = match[5] ? parseInt(match[5], 10) : 0;
         const secs = match[6] ? parseInt(match[6], 10) : 0;
         return new Date(year, month, day, hours, mins, secs);
     }
-    
-    const fallback = new Date(s.includes("-") ? s.replace(" ", "T") : s);
+
+    const clean = s.includes("-") ? s.replace(" ", "T") : s;
+    const fallback = new Date(clean);
     return isNaN(fallback.getTime()) ? null : fallback;
 }
 
@@ -610,5 +662,11 @@ function formatDurationHhMm(val, startStr, endStr) {
 window.calculateDuration = calculateDuration;
 window.calculateDurationHhMm = calculateDuration;
 window.formatDurationHhMm = formatDurationHhMm;
+window.formatAppDateTime = formatAppDateTime;
+window.formatAppDate = formatAppDate;
+window.normalizeDateParts = normalizeDateParts;
+window.formatDateTimeDisplay = formatDateTimeDisplay;
+window.formatDateDisplay = formatDateDisplay;
+window.parseAppDateTime = parseAppDateTime;
 
 
