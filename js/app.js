@@ -7184,13 +7184,22 @@ function matchesDailyDeliveryFilter(order) {
         const khan = String(order.khan || "").toLowerCase();
         const status = String(order.status || "").toLowerCase();
         const phone = String(order.phone || "").toLowerCase();
+        const notes = String(order.notes || order.specialNotes || "").toLowerCase();
+        const bu = String(order.bu || order.businessUnit || "").toLowerCase();
+        const docType = String(order.documentType || "").toLowerCase();
 
-        const match = so.includes(q) || cust.includes(q) || inv.includes(q) || pkg.includes(q) || 
-                      driver.includes(q) || city.includes(q) || khan.includes(q) || status.includes(q) || phone.includes(q);
+        const match = so.includes(q) || cust.includes(q) || bu.includes(q) || inv.includes(q) || 
+                      pkg.includes(q) || driver.includes(q) || city.includes(q) || khan.includes(q) || 
+                      status.includes(q) || phone.includes(q) || notes.includes(q) || docType.includes(q);
         if (!match) return false;
     }
 
     // 2. Date Filter
+    // Ongoing Delivering orders (Recent Orders) must ALWAYS stay active in the Recent Order queue until End Delivery:
+    // Any order with Status: Delivering (whether started yesterday or earlier) is forwarded to Today until completed.
+    if (isDailyDeliveryRecentOrder(order)) {
+        return true;
+    }
     const preset = dd.datePreset || "TODAY";
     const customDate = dd.filterDate || "";
 
