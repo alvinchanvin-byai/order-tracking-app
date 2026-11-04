@@ -587,8 +587,10 @@ ${pkgLine}${locLine}${paymentLine}${notesLine}⏰ <b>ម៉ោងបញ្ចប
 
         const filterDate = targetDateStr || todayIso;
 
-        // Filter orders for the day (deliveryStartTime or deliveryEndTime matches)
+        // Filter orders for the day (deliveryStartTime or deliveryEndTime matches, plus ongoing Delivering orders)
         const dailyOrders = orders.filter(o => {
+            const isDelivering = (o.status || "").toLowerCase().includes("deliver") && !o.deliveryEndTime;
+            if (isDelivering) return true;
             const startD = (o.deliveryStartTime || "").substring(0, 10);
             const endD = (o.deliveryEndTime || "").substring(0, 10);
             const soD = (o.soDate || o.so_date || o.timestamp || "").substring(0, 10);
