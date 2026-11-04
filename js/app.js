@@ -290,6 +290,74 @@ function renderBUBadge(bu, extraClasses = "") {
     return `<span class="text-xs px-2 py-0.5 rounded-md font-bold border ${colorClass} ${extraClasses}" title="BU: ${escapeHtml(name)}">${escapeHtml(name)}</span>`;
 }
 
+// ========================================================
+// CLIPBOARD COPY & TOAST NOTIFICATION HELPERS
+// ========================================================
+function copyTextToClipboard(text, label = "") {
+    if (!text || text === "-" || String(text).trim() === "") return;
+    const cleanText = String(text).trim();
+
+    const onDone = () => {
+        showCopyNotification(cleanText, label);
+    };
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(cleanText).then(onDone).catch(() => {
+            fallbackCopyText(cleanText, onDone);
+        });
+    } else {
+        fallbackCopyText(cleanText, onDone);
+    }
+}
+
+function fallbackCopyText(text, callback) {
+    try {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.top = "-9999px";
+        textArea.style.left = "-9999px";
+        textArea.style.opacity = "0";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        const successful = document.execCommand("copy");
+        document.body.removeChild(textArea);
+        if (successful && callback) callback();
+    } catch (err) {
+        console.error("Fallback copy failed:", err);
+    }
+}
+
+function showCopyNotification(text, label = "") {
+    let banner = document.getElementById("copyFloatingToast");
+    if (!banner) {
+        banner = document.createElement("div");
+        banner.id = "copyFloatingToast";
+        banner.className = "fixed bottom-6 right-6 z-[9999] bg-slate-900/95 backdrop-blur-md text-white px-4 py-2.5 rounded-2xl shadow-2xl border border-slate-700/80 flex items-center gap-2.5 text-xs font-semibold transform transition-all duration-300 opacity-0 translate-y-4 pointer-events-none";
+        document.body.appendChild(banner);
+    }
+
+    const labelPrefix = label ? `<span class="text-sky-400 font-bold">${escapeHtml(label)}:</span> ` : "";
+    const displayVal = text.length > 28 ? escapeHtml(text.slice(0, 28)) + "..." : escapeHtml(text);
+    banner.innerHTML = `
+        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400 stroke-[2.5]"></i>
+        <span>បាន Copy ${labelPrefix}<span class="font-mono font-bold text-emerald-300">${displayVal}</span></span>
+    `;
+    if (window.lucide && lucide.createIcons) {
+        lucide.createIcons({ root: banner });
+    }
+
+    banner.classList.remove("opacity-0", "translate-y-4", "pointer-events-none");
+    banner.classList.add("opacity-100", "translate-y-0");
+
+    if (window._copyToastTimer) clearTimeout(window._copyToastTimer);
+    window._copyToastTimer = setTimeout(() => {
+        banner.classList.remove("opacity-100", "translate-y-0");
+        banner.classList.add("opacity-0", "translate-y-4", "pointer-events-none");
+    }, 2000);
+}
+
 // Generate Next Auto SO Number in format: SO-FSCO-YYMMxxx (e.g. SO-FSCO-2610001, SO-FSCO-2610002)
 function generateNextAutoSONumber() {
     const now = new Date();
@@ -4581,7 +4649,7 @@ function renderDashboardTable() {
             <tr id="row-order-${escapeHtml(order.soNumber)}"
                 data-so="${escapeHtml(order.soNumber)}"
                 onclick="toggleOrderRowHighlight('${escapeHtml(order.soNumber)}', event)"
-                class="order-table-row transition-all border-b border-slate-100 text-xs cursor-pointer select-none ${isHighlighted ? 'order-row-highlighted' : 'hover:bg-slate-50/80'}"
+                class="order-table-row transition-all border-b border-slate-100 text-xs cursor-pointer ${isHighlighted ? 'order-row-highlighted' : 'hover:bg-slate-50/80'}"
                 title="ចុចដើម្បី Highlight (ចុច Shift ឬ Ctrl ដើម្បីជ្រើសរើសច្រើន Multi-select)">
                 <!-- 1. Status -->
                 <td data-col="status" class="py-3 px-3.5 text-center whitespace-nowrap">
@@ -4597,14 +4665,26 @@ function renderDashboardTable() {
 
                 <!-- 3. SO# -->
                 <td data-col="soNumber" class="py-3 px-3.5 font-bold text-blue-700 tracking-wide font-mono whitespace-nowrap">
-                    <span class="cursor-pointer hover:underline inline-flex items-center gap-1" onclick="event.stopPropagation(); viewOrderDetails('${escapeHtml(order.soNumber)}')">
-                        ${escapeHtml(order.soNumber)}
-                    </span>
+                    <div class="inline-flex items-center gap-1.5 group/copy">
+                        <span class="cursor-pointer hover:underline select-text" onclick="event.stopPropagation(); viewOrderDetails('${escapeHtml(order.soNumber)}')" title="ចុចដើម្បីមើលព័ត៌មានលម្អិត">
+                            ${escapeHtml(order.soNumber)}
+                        </span>
+                        ${order.soNumber && order.soNumber !== '-' ? `
+                        <button type="button" onclick="event.stopPropagation(); copyTextToClipboard('${escapeHtml(order.soNumber)}', 'SO#')" class="copy-btn opacity-0 group-hover/copy:opacity-100 p-0.5 rounded hover:bg-blue-100/80 text-blue-500 hover:text-blue-700 transition cursor-pointer flex-shrink-0" title="Copy SO#: ${escapeHtml(order.soNumber)}">
+                            <i data-lucide="copy" class="w-3 h-3"></i>
+                        </button>` : ''}
+                    </div>
                 </td>
 
                 <!-- 4. Customer Name -->
                 <td data-col="customerName" class="py-3 px-3.5 font-bold text-slate-900 whitespace-nowrap max-w-[240px] truncate" title="${escapeHtml(order.customerName)}">
-                    ${escapeHtml(order.customerName)}
+                    <div class="inline-flex items-center gap-1.5 group/copy max-w-full">
+                        <span class="truncate select-text">${escapeHtml(order.customerName)}</span>
+                        ${order.customerName && order.customerName !== '-' ? `
+                        <button type="button" onclick="event.stopPropagation(); copyTextToClipboard('${escapeHtml(order.customerName)}', 'Customer Name')" class="copy-btn opacity-0 group-hover/copy:opacity-100 p-0.5 rounded hover:bg-slate-200/80 text-slate-400 hover:text-slate-700 transition cursor-pointer flex-shrink-0" title="Copy Customer Name">
+                            <i data-lucide="copy" class="w-3 h-3"></i>
+                        </button>` : ''}
+                    </div>
                 </td>
 
                 <!-- 5. City/Province -->
@@ -4622,12 +4702,24 @@ function renderDashboardTable() {
 
                 <!-- 7. Packing List# -->
                 <td data-col="packingList" class="py-3 px-3.5 font-mono text-slate-700 font-medium whitespace-nowrap">
-                    ${escapeHtml(order.packingListNumber || "-")}
+                    <div class="inline-flex items-center gap-1.5 group/copy">
+                        <span class="select-text">${escapeHtml(order.packingListNumber || "-")}</span>
+                        ${order.packingListNumber && order.packingListNumber !== '-' ? `
+                        <button type="button" onclick="event.stopPropagation(); copyTextToClipboard('${escapeHtml(order.packingListNumber)}', 'Packing List#')" class="copy-btn opacity-0 group-hover/copy:opacity-100 p-0.5 rounded hover:bg-slate-200/80 text-slate-400 hover:text-slate-700 transition cursor-pointer flex-shrink-0" title="Copy Packing List#">
+                            <i data-lucide="copy" class="w-3 h-3"></i>
+                        </button>` : ''}
+                    </div>
                 </td>
 
                 <!-- 8. Invoice# -->
                 <td data-col="invoiceNumber" class="py-3 px-3.5 font-mono text-slate-800 font-medium whitespace-nowrap">
-                    ${escapeHtml(order.invoiceNumber || "-")}
+                    <div class="inline-flex items-center gap-1.5 group/copy">
+                        <span class="select-text">${escapeHtml(order.invoiceNumber || "-")}</span>
+                        ${order.invoiceNumber && order.invoiceNumber !== '-' ? `
+                        <button type="button" onclick="event.stopPropagation(); copyTextToClipboard('${escapeHtml(order.invoiceNumber)}', 'Invoice#')" class="copy-btn opacity-0 group-hover/copy:opacity-100 p-0.5 rounded hover:bg-slate-200/80 text-slate-400 hover:text-slate-700 transition cursor-pointer flex-shrink-0" title="Copy Invoice#">
+                            <i data-lucide="copy" class="w-3 h-3"></i>
+                        </button>` : ''}
+                    </div>
                 </td>
 
                 <!-- 9. Invoice Amount -->
@@ -7917,7 +8009,7 @@ function renderDailyDeliveryTable1(orders) {
             <tr id="daily-t1-row-${escapeHtml(order.soNumber)}"
                 data-so="${escapeHtml(order.soNumber)}"
                 onclick="toggleOrderRowHighlight('${escapeHtml(order.soNumber)}', event)"
-                class="order-table-row transition-all border-b border-slate-100 text-xs cursor-pointer select-none ${isHighlighted ? 'order-row-highlighted' : 'hover:bg-sky-50/40'}"
+                class="order-table-row transition-all border-b border-slate-100 text-xs cursor-pointer ${isHighlighted ? 'order-row-highlighted' : 'hover:bg-sky-50/40'}"
                 title="ចុចដើម្បី Highlight (ចុច Shift ឬ Ctrl ជាមួយគ្នាសម្រាប់ Multi-select)">
                 <!-- 1. Status -->
                 <td data-daily-t1-col="status" class="py-3 px-3 text-center whitespace-nowrap">
@@ -7933,14 +8025,26 @@ function renderDailyDeliveryTable1(orders) {
 
                 <!-- 3. SO# -->
                 <td data-daily-t1-col="soNumber" class="py-3 px-3 font-bold font-mono text-blue-700 whitespace-nowrap">
-                    <span class="cursor-pointer hover:underline" onclick="event.stopPropagation(); viewOrderDetails('${escapeHtml(order.soNumber)}')">
-                        ${escapeHtml(order.soNumber || "-")}
-                    </span>
+                    <div class="inline-flex items-center gap-1.5 group/copy">
+                        <span class="cursor-pointer hover:underline select-text" onclick="event.stopPropagation(); viewOrderDetails('${escapeHtml(order.soNumber)}')" title="ចុចដើម្បីមើលព័ត៌មានលម្អិត">
+                            ${escapeHtml(order.soNumber || "-")}
+                        </span>
+                        ${order.soNumber && order.soNumber !== '-' ? `
+                        <button type="button" onclick="event.stopPropagation(); copyTextToClipboard('${escapeHtml(order.soNumber)}', 'SO#')" class="copy-btn opacity-0 group-hover/copy:opacity-100 p-0.5 rounded hover:bg-blue-100/80 text-blue-500 hover:text-blue-700 transition cursor-pointer flex-shrink-0" title="Copy SO#: ${escapeHtml(order.soNumber)}">
+                            <i data-lucide="copy" class="w-3 h-3"></i>
+                        </button>` : ''}
+                    </div>
                 </td>
 
                 <!-- 4. Customer Name -->
                 <td data-daily-t1-col="customerName" class="py-3 px-3 font-bold text-slate-900 whitespace-nowrap max-w-[200px] truncate" title="${escapeHtml(order.customerName || '')}">
-                    ${escapeHtml(order.customerName || "-")}
+                    <div class="inline-flex items-center gap-1.5 group/copy max-w-full">
+                        <span class="truncate select-text">${escapeHtml(order.customerName || "-")}</span>
+                        ${order.customerName && order.customerName !== '-' ? `
+                        <button type="button" onclick="event.stopPropagation(); copyTextToClipboard('${escapeHtml(order.customerName)}', 'Customer Name')" class="copy-btn opacity-0 group-hover/copy:opacity-100 p-0.5 rounded hover:bg-slate-200/80 text-slate-400 hover:text-slate-700 transition cursor-pointer flex-shrink-0" title="Copy Customer Name">
+                            <i data-lucide="copy" class="w-3 h-3"></i>
+                        </button>` : ''}
+                    </div>
                 </td>
 
                 <!-- 5. City/Province -->
@@ -7955,12 +8059,24 @@ function renderDailyDeliveryTable1(orders) {
 
                 <!-- 7. Packing List# -->
                 <td data-daily-t1-col="packingList" class="py-3 px-3 font-mono text-slate-600 whitespace-nowrap">
-                    ${escapeHtml(order.packingListNumber || "-")}
+                    <div class="inline-flex items-center gap-1.5 group/copy">
+                        <span class="select-text">${escapeHtml(order.packingListNumber || "-")}</span>
+                        ${order.packingListNumber && order.packingListNumber !== '-' ? `
+                        <button type="button" onclick="event.stopPropagation(); copyTextToClipboard('${escapeHtml(order.packingListNumber)}', 'Packing List#')" class="copy-btn opacity-0 group-hover/copy:opacity-100 p-0.5 rounded hover:bg-slate-200/80 text-slate-400 hover:text-slate-700 transition cursor-pointer flex-shrink-0" title="Copy Packing List#">
+                            <i data-lucide="copy" class="w-3 h-3"></i>
+                        </button>` : ''}
+                    </div>
                 </td>
 
                 <!-- 8. Invoice# -->
                 <td data-daily-t1-col="invoiceNumber" class="py-3 px-3 font-mono text-slate-600 whitespace-nowrap">
-                    ${escapeHtml(order.invoiceNumber || "-")}
+                    <div class="inline-flex items-center gap-1.5 group/copy">
+                        <span class="select-text">${escapeHtml(order.invoiceNumber || "-")}</span>
+                        ${order.invoiceNumber && order.invoiceNumber !== '-' ? `
+                        <button type="button" onclick="event.stopPropagation(); copyTextToClipboard('${escapeHtml(order.invoiceNumber)}', 'Invoice#')" class="copy-btn opacity-0 group-hover/copy:opacity-100 p-0.5 rounded hover:bg-slate-200/80 text-slate-400 hover:text-slate-700 transition cursor-pointer flex-shrink-0" title="Copy Invoice#">
+                            <i data-lucide="copy" class="w-3 h-3"></i>
+                        </button>` : ''}
+                    </div>
                 </td>
 
                 <!-- 9. Invoice Amount -->
@@ -8091,7 +8207,7 @@ function renderDailyDeliveryTable2(orders) {
             <tr id="daily-t2-row-${escapeHtml(order.soNumber)}"
                 data-so="${escapeHtml(order.soNumber)}"
                 onclick="toggleOrderRowHighlight('${escapeHtml(order.soNumber)}', event)"
-                class="order-table-row transition-all border-b border-slate-100 text-xs cursor-pointer select-none ${isHighlighted ? 'order-row-highlighted' : 'hover:bg-emerald-50/40'}"
+                class="order-table-row transition-all border-b border-slate-100 text-xs cursor-pointer ${isHighlighted ? 'order-row-highlighted' : 'hover:bg-emerald-50/40'}"
                 title="ចុចដើម្បី Highlight (ចុច Shift ឬ Ctrl ជាមួយគ្នាសម្រាប់ Multi-select)">
                 <!-- 1. Status -->
                 <td data-daily-t2-col="status" class="py-3 px-3 text-center whitespace-nowrap">
@@ -8107,14 +8223,26 @@ function renderDailyDeliveryTable2(orders) {
 
                 <!-- 3. SO# -->
                 <td data-daily-t2-col="soNumber" class="py-3 px-3 font-bold font-mono text-blue-700 whitespace-nowrap">
-                    <span class="cursor-pointer hover:underline" onclick="event.stopPropagation(); viewOrderDetails('${escapeHtml(order.soNumber)}')">
-                        ${escapeHtml(order.soNumber || "-")}
-                    </span>
+                    <div class="inline-flex items-center gap-1.5 group/copy">
+                        <span class="cursor-pointer hover:underline select-text" onclick="event.stopPropagation(); viewOrderDetails('${escapeHtml(order.soNumber)}')" title="ចុចដើម្បីមើលព័ត៌មានលម្អិត">
+                            ${escapeHtml(order.soNumber || "-")}
+                        </span>
+                        ${order.soNumber && order.soNumber !== '-' ? `
+                        <button type="button" onclick="event.stopPropagation(); copyTextToClipboard('${escapeHtml(order.soNumber)}', 'SO#')" class="copy-btn opacity-0 group-hover/copy:opacity-100 p-0.5 rounded hover:bg-blue-100/80 text-blue-500 hover:text-blue-700 transition cursor-pointer flex-shrink-0" title="Copy SO#: ${escapeHtml(order.soNumber)}">
+                            <i data-lucide="copy" class="w-3 h-3"></i>
+                        </button>` : ''}
+                    </div>
                 </td>
 
                 <!-- 4. Customer Name -->
                 <td data-daily-t2-col="customerName" class="py-3 px-3 font-bold text-slate-900 whitespace-nowrap max-w-[200px] truncate" title="${escapeHtml(order.customerName || '')}">
-                    ${escapeHtml(order.customerName || "-")}
+                    <div class="inline-flex items-center gap-1.5 group/copy max-w-full">
+                        <span class="truncate select-text">${escapeHtml(order.customerName || "-")}</span>
+                        ${order.customerName && order.customerName !== '-' ? `
+                        <button type="button" onclick="event.stopPropagation(); copyTextToClipboard('${escapeHtml(order.customerName)}', 'Customer Name')" class="copy-btn opacity-0 group-hover/copy:opacity-100 p-0.5 rounded hover:bg-slate-200/80 text-slate-400 hover:text-slate-700 transition cursor-pointer flex-shrink-0" title="Copy Customer Name">
+                            <i data-lucide="copy" class="w-3 h-3"></i>
+                        </button>` : ''}
+                    </div>
                 </td>
 
                 <!-- 5. City/Province -->
@@ -8129,12 +8257,24 @@ function renderDailyDeliveryTable2(orders) {
 
                 <!-- 7. Packing List# -->
                 <td data-daily-t2-col="packingList" class="py-3 px-3 font-mono text-slate-600 whitespace-nowrap">
-                    ${escapeHtml(order.packingListNumber || "-")}
+                    <div class="inline-flex items-center gap-1.5 group/copy">
+                        <span class="select-text">${escapeHtml(order.packingListNumber || "-")}</span>
+                        ${order.packingListNumber && order.packingListNumber !== '-' ? `
+                        <button type="button" onclick="event.stopPropagation(); copyTextToClipboard('${escapeHtml(order.packingListNumber)}', 'Packing List#')" class="copy-btn opacity-0 group-hover/copy:opacity-100 p-0.5 rounded hover:bg-slate-200/80 text-slate-400 hover:text-slate-700 transition cursor-pointer flex-shrink-0" title="Copy Packing List#">
+                            <i data-lucide="copy" class="w-3 h-3"></i>
+                        </button>` : ''}
+                    </div>
                 </td>
 
                 <!-- 8. Invoice# -->
                 <td data-daily-t2-col="invoiceNumber" class="py-3 px-3 font-mono text-slate-600 whitespace-nowrap">
-                    ${escapeHtml(order.invoiceNumber || "-")}
+                    <div class="inline-flex items-center gap-1.5 group/copy">
+                        <span class="select-text">${escapeHtml(order.invoiceNumber || "-")}</span>
+                        ${order.invoiceNumber && order.invoiceNumber !== '-' ? `
+                        <button type="button" onclick="event.stopPropagation(); copyTextToClipboard('${escapeHtml(order.invoiceNumber)}', 'Invoice#')" class="copy-btn opacity-0 group-hover/copy:opacity-100 p-0.5 rounded hover:bg-slate-200/80 text-slate-400 hover:text-slate-700 transition cursor-pointer flex-shrink-0" title="Copy Invoice#">
+                            <i data-lucide="copy" class="w-3 h-3"></i>
+                        </button>` : ''}
+                    </div>
                 </td>
 
                 <!-- 9. Invoice Amount -->
@@ -8467,6 +8607,10 @@ window.saveDailyT2ColumnPrefs = saveDailyT2ColumnPrefs;
 
 // View Full Order Details Modal
 function viewOrderDetails(soNumber) {
+    if (window.getSelection && window.getSelection().toString().trim().length > 0) {
+        return;
+    }
+
     const cleanTarget = String(soNumber || "").trim().toLowerCase();
     const order = AppState.orders.find(o => String(o.soNumber || "").trim().toLowerCase() === cleanTarget);
     if (!order) return;
@@ -8503,11 +8647,17 @@ function viewOrderDetails(soNumber) {
                 <div>
                     <div class="flex items-center gap-2.5">
                         <span class="text-xs font-mono font-bold text-slate-400">SO#:</span>
-                        <h3 class="text-2xl sm:text-3xl font-black text-blue-700 tracking-tight font-mono">${escapeHtml(order.soNumber)}</h3>
+                        <h3 class="text-2xl sm:text-3xl font-black text-blue-700 tracking-tight font-mono select-text">${escapeHtml(order.soNumber)}</h3>
+                        <button type="button" onclick="copyTextToClipboard('${escapeHtml(order.soNumber)}', 'SO#')" class="p-1 rounded-lg hover:bg-blue-100/80 text-blue-600 hover:text-blue-800 transition cursor-pointer" title="Copy SO#">
+                            <i data-lucide="copy" class="w-4 h-4"></i>
+                        </button>
                     </div>
                     <div class="flex items-center gap-2 text-slate-800 font-bold text-base sm:text-lg mt-1">
                         <i data-lucide="user" class="w-4 h-4 text-blue-600"></i>
-                        <span>${escapeHtml(order.customerName)}</span>
+                        <span class="select-text">${escapeHtml(order.customerName)}</span>
+                        <button type="button" onclick="copyTextToClipboard('${escapeHtml(order.customerName)}', 'Customer Name')" class="p-1 rounded-lg hover:bg-slate-200/70 text-slate-400 hover:text-slate-700 transition cursor-pointer" title="Copy Customer Name">
+                            <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                        </button>
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
@@ -8566,16 +8716,24 @@ function viewOrderDetails(soNumber) {
             </div>
 
             <!-- 4. Documents & References -->
-            <div class="p-4 rounded-2xl bg-blue-50/50 border border-blue-100 shadow-2xs space-y-1 text-xs">
+            <div class="p-4 rounded-2xl bg-blue-50/50 border border-blue-100 shadow-2xs space-y-1.5 text-xs">
                 <div class="flex items-center justify-between text-blue-700">
                     <span class="font-medium">ឯកសារ &amp; លេខយោង</span>
                     <i data-lucide="file-text" class="w-4 h-4 text-blue-600"></i>
                 </div>
-                <div class="text-slate-700 truncate">
-                    <span class="text-slate-400">PL#:</span> <b class="font-mono text-slate-800">${escapeHtml(order.packingListNumber || "-")}</b>
+                <div class="text-slate-700 truncate flex items-center justify-between gap-1">
+                    <div><span class="text-slate-400">PL#:</span> <b class="font-mono text-slate-800 select-text">${escapeHtml(order.packingListNumber || "-")}</b></div>
+                    ${order.packingListNumber && order.packingListNumber !== '-' ? `
+                    <button type="button" onclick="copyTextToClipboard('${escapeHtml(order.packingListNumber)}', 'Packing List#')" class="p-0.5 rounded hover:bg-blue-100 text-blue-500 hover:text-blue-700 transition cursor-pointer" title="Copy PL#">
+                        <i data-lucide="copy" class="w-3 h-3"></i>
+                    </button>` : ''}
                 </div>
-                <div class="text-slate-700 truncate">
-                    <span class="text-slate-400">INV#:</span> <b class="font-mono text-slate-800">${escapeHtml(order.invoiceNumber || "-")}</b>
+                <div class="text-slate-700 truncate flex items-center justify-between gap-1">
+                    <div><span class="text-slate-400">INV#:</span> <b class="font-mono text-slate-800 select-text">${escapeHtml(order.invoiceNumber || "-")}</b></div>
+                    ${order.invoiceNumber && order.invoiceNumber !== '-' ? `
+                    <button type="button" onclick="copyTextToClipboard('${escapeHtml(order.invoiceNumber)}', 'Invoice#')" class="p-0.5 rounded hover:bg-blue-100 text-blue-500 hover:text-blue-700 transition cursor-pointer" title="Copy INV#">
+                        <i data-lucide="copy" class="w-3 h-3"></i>
+                    </button>` : ''}
                 </div>
                 <div class="text-[11px] text-slate-500 truncate" title="${escapeHtml(order.documentType || "-")}">
                     ${escapeHtml(order.documentType || "-")}
@@ -9704,7 +9862,12 @@ function applyHighlightColor(colorObj, save = true) {
 function toggleOrderRowHighlight(soNumber, event) {
     if (!soNumber) return;
 
-    if (event && event.target && event.target.closest("button, a, input, select, textarea, .prevent-row-click")) {
+    // Do not toggle highlight if user was selecting text with cursor (drag to copy)
+    if (window.getSelection && window.getSelection().toString().trim().length > 0) {
+        return;
+    }
+
+    if (event && event.target && event.target.closest("button, a, input, select, textarea, .prevent-row-click, .copy-btn")) {
         return;
     }
 
@@ -10988,14 +11151,26 @@ function renderReportView() {
 
                 <!-- 3. SO# -->
                 <td class="py-3 px-3.5 font-bold font-mono text-blue-700 whitespace-nowrap">
-                    <span class="cursor-pointer hover:underline" onclick="viewOrderDetails('${escapeHtml(order.soNumber)}')">
-                        ${escapeHtml(order.soNumber || "-")}
-                    </span>
+                    <div class="inline-flex items-center gap-1.5 group/copy">
+                        <span class="cursor-pointer hover:underline select-text" onclick="viewOrderDetails('${escapeHtml(order.soNumber)}')" title="ចុចដើម្បីមើលព័ត៌មានលម្អិត">
+                            ${escapeHtml(order.soNumber || "-")}
+                        </span>
+                        ${order.soNumber && order.soNumber !== '-' ? `
+                        <button type="button" onclick="event.stopPropagation(); copyTextToClipboard('${escapeHtml(order.soNumber)}', 'SO#')" class="copy-btn opacity-0 group-hover/copy:opacity-100 p-0.5 rounded hover:bg-blue-100/80 text-blue-500 hover:text-blue-700 transition cursor-pointer flex-shrink-0" title="Copy SO#: ${escapeHtml(order.soNumber)}">
+                            <i data-lucide="copy" class="w-3 h-3"></i>
+                        </button>` : ''}
+                    </div>
                 </td>
 
                 <!-- 4. Customer Name -->
                 <td class="py-3 px-3.5 font-bold text-slate-900 whitespace-nowrap max-w-[220px] truncate" title="${escapeHtml(order.customerName || '')}">
-                    ${escapeHtml(order.customerName || "-")}
+                    <div class="inline-flex items-center gap-1.5 group/copy max-w-full">
+                        <span class="truncate select-text">${escapeHtml(order.customerName || "-")}</span>
+                        ${order.customerName && order.customerName !== '-' ? `
+                        <button type="button" onclick="event.stopPropagation(); copyTextToClipboard('${escapeHtml(order.customerName)}', 'Customer Name')" class="copy-btn opacity-0 group-hover/copy:opacity-100 p-0.5 rounded hover:bg-slate-200/80 text-slate-400 hover:text-slate-700 transition cursor-pointer flex-shrink-0" title="Copy Customer Name">
+                            <i data-lucide="copy" class="w-3 h-3"></i>
+                        </button>` : ''}
+                    </div>
                 </td>
 
                 <!-- 5. City/Province -->
@@ -11010,12 +11185,24 @@ function renderReportView() {
 
                 <!-- 7. Packing list# -->
                 <td class="py-3 px-3.5 font-mono text-slate-600 whitespace-nowrap">
-                    ${escapeHtml(order.packingListNumber || "-")}
+                    <div class="inline-flex items-center gap-1.5 group/copy">
+                        <span class="select-text">${escapeHtml(order.packingListNumber || "-")}</span>
+                        ${order.packingListNumber && order.packingListNumber !== '-' ? `
+                        <button type="button" onclick="event.stopPropagation(); copyTextToClipboard('${escapeHtml(order.packingListNumber)}', 'Packing List#')" class="copy-btn opacity-0 group-hover/copy:opacity-100 p-0.5 rounded hover:bg-slate-200/80 text-slate-400 hover:text-slate-700 transition cursor-pointer flex-shrink-0" title="Copy Packing List#">
+                            <i data-lucide="copy" class="w-3 h-3"></i>
+                        </button>` : ''}
+                    </div>
                 </td>
 
                 <!-- 8. Invoice# -->
                 <td class="py-3 px-3.5 font-mono text-slate-600 whitespace-nowrap">
-                    ${escapeHtml(order.invoiceNumber || "-")}
+                    <div class="inline-flex items-center gap-1.5 group/copy">
+                        <span class="select-text">${escapeHtml(order.invoiceNumber || "-")}</span>
+                        ${order.invoiceNumber && order.invoiceNumber !== '-' ? `
+                        <button type="button" onclick="event.stopPropagation(); copyTextToClipboard('${escapeHtml(order.invoiceNumber)}', 'Invoice#')" class="copy-btn opacity-0 group-hover/copy:opacity-100 p-0.5 rounded hover:bg-slate-200/80 text-slate-400 hover:text-slate-700 transition cursor-pointer flex-shrink-0" title="Copy Invoice#">
+                            <i data-lucide="copy" class="w-3 h-3"></i>
+                        </button>` : ''}
+                    </div>
                 </td>
 
                 <!-- 9. Invoice amount with currency -->
@@ -13730,6 +13917,8 @@ window.getDocumentTypeBadgeClass = getDocumentTypeBadgeClass;
 window.renderDocumentTypeBadge = renderDocumentTypeBadge;
 window.getBUBadgeClass = getBUBadgeClass;
 window.renderBUBadge = renderBUBadge;
+window.copyTextToClipboard = copyTextToClipboard;
+window.showCopyNotification = showCopyNotification;
 
 // Module: Report Global Bindings
 window.switchReportTab = switchReportTab;
