@@ -269,6 +269,27 @@ function renderDocumentTypeBadge(docType, extraClasses = "") {
     return `<span class="text-xs px-2 py-0.5 rounded-md font-semibold border ${colorClass} ${extraClasses}" title="Document Type: ${escapeHtml(name)}">${escapeHtml(name)}</span>`;
 }
 
+// Color styling for Business Units (CPS, CHS, STS, CCS, DHC, FSCO, etc.)
+function getBUBadgeClass(bu) {
+    const raw = String(bu || "").trim().toUpperCase();
+    if (raw.includes("CPS")) return "bg-indigo-50 text-indigo-700 border-indigo-200/90";
+    if (raw.includes("CHS")) return "bg-emerald-50 text-emerald-700 border-emerald-200/90";
+    if (raw.includes("STS")) return "bg-cyan-50 text-cyan-700 border-cyan-200/90";
+    if (raw.includes("CCS")) return "bg-amber-50 text-amber-800 border-amber-200/90";
+    if (raw.includes("DHC")) return "bg-blue-50 text-blue-700 border-blue-200/90";
+    if (raw.includes("FSCO")) return "bg-purple-50 text-purple-700 border-purple-200/90";
+    return "bg-slate-50 text-slate-700 border-slate-200/90";
+}
+
+function renderBUBadge(bu, extraClasses = "") {
+    if (!bu || bu === "-" || String(bu).trim() === "") {
+        return `<span class="text-xs px-2 py-0.5 rounded-md font-semibold border bg-slate-50 text-slate-400 border-slate-200/80 ${extraClasses}">-</span>`;
+    }
+    const name = String(bu).trim();
+    const colorClass = getBUBadgeClass(name);
+    return `<span class="text-xs px-2 py-0.5 rounded-md font-bold border ${colorClass} ${extraClasses}" title="BU: ${escapeHtml(name)}">${escapeHtml(name)}</span>`;
+}
+
 // Generate Next Auto SO Number in format: SO-FSCO-YYMMxxx (e.g. SO-FSCO-2610001, SO-FSCO-2610002)
 function generateNextAutoSONumber() {
     const now = new Date();
@@ -6786,7 +6807,7 @@ async function startSecondDelivery(soNumber) {
 // Table 2: Completed Order (15 Columns)
 // ========================================================
 
-// Table 1: Recent Order Columns (14 Columns)
+// Table 1: Recent Order Columns (15 Columns)
 const DAILY_T1_COLUMNS = [
     { key: "status", label: "Status" },
     { key: "soDate", label: "SO Date" },
@@ -6798,13 +6819,14 @@ const DAILY_T1_COLUMNS = [
     { key: "invoiceNumber", label: "Invoice#" },
     { key: "invoiceAmount", label: "Invoice Amount" },
     { key: "documentType", label: "Document Type" },
+    { key: "bu", label: "BU" },
     { key: "totalPackage", label: "Total Packages" },
     { key: "driver", label: "អ្នកដឹក (Driver)" },
     { key: "startTime", label: "ពេលចេញ (Start)" },
     { key: "actions", label: "សកម្មភាព (Action)" }
 ];
 
-// Table 2: Completed Order Columns (16 Columns)
+// Table 2: Completed Order Columns (17 Columns)
 const DAILY_T2_COLUMNS = [
     { key: "status", label: "Status" },
     { key: "soDate", label: "SO Date" },
@@ -6816,6 +6838,7 @@ const DAILY_T2_COLUMNS = [
     { key: "invoiceNumber", label: "Invoice#" },
     { key: "invoiceAmount", label: "Invoice Amount" },
     { key: "documentType", label: "Document Type" },
+    { key: "bu", label: "BU" },
     { key: "driver", label: "អ្នកដឹក (Driver)" },
     { key: "startTime", label: "ពេលចេញ (Start)" },
     { key: "endTime", label: "ពេលដល់ (End)" },
@@ -7860,6 +7883,7 @@ function renderDailyDeliveryTable1(orders) {
             <th data-daily-t1-col="invoiceNumber" class="py-3.5 px-3 text-left whitespace-nowrap">Invoice#</th>
             <th data-daily-t1-col="invoiceAmount" class="py-3.5 px-3 text-right whitespace-nowrap">Invoice Amount</th>
             <th data-daily-t1-col="documentType" class="py-3.5 px-3 text-center whitespace-nowrap">Document Type</th>
+            <th data-daily-t1-col="bu" class="py-3.5 px-3 text-center whitespace-nowrap">BU</th>
             <th data-daily-t1-col="totalPackage" class="py-3.5 px-3 text-center whitespace-nowrap">Total Packages</th>
             <th data-daily-t1-col="driver" class="py-3.5 px-3 text-left whitespace-nowrap">អ្នកដឹក (Driver)</th>
             <th data-daily-t1-col="startTime" class="py-3.5 px-3 text-center whitespace-nowrap">ពេលចេញ (Start)</th>
@@ -7949,6 +7973,11 @@ function renderDailyDeliveryTable1(orders) {
                     ${renderDocumentTypeBadge(order.documentType)}
                 </td>
 
+                <!-- BU -->
+                <td data-daily-t1-col="bu" class="py-3 px-3 text-center whitespace-nowrap">
+                    ${renderBUBadge(order.bu)}
+                </td>
+
                 <!-- 10. Total Packages -->
                 <td data-daily-t1-col="totalPackage" class="py-3 px-3 text-center whitespace-nowrap">
                     ${pkgStr !== "-" ? `<span class="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 font-bold text-xs">${pkgStr}</span>` : '<span class="text-slate-300 font-semibold">-</span>'}
@@ -8010,6 +8039,7 @@ function renderDailyDeliveryTable2(orders) {
             <th data-daily-t2-col="invoiceNumber" class="py-3.5 px-3 text-left whitespace-nowrap">Invoice#</th>
             <th data-daily-t2-col="invoiceAmount" class="py-3.5 px-3 text-right whitespace-nowrap">Invoice Amount</th>
             <th data-daily-t2-col="documentType" class="py-3.5 px-3 text-center whitespace-nowrap">Document Type</th>
+            <th data-daily-t2-col="bu" class="py-3.5 px-3 text-center whitespace-nowrap">BU</th>
             <th data-daily-t2-col="driver" class="py-3.5 px-3 text-left whitespace-nowrap">អ្នកដឹក (Driver)</th>
             <th data-daily-t2-col="startTime" class="py-3.5 px-3 text-center whitespace-nowrap">ពេលចេញ (Start)</th>
             <th data-daily-t2-col="endTime" class="py-3.5 px-3 text-center whitespace-nowrap">ពេលដល់ (End)</th>
@@ -8115,6 +8145,11 @@ function renderDailyDeliveryTable2(orders) {
                 <!-- Document Type -->
                 <td data-daily-t2-col="documentType" class="py-3 px-3 text-center whitespace-nowrap">
                     ${renderDocumentTypeBadge(order.documentType)}
+                </td>
+
+                <!-- BU -->
+                <td data-daily-t2-col="bu" class="py-3 px-3 text-center whitespace-nowrap">
+                    ${renderBUBadge(order.bu)}
                 </td>
 
                 <!-- 10. Driver -->
@@ -8333,7 +8368,7 @@ function exportDailyDeliveryToExcel() {
     // 1. Sheet 1: Recent Orders (In Delivery)
     const headers1 = [
         "Status", "SO Date", "SO#", "Customer Name", "City / Province", "Khan / District", 
-        "Packing List#", "Invoice#", "Invoice Amount", "Total Packages", "Driver", "Start Delivery Time"
+        "Packing List#", "Invoice#", "Invoice Amount", "Document Type", "BU", "Total Packages", "Driver", "Start Delivery Time"
     ];
     const rows1 = allRecentOrders.map(o => [
         getStatusBadgeInfo(o).text,
@@ -8345,6 +8380,8 @@ function exportDailyDeliveryToExcel() {
         o.packingListNumber || "-",
         o.invoiceNumber || "-",
         formatInvoiceAmountWithCurrency(o.invoiceAmount, o.currency),
+        o.documentType || "SO to customer",
+        o.bu || "-",
         formatPackageWithUnit(o.totalPackage, o.packageUnit),
         o.deliveryBy || "-",
         o.deliveryStartTime ? formatDateTimeDisplay(o.deliveryStartTime) : "-"
@@ -8355,7 +8392,7 @@ function exportDailyDeliveryToExcel() {
     // Sheet 2: Completed Orders
     const headers2 = [
         "Status", "SO Date", "SO#", "Customer Name", "City / Province", "Khan / District", 
-        "Packing List#", "Invoice#", "Invoice Amount", "Driver", "Start Delivery Time", 
+        "Packing List#", "Invoice#", "Invoice Amount", "Document Type", "BU", "Driver", "Start Delivery Time", 
         "End Delivery Time", "Duration", "Payment Receipt"
     ];
     const rows2 = allCompletedOrders.map(o => [
@@ -8368,6 +8405,8 @@ function exportDailyDeliveryToExcel() {
         o.packingListNumber || "-",
         o.invoiceNumber || "-",
         formatInvoiceAmountWithCurrency(o.invoiceAmount, o.currency),
+        o.documentType || "SO to customer",
+        o.bu || "-",
         o.deliveryBy || "-",
         o.deliveryStartTime ? formatDateTimeDisplay(o.deliveryStartTime) : "-",
         o.deliveryEndTime ? formatDateTimeDisplay(o.deliveryEndTime) : "-",
@@ -13689,6 +13728,8 @@ window.getOrdinal = getOrdinal;
 window.getSuccessStatusName = getSuccessStatusName;
 window.getDocumentTypeBadgeClass = getDocumentTypeBadgeClass;
 window.renderDocumentTypeBadge = renderDocumentTypeBadge;
+window.getBUBadgeClass = getBUBadgeClass;
+window.renderBUBadge = renderBUBadge;
 
 // Module: Report Global Bindings
 window.switchReportTab = switchReportTab;
