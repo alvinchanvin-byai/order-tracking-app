@@ -537,6 +537,58 @@ body {
     will-change: transform;
 }
 
+/* ========================================================================== */
+/* TABLE TEXT SELECTION & COPY ENHANCEMENTS                                  */
+/* ========================================================================== */
+
+/* Enable text selection across all table data cells in all modules */
+.order-table-row,
+.order-table-row td,
+#dailyDeliveryTable1Body tr td,
+#dailyDeliveryTable2Body tr td,
+#reportTableBody tr td,
+#ordersTableBody tr td,
+#orderDetailsModal {
+    user-select: text !important;
+    -webkit-user-select: text !important;
+}
+
+/* Text cursor indicator for selectable text items */
+.order-table-row .select-text,
+#dailyDeliveryTable1Body .select-text,
+#dailyDeliveryTable2Body .select-text,
+#reportTableBody .select-text,
+#ordersTableBody .select-text,
+#orderDetailsModal .select-text {
+    cursor: text !important;
+    user-select: text !important;
+    -webkit-user-select: text !important;
+}
+
+/* Clear and vibrant text selection highlight */
+.order-table-row ::selection,
+#dailyDeliveryTable1Body ::selection,
+#dailyDeliveryTable2Body ::selection,
+#reportTableBody ::selection,
+#ordersTableBody ::selection,
+#orderDetailsModal ::selection {
+    background-color: #bae6fd !important; /* Sky 200 */
+    color: #0369a1 !important; /* Sky 900 */
+}
+
+/* Keep action buttons and badges non-selectable for clean clicking */
+.order-table-row button,
+.order-table-row .copy-btn,
+.order-table-row [class*="rounded-full"],
+.order-table-row .select-none,
+#dailyDeliveryTable1Body button,
+#dailyDeliveryTable2Body button,
+#reportTableBody button {
+    user-select: none !important;
+    -webkit-user-select: none !important;
+}
+
+
 
 
 
