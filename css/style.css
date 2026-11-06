@@ -588,6 +588,22 @@ body {
     -webkit-user-select: none !important;
 }
 
+/* ========================================================================== */
+/* STRICT UPPERCASE SO# ENFORCEMENT                                          */
+/* ========================================================================== */
+#fieldSONumber,
+#editOrderSONumber,
+[data-col="soNumber"],
+[data-daily-t1-col="soNumber"],
+[data-daily-t2-col="soNumber"],
+#editModalSOBadge,
+#endDeliverySOBadge,
+#endCheckingSOBadge,
+.so-number-display {
+    text-transform: uppercase !important;
+}
+
+
 
 
 
