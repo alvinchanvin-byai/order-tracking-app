@@ -46,7 +46,7 @@
     <link rel="dns-prefetch" href="https://script.google.com">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css?v=live-v5.2.9">
+    <link rel="stylesheet" href="css/style.css?v=live-v5.3.0">
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -640,7 +640,7 @@
                         </button>
                         
                         <!-- Popover Menu -->
-                        <div id="personalDisplayMenu" class="hidden absolute right-0 top-full mt-2 w-80 sm:w-96 max-w-[calc(100vw-2rem)] bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 p-4 z-50 space-y-3 ring-1 ring-slate-900/10">
+                        <div id="personalDisplayMenu" class="hidden absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-80 sm:w-96 max-w-[calc(100vw-1.25rem)] bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 p-3.5 sm:p-4 z-50 space-y-3 ring-1 ring-slate-900/10">
                             <div class="flex items-center justify-between pb-2 border-b border-slate-100">
                                 <div class="flex items-center gap-2">
                                     <div class="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -657,10 +657,15 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
-                                    <button type="button" id="btnSelectAllCols" class="text-[11px] font-bold text-blue-600 hover:text-blue-700">All</button>
-                                    <span class="text-slate-300">|</span>
-                                    <button type="button" id="btnResetCols" class="text-[11px] font-bold text-slate-500 hover:text-slate-700">Reset</button>
+                                <div class="flex items-center gap-1.5">
+                                    <div class="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
+                                        <button type="button" id="btnSelectAllCols" class="text-[11px] font-bold text-blue-600 hover:text-blue-700 cursor-pointer">All</button>
+                                        <span class="text-slate-300">|</span>
+                                        <button type="button" id="btnResetCols" class="text-[11px] font-bold text-slate-500 hover:text-slate-700 cursor-pointer">Reset</button>
+                                    </div>
+                                    <button type="button" onclick="document.getElementById('personalDisplayMenu').classList.add('hidden')" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer" title="បិទ (Close)">
+                                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                    </button>
                                 </div>
                             </div>
                             
@@ -690,7 +695,7 @@
                         </button>
                         
                         <!-- Popover Menu -->
-                        <div id="highlightColorMenu" class="hidden absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-2rem)] bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 p-4 z-50 space-y-3 ring-1 ring-slate-900/10">
+                        <div id="highlightColorMenu" class="hidden absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-72 max-w-[calc(100vw-1.25rem)] bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 p-3.5 sm:p-4 z-50 space-y-3 ring-1 ring-slate-900/10">
                             <div class="flex items-center justify-between pb-2 border-b border-slate-100">
                                 <div class="flex items-center gap-2">
                                     <div class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
@@ -701,9 +706,14 @@
                                         <p class="text-[11px] text-slate-400">ជ្រើសពណ៌សម្រាប់ជួរតារាង</p>
                                     </div>
                                 </div>
-                                <button type="button" id="btnClearHighlights" class="text-[11px] font-bold text-slate-400 hover:text-red-600 transition" title="ដក Highlight ទាំងអស់">
-                                    Clear
-                                </button>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" id="btnClearHighlights" class="text-[11px] font-bold text-slate-400 hover:text-red-600 transition cursor-pointer" title="ដក Highlight ទាំងអស់">
+                                        Clear
+                                    </button>
+                                    <button type="button" onclick="document.getElementById('highlightColorMenu').classList.add('hidden')" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer" title="បិទ (Close)">
+                                        <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                    </button>
+                                </div>
                             </div>
 
                             <!-- Preset Color Swatches -->
@@ -1500,7 +1510,7 @@
                             </button>
                             
                             <!-- Popover Menu -->
-                            <div id="dailyT1HighlightMenu" class="hidden absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-2rem)] bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 p-4 z-50 space-y-3 ring-1 ring-slate-900/10">
+                            <div id="dailyT1HighlightMenu" class="hidden absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-72 max-w-[calc(100vw-1.25rem)] bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 p-3.5 sm:p-4 z-50 space-y-3 ring-1 ring-slate-900/10">
                                 <div class="flex items-center justify-between pb-2 border-b border-slate-100">
                                     <div class="flex items-center gap-2">
                                         <div class="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
@@ -1511,9 +1521,14 @@
                                             <p class="text-[11px] text-slate-400">ជ្រើសពណ៌សម្រាប់ជួរតារាង</p>
                                         </div>
                                     </div>
-                                    <button type="button" onclick="clearAllHighlights()" class="text-[11px] font-bold text-slate-400 hover:text-red-600 transition cursor-pointer" title="ដក Highlight ទាំងអស់">
-                                        Clear
-                                    </button>
+                                    <div class="flex items-center gap-2">
+                                        <button type="button" onclick="clearAllHighlights()" class="text-[11px] font-bold text-slate-400 hover:text-red-600 transition cursor-pointer" title="ដក Highlight ទាំងអស់">
+                                            Clear
+                                        </button>
+                                        <button type="button" onclick="document.getElementById('dailyT1HighlightMenu').classList.add('hidden')" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer" title="បិទ (Close)">
+                                            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div>
                                     <div class="text-[11px] font-medium text-slate-500 mb-2">ពណ៌គំរូ (Presets):</div>
@@ -1548,17 +1563,22 @@
                             </button>
 
                             <!-- Popover Menu for Table 1 -->
-                            <div id="dailyT1PersonalDisplayMenu" class="hidden absolute right-0 top-full mt-2 w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 p-3.5 z-50 space-y-3 ring-1 ring-slate-900/10">
+                            <div id="dailyT1PersonalDisplayMenu" class="hidden absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-72 sm:w-80 max-w-[calc(100vw-1.25rem)] bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 p-3.5 z-50 space-y-3 ring-1 ring-slate-900/10">
                                 <div class="flex items-center justify-between pb-2 border-b border-slate-100">
                                     <div class="flex items-center gap-1.5">
                                         <i data-lucide="sliders-horizontal" class="w-4 h-4 text-sky-600"></i>
                                         <h4 class="text-xs font-bold text-slate-800">Recent Order Columns</h4>
                                         <span id="dailyT1PersonalDisplayHeaderBadge" class="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-sky-50 text-sky-700 font-mono border border-sky-200">15/15</span>
                                     </div>
-                                    <div class="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
-                                        <button type="button" onclick="setDailyT1PersonalDisplayAll(true)" class="text-[11px] font-bold text-sky-600 hover:text-sky-700 cursor-pointer">All</button>
-                                        <span class="text-slate-300">|</span>
-                                        <button type="button" onclick="resetDailyT1PersonalDisplay()" class="text-[11px] font-bold text-slate-500 hover:text-slate-700 cursor-pointer">Reset</button>
+                                    <div class="flex items-center gap-1.5">
+                                        <div class="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
+                                            <button type="button" onclick="setDailyT1PersonalDisplayAll(true)" class="text-[11px] font-bold text-sky-600 hover:text-sky-700 cursor-pointer">All</button>
+                                            <span class="text-slate-300">|</span>
+                                            <button type="button" onclick="resetDailyT1PersonalDisplay()" class="text-[11px] font-bold text-slate-500 hover:text-slate-700 cursor-pointer">Reset</button>
+                                        </div>
+                                        <button type="button" onclick="closeDailyT1PersonalDisplayMenu()" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer" title="បិទ (Close)">
+                                            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                        </button>
                                     </div>
                                 </div>
                                 
@@ -1655,7 +1675,7 @@
                             </button>
                             
                             <!-- Popover Menu -->
-                            <div id="dailyT2HighlightMenu" class="hidden absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-2rem)] bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 p-4 z-50 space-y-3 ring-1 ring-slate-900/10">
+                            <div id="dailyT2HighlightMenu" class="hidden absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-72 max-w-[calc(100vw-1.25rem)] bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 p-3.5 sm:p-4 z-50 space-y-3 ring-1 ring-slate-900/10">
                                 <div class="flex items-center justify-between pb-2 border-b border-slate-100">
                                     <div class="flex items-center gap-2">
                                         <div class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
@@ -1666,9 +1686,14 @@
                                             <p class="text-[11px] text-slate-400">ជ្រើសពណ៌សម្រាប់ជួរតារាង</p>
                                         </div>
                                     </div>
-                                    <button type="button" onclick="clearAllHighlights()" class="text-[11px] font-bold text-slate-400 hover:text-red-600 transition cursor-pointer" title="ដក Highlight ទាំងអស់">
-                                        Clear
-                                    </button>
+                                    <div class="flex items-center gap-2">
+                                        <button type="button" onclick="clearAllHighlights()" class="text-[11px] font-bold text-slate-400 hover:text-red-600 transition cursor-pointer" title="ដក Highlight ទាំងអស់">
+                                            Clear
+                                        </button>
+                                        <button type="button" onclick="document.getElementById('dailyT2HighlightMenu').classList.add('hidden')" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer" title="បិទ (Close)">
+                                            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                        </button>
+                                    </div>
                                 </div>
                                 <div>
                                     <div class="text-[11px] font-medium text-slate-500 mb-2">ពណ៌គំរូ (Presets):</div>
@@ -1703,17 +1728,22 @@
                             </button>
 
                             <!-- Popover Menu for Table 2 -->
-                            <div id="dailyT2PersonalDisplayMenu" class="hidden absolute right-0 top-full mt-2 w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 p-3.5 z-50 space-y-3 ring-1 ring-slate-900/10">
+                            <div id="dailyT2PersonalDisplayMenu" class="hidden absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-72 sm:w-80 max-w-[calc(100vw-1.25rem)] bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-slate-200 p-3.5 z-50 space-y-3 ring-1 ring-slate-900/10">
                                 <div class="flex items-center justify-between pb-2 border-b border-slate-100">
                                     <div class="flex items-center gap-1.5">
                                         <i data-lucide="sliders-horizontal" class="w-4 h-4 text-emerald-600"></i>
                                         <h4 class="text-xs font-bold text-slate-800">Completed Order Columns</h4>
                                         <span id="dailyT2PersonalDisplayHeaderBadge" class="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-50 text-emerald-700 font-mono border border-emerald-200">17/17</span>
                                     </div>
-                                    <div class="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
-                                        <button type="button" onclick="setDailyT2PersonalDisplayAll(true)" class="text-[11px] font-bold text-emerald-600 hover:text-emerald-700 cursor-pointer">All</button>
-                                        <span class="text-slate-300">|</span>
-                                        <button type="button" onclick="resetDailyT2PersonalDisplay()" class="text-[11px] font-bold text-slate-500 hover:text-slate-700 cursor-pointer">Reset</button>
+                                    <div class="flex items-center gap-1.5">
+                                        <div class="flex items-center gap-1.5 bg-slate-50 px-2 py-1 rounded-lg border border-slate-100">
+                                            <button type="button" onclick="setDailyT2PersonalDisplayAll(true)" class="text-[11px] font-bold text-emerald-600 hover:text-emerald-700 cursor-pointer">All</button>
+                                            <span class="text-slate-300">|</span>
+                                            <button type="button" onclick="resetDailyT2PersonalDisplay()" class="text-[11px] font-bold text-slate-500 hover:text-slate-700 cursor-pointer">Reset</button>
+                                        </div>
+                                        <button type="button" onclick="closeDailyT2PersonalDisplayMenu()" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer" title="បិទ (Close)">
+                                            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                                        </button>
                                     </div>
                                 </div>
                                 
@@ -4103,9 +4133,9 @@
 
     <!-- App Core Scripts -->
     <script src="js/paho-mqtt.min.js"></script>
-    <script src="js/data.js?v=live-v5.2.9"></script>
-    <script src="js/sheets-sync.js?v=live-v5.2.9"></script>
-    <script src="js/telegram-notify.js?v=live-v5.2.9"></script>
-    <script src="js/app.js?v=live-v5.2.9"></script>
+    <script src="js/data.js?v=live-v5.3.0"></script>
+    <script src="js/sheets-sync.js?v=live-v5.3.0"></script>
+    <script src="js/telegram-notify.js?v=live-v5.3.0"></script>
+    <script src="js/app.js?v=live-v5.3.0"></script>
 </body>
 </html>
