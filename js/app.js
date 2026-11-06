@@ -7065,6 +7065,120 @@ function renderDailyT1PersonalDisplayCheckboxes() {
     });
 }
 
+/**
+ * Automatically adjusts dropdown menu position so it NEVER overflows the viewport edges (Mobile & Desktop)
+ */
+function positionDropdownWithinViewport(menuEl, buttonEl) {
+    if (!menuEl || !buttonEl) return;
+    if (menuEl.classList.contains("hidden")) return;
+
+    const parentEl = menuEl.parentElement;
+    if (!parentEl) return;
+
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const btnRect = buttonEl.getBoundingClientRect();
+    const parentRect = parentEl.getBoundingClientRect();
+
+    // Mobile layout (< 640px)
+    if (viewportWidth < 640) {
+        const margin = 10;
+        const availableWidth = Math.max(280, viewportWidth - (margin * 2));
+        const menuWidth = Math.min(availableWidth, 420);
+
+        // Center symmetrically on mobile screen
+        let screenLeft = margin;
+        if (viewportWidth > menuWidth + (margin * 2)) {
+            screenLeft = Math.round((viewportWidth - menuWidth) / 2);
+        }
+
+        const relativeLeft = Math.round(screenLeft - parentRect.left);
+        menuEl.style.left = `${relativeLeft}px`;
+        menuEl.style.right = "auto";
+        menuEl.style.width = `${menuWidth}px`;
+        menuEl.style.maxWidth = `${menuWidth}px`;
+        menuEl.style.boxSizing = "border-box";
+
+        // Vertical position: open downwards by default, or upwards if not enough space
+        const menuHeight = menuEl.offsetHeight || 380;
+        if (btnRect.bottom + menuHeight > viewportHeight - 12 && btnRect.top > menuHeight + 20) {
+            menuEl.style.top = "auto";
+            menuEl.style.bottom = "100%";
+            menuEl.style.marginTop = "0";
+            menuEl.style.marginBottom = "0.5rem";
+        } else {
+            menuEl.style.top = "100%";
+            menuEl.style.bottom = "auto";
+            menuEl.style.marginTop = "0.5rem";
+            menuEl.style.marginBottom = "0";
+        }
+        return;
+    }
+
+    // Tablet & Desktop layout (>= 640px)
+    menuEl.style.width = "";
+    menuEl.style.maxWidth = "";
+    menuEl.style.boxSizing = "";
+
+    const menuRect = menuEl.getBoundingClientRect();
+    const menuWidth = menuRect.width || 360;
+
+    // Check if right-aligned overflows the left edge of viewport
+    const screenLeftIfRight = btnRect.right - menuWidth;
+    // Check if left-aligned overflows the right edge of viewport
+    const screenRightIfLeft = btnRect.left + menuWidth;
+
+    if (screenLeftIfRight < 12) {
+        // Not enough room to the left -> align left
+        menuEl.style.left = "0px";
+        menuEl.style.right = "auto";
+    } else if (screenRightIfLeft > viewportWidth - 12) {
+        // Not enough room to the right -> align right
+        menuEl.style.left = "auto";
+        menuEl.style.right = "0px";
+    } else {
+        // Align based on button position on screen
+        if (btnRect.left > viewportWidth / 2) {
+            menuEl.style.left = "auto";
+            menuEl.style.right = "0px";
+        } else {
+            menuEl.style.left = "0px";
+            menuEl.style.right = "auto";
+        }
+    }
+
+    // Vertical positioning check
+    const menuHeight = menuEl.offsetHeight || 380;
+    if (btnRect.bottom + menuHeight > viewportHeight - 12 && btnRect.top > menuHeight + 20) {
+        menuEl.style.top = "auto";
+        menuEl.style.bottom = "100%";
+        menuEl.style.marginTop = "0";
+        menuEl.style.marginBottom = "0.5rem";
+    } else {
+        menuEl.style.top = "100%";
+        menuEl.style.bottom = "auto";
+        menuEl.style.marginTop = "0.5rem";
+        menuEl.style.marginBottom = "0";
+    }
+}
+window.positionDropdownWithinViewport = positionDropdownWithinViewport;
+
+window.addEventListener("resize", () => {
+    const menus = [
+        { menu: document.getElementById("personalDisplayMenu"), btn: document.getElementById("btnPersonalDisplay") },
+        { menu: document.getElementById("highlightColorMenu"), btn: document.getElementById("btnHighlightColor") },
+        { menu: document.getElementById("dailyT1PersonalDisplayMenu"), btn: document.getElementById("btnDailyT1PersonalDisplay") },
+        { menu: document.getElementById("dailyT1HighlightMenu"), btn: document.getElementById("btnDailyT1HighlightColor") || document.getElementById("btnDailyT1Highlight") },
+        { menu: document.getElementById("dailyT2PersonalDisplayMenu"), btn: document.getElementById("btnDailyT2PersonalDisplay") },
+        { menu: document.getElementById("dailyT2HighlightMenu"), btn: document.getElementById("btnDailyT2HighlightColor") || document.getElementById("btnDailyT2Highlight") }
+    ];
+    menus.forEach(item => {
+        if (item.menu && !item.menu.classList.contains("hidden") && item.btn) {
+            positionDropdownWithinViewport(item.menu, item.btn);
+        }
+    });
+});
+
 function toggleDailyT1PersonalDisplayMenu(e) {
     if (e) e.stopPropagation();
     const menu = document.getElementById("dailyT1PersonalDisplayMenu");
@@ -7074,6 +7188,9 @@ function toggleDailyT1PersonalDisplayMenu(e) {
         closeDailyT2PersonalDisplayMenu();
         renderDailyT1PersonalDisplayCheckboxes();
         menu.classList.remove("hidden");
+        const btn = document.getElementById("btnDailyT1PersonalDisplay");
+        if (btn) positionDropdownWithinViewport(menu, btn);
+        if (typeof lucide !== "undefined") lucide.createIcons();
     } else {
         menu.classList.add("hidden");
     }
@@ -7212,6 +7329,9 @@ function toggleDailyT2PersonalDisplayMenu(e) {
         closeDailyT1PersonalDisplayMenu();
         renderDailyT2PersonalDisplayCheckboxes();
         menu.classList.remove("hidden");
+        const btn = document.getElementById("btnDailyT2PersonalDisplay");
+        if (btn) positionDropdownWithinViewport(menu, btn);
+        if (typeof lucide !== "undefined") lucide.createIcons();
     } else {
         menu.classList.add("hidden");
     }
@@ -7749,6 +7869,9 @@ function toggleDailyT1HighlightMenu(event) {
 
     if (isHidden) {
         menu.classList.remove("hidden");
+        const btn = document.getElementById("btnDailyT1HighlightColor") || document.getElementById("btnDailyT1Highlight");
+        if (btn) positionDropdownWithinViewport(menu, btn);
+        if (typeof lucide !== "undefined") lucide.createIcons();
     } else {
         menu.classList.add("hidden");
     }
@@ -7766,6 +7889,9 @@ function toggleDailyT2HighlightMenu(event) {
 
     if (isHidden) {
         menu.classList.remove("hidden");
+        const btn = document.getElementById("btnDailyT2HighlightColor") || document.getElementById("btnDailyT2Highlight");
+        if (btn) positionDropdownWithinViewport(menu, btn);
+        if (typeof lucide !== "undefined") lucide.createIcons();
     } else {
         menu.classList.add("hidden");
     }
@@ -9711,6 +9837,8 @@ function initPersonalDisplay() {
         menu.classList.toggle("hidden");
         if (!menu.classList.contains("hidden")) {
             refreshPersonalDisplayMenu();
+            positionDropdownWithinViewport(menu, btnToggle);
+            if (typeof lucide !== "undefined") lucide.createIcons();
         }
     });
 
@@ -10047,6 +10175,10 @@ function setupHighlightColorMenu() {
             if (m1) m1.classList.add("hidden");
             const m2 = document.getElementById("dailyT2HighlightMenu");
             if (m2) m2.classList.add("hidden");
+            if (!menu.classList.contains("hidden")) {
+                positionDropdownWithinViewport(menu, btnToggle);
+                if (typeof lucide !== "undefined") lucide.createIcons();
+            }
         });
     }
 
