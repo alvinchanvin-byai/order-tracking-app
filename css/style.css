@@ -603,6 +603,29 @@ body {
     text-transform: uppercase !important;
 }
 
+/* ========================================================================== */
+/* RESPONSIVE DROPDOWNS (Personal Display & Highlights Viewport Protection)    */
+/* ========================================================================== */
+@media (max-width: 639px) {
+    #personalDisplayMenu,
+    #highlightColorMenu,
+    #dailyT1PersonalDisplayMenu,
+    #dailyT1HighlightMenu,
+    #dailyT2PersonalDisplayMenu,
+    #dailyT2HighlightMenu {
+        max-width: calc(100vw - 20px) !important;
+        box-sizing: border-box !important;
+    }
+
+    #columnCheckboxesList,
+    #dailyT1ColumnCheckboxesList,
+    #dailyT2ColumnCheckboxesList {
+        max-height: 48vh !important;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+
 
 
 
