@@ -549,6 +549,7 @@ function cleanAndFormatAllHeadersAndDurations() {
         if (hn) colMap[hn] = hi + 1;
       }
 
+      var colSo = colMap["so#"] || colMap["so"] || 2;
       var colPStart = colMap["picking start time"] || colMap["picking start"] || 17;
       var colPEnd = colMap["picking end time"] || colMap["picking end"] || 18;
       var colPDur = colMap["picking duration"] || 19;
@@ -563,6 +564,13 @@ function cleanAndFormatAllHeadersAndDurations() {
       var changed = false;
 
       for (var r = 0; r < numRows; r++) {
+        // Enforce UPPERCASE SO#
+        var curSo = String(allVals[r][colSo - 1] || "").trim();
+        if (curSo && curSo !== curSo.toUpperCase()) {
+          allVals[r][colSo - 1] = curSo.toUpperCase();
+          changed = true;
+        }
+
         // A. Picking Duration
         var pStart = allVals[r][colPStart - 1];
         var pEnd = allVals[r][colPEnd - 1];
@@ -1307,7 +1315,7 @@ function doGet(e) {
 
         return {
           timestamp: formatDateTimeGAS(row[cTs]),
-          soNumber: String(row[cSo] || ""),
+          soNumber: String(row[cSo] || "").trim().toUpperCase(),
           customerName: String(row[cCust] || ""),
           cityProvince: String(row[cCity] || ""),
           khan: String(row[cKhan] || ""),
@@ -1654,8 +1662,9 @@ function doPost(e) {
       var sheet = getOrCreateSheet(SHEET_TRACKING, HEADERS_TRACKING);
       ensureTrackingHeaders(sheet);
       var order = payload.order || payload;
-      var soNumber = String(order.soNumber || "").trim();
-      var originalSo = String(payload.originalSoNumber || order.originalSoNumber || soNumber).trim();
+      var soNumber = String(order.soNumber || "").trim().toUpperCase();
+      var originalSo = String(payload.originalSoNumber || order.originalSoNumber || soNumber).trim().toUpperCase();
+      order.soNumber = soNumber;
       
       if (!soNumber) throw new Error("SO# is required!");
       
@@ -1727,7 +1736,7 @@ function doPost(e) {
     else if (action === "UPDATE_STAGE") {
       var sheet = getOrCreateSheet(SHEET_TRACKING, HEADERS_TRACKING);
       ensureTrackingHeaders(sheet);
-      var soNumber = String(payload.soNumber || "").trim();
+      var soNumber = String(payload.soNumber || "").trim().toUpperCase();
       if (!soNumber) throw new Error("SO# is required!");
       
       var rowIndex = findRowByKey(sheet, 2, soNumber);
@@ -1878,13 +1887,13 @@ function doPost(e) {
     // ACTION: MARK OR UNMARK DAILY COMPLETED ORDERS
     // ==========================================
     else if (action === "MARK_DAILY_COMPLETED") {
-      var soNumber = String(payload.soNumber || "").trim();
+      var soNumber = String(payload.soNumber || "").trim().toUpperCase();
       if (soNumber) addDailyCompletedSoGAS(soNumber);
       var mutMark = { action: "MARK_DAILY_COMPLETED", soNumber: soNumber };
       return createJsonResponse({ status: "success", action: "DAILY_COMPLETED_MARKED", soNumber: soNumber, dailyCompletedSos: getDailyCompletedSosGAS(), serverTimestamp: markDataUpdated(mutMark) });
     }
     else if (action === "UNMARK_DAILY_COMPLETED") {
-      var soNumber = String(payload.soNumber || "").trim();
+      var soNumber = String(payload.soNumber || "").trim().toUpperCase();
       if (soNumber) removeDailyCompletedSoGAS(soNumber);
       var mutUnmark = { action: "UNMARK_DAILY_COMPLETED", soNumber: soNumber };
       return createJsonResponse({ status: "success", action: "DAILY_COMPLETED_UNMARKED", soNumber: soNumber, dailyCompletedSos: getDailyCompletedSosGAS(), serverTimestamp: markDataUpdated(mutUnmark) });
@@ -2210,6 +2219,14 @@ function onEdit(e) {
     if (row <= 1) return;
 
     var col = e.range.getColumn();
+    // Auto-uppercase if SO# is edited directly in Sheet (Column 2)
+    if (col === 2) {
+      var soVal = String(e.range.getValue() || "").trim();
+      if (soVal && soVal !== soVal.toUpperCase()) {
+        e.range.setValue(soVal.toUpperCase());
+      }
+      return;
+    }
     // Only process edits in timestamp columns (Picking, Checking, Delivery) or Status column (Cols 15 to 26)
     if (col < 15 || col > 26) return;
 
