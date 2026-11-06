@@ -758,9 +758,11 @@ function normalizeOrderDates(order) {
 
     // Derive status strictly based on column timestamp data
     let finalStatus = deriveOrderStatusFromColumns(order);
+    const cleanSoNumber = String(order.soNumber || order.orderNumber || order.so || "").trim().toUpperCase();
 
     return {
         ...order,
+        soNumber: cleanSoNumber,
         deliveryAttempts: attempts,
         status: finalStatus,
         documentType: docType,
@@ -2606,7 +2608,16 @@ function setupEventListeners() {
         btnSyncAllSetup.addEventListener("click", syncAllSetupToSheets);
     }
 
-    // Auto Generate SO# Button
+    // Auto Generate SO# Button & Enforce Uppercase on SO Input
+    const regSoInput = document.getElementById("fieldSONumber");
+    if (regSoInput) {
+        regSoInput.addEventListener("input", (e) => {
+            e.target.value = e.target.value.toUpperCase();
+        });
+        regSoInput.addEventListener("blur", (e) => {
+            e.target.value = e.target.value.trim().toUpperCase();
+        });
+    }
     const btnGenSO = document.getElementById("btnGenSO");
     if (btnGenSO) {
         btnGenSO.addEventListener("click", () => {
@@ -3053,8 +3064,12 @@ function setupEventListeners() {
     const editSoInput = document.getElementById("editOrderSONumber");
     if (editSoInput) {
         editSoInput.addEventListener("input", (e) => {
+            e.target.value = e.target.value.toUpperCase();
             const badge = document.getElementById("editModalSOBadge");
-            if (badge) badge.textContent = e.target.value.trim() || "SO#";
+            if (badge) badge.textContent = e.target.value.trim().toUpperCase() || "SO#";
+        });
+        editSoInput.addEventListener("blur", (e) => {
+            e.target.value = e.target.value.trim().toUpperCase();
         });
     }
 
@@ -5181,7 +5196,7 @@ function getStatusBadgeInfo(order) {
 async function handleOrderRegistration(e) {
     e.preventDefault();
 
-    let soNumber = document.getElementById("fieldSONumber").value.trim();
+    let soNumber = document.getElementById("fieldSONumber").value.trim().toUpperCase();
     let customerName = document.getElementById("fieldCustomerName").value.trim();
     const cityProvince = getCleanEnglishLocation(document.getElementById("fieldCityProvince").value.trim());
     const khan = getCleanEnglishLocation(document.getElementById("fieldKhan").value.trim());
@@ -5199,6 +5214,8 @@ async function handleOrderRegistration(e) {
     // Auto-generate SO# if empty (format: SO-FSCO-YYMMxxx)
     if (!soNumber) {
         soNumber = generateNextAutoSONumber();
+    } else {
+        soNumber = soNumber.toUpperCase();
     }
     if (!customerName) {
         customerName = "-";
@@ -5912,7 +5929,8 @@ async function startChecking(soNumber) {
 }
 
 function openEndCheckingModal(soNumber) {
-    const order = AppState.orders.find(o => o.soNumber === soNumber);
+    const cleanSo = String(soNumber || "").trim().toUpperCase();
+    const order = AppState.orders.find(o => String(o.soNumber || "").trim().toUpperCase() === cleanSo);
     if (!order) return;
 
     const modal = document.getElementById("endCheckingModal");
@@ -5926,8 +5944,9 @@ function openEndCheckingModal(soNumber) {
     const unitSelect = document.getElementById("endCheckingPackageUnit");
     const notesInput = document.getElementById("endCheckingNotes");
 
-    if (soBadge) soBadge.textContent = order.soNumber;
-    if (soInput) soInput.value = order.soNumber;
+    const upperSo = String(order.soNumber || "").toUpperCase();
+    if (soBadge) soBadge.textContent = upperSo;
+    if (soInput) soInput.value = upperSo;
     if (customerEl) customerEl.textContent = order.customerName || "-";
     if (invEl) invEl.textContent = order.invoiceNumber || "-";
     if (pkEl) pkEl.textContent = order.packingListNumber || "-";
@@ -6387,7 +6406,8 @@ async function batchStartWaitingDeliveryOrders() {
 window.batchStartWaitingDeliveryOrders = batchStartWaitingDeliveryOrders;
 
 function openEndDeliveryModal(soNumber) {
-    const order = AppState.orders.find(o => o.soNumber === soNumber);
+    const cleanSo = String(soNumber || "").trim().toUpperCase();
+    const order = AppState.orders.find(o => String(o.soNumber || "").trim().toUpperCase() === cleanSo);
     if (!order) return;
 
     const modal = document.getElementById("endDeliveryModal");
@@ -6395,8 +6415,9 @@ function openEndDeliveryModal(soNumber) {
     const soInput = document.getElementById("endDeliverySONumber");
     const notesInput = document.getElementById("endDeliveryNotes");
 
-    if (soBadge) soBadge.textContent = order.soNumber;
-    if (soInput) soInput.value = order.soNumber;
+    const upperSo = String(order.soNumber || "").toUpperCase();
+    if (soBadge) soBadge.textContent = upperSo;
+    if (soInput) soInput.value = upperSo;
     if (notesInput) notesInput.value = "";
 
     // Dynamic success title based on delivery attempt: 1st -> Success, 2nd -> 2nd Success, 3rd -> 3rd Success...
@@ -9317,10 +9338,12 @@ function openEditOrderModal(soNumber) {
     const origTsInput = document.getElementById("editOrderOriginalTimestamp");
     const origPlInput = document.getElementById("editOrderOriginalPackingList");
     const soBadge = document.getElementById("editModalSOBadge");
-    if (soInput) soInput.value = order.soNumber;
-    if (origSoInput) origSoInput.value = order.soNumber;
+    const upperSo = String(order.soNumber || "").toUpperCase();
+    if (soInput) soInput.value = upperSo;
+    if (origSoInput) origSoInput.value = upperSo;
     if (origTsInput) origTsInput.value = order.timestamp || "";
     if (origPlInput) origPlInput.value = order.packingListNumber || "";
+    if (soBadge) soBadge.textContent = upperSo || "SO#";
     if (soBadge) soBadge.textContent = order.soNumber;
 
     // Populate Province select
@@ -9432,10 +9455,10 @@ function closeEditOrderModal() {
 
 async function handleEditOrderSubmit(e) {
     e.preventDefault();
-    const originalSoNumber = (document.getElementById("editOrderOriginalSONumber")?.value || "").trim();
+    const originalSoNumber = (document.getElementById("editOrderOriginalSONumber")?.value || "").trim().toUpperCase();
     const originalTimestamp = (document.getElementById("editOrderOriginalTimestamp")?.value || "").trim();
     const originalPackingList = (document.getElementById("editOrderOriginalPackingList")?.value || "").trim();
-    const newSoNumber = (document.getElementById("editOrderSONumber")?.value || "").trim();
+    const newSoNumber = (document.getElementById("editOrderSONumber")?.value || "").trim().toUpperCase();
 
     if (!newSoNumber) {
         showToast("សូមបញ្ចូលលេខ SO#!", "error");
@@ -13996,7 +14019,7 @@ function cleanScannedCode(rawText, targetFieldId) {
         try {
             const parsed = JSON.parse(str);
             if ((targetFieldId === "fieldSONumber" || targetFieldId === "editOrderSONumber") && (parsed.so || parsed.soNumber || parsed.so_number)) {
-                return String(parsed.so || parsed.soNumber || parsed.so_number).trim();
+                return String(parsed.so || parsed.soNumber || parsed.so_number).trim().toUpperCase();
             }
             if ((targetFieldId === "fieldPackingList" || targetFieldId === "editPackingList") && (parsed.pl || parsed.packingList || parsed.packing_list)) {
                 return String(parsed.pl || parsed.packingList || parsed.packing_list).trim();
@@ -14009,7 +14032,7 @@ function cleanScannedCode(rawText, targetFieldId) {
 
     // Strip common human-readable prefixes like "SO: ", "SO# ", "PL# ", "INV: "
     if (targetFieldId === "fieldSONumber" || targetFieldId === "editOrderSONumber") {
-        str = str.replace(/^(SO#?|SO\s*Number|Sale\s*Order#?)\s*[:=\-]?\s*/i, "").trim();
+        str = str.replace(/^(SO#?|SO\s*Number|Sale\s*Order#?)\s*[:=\-]?\s*/i, "").trim().toUpperCase();
     } else if (targetFieldId === "fieldPackingList" || targetFieldId === "editPackingList") {
         str = str.replace(/^(PL#?|Packing\s*List#?)\s*[:=\-]?\s*/i, "").trim();
     } else if (targetFieldId === "fieldInvoiceNumber" || targetFieldId === "editInvoiceNumber") {
