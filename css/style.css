@@ -625,6 +625,31 @@ body {
     }
 }
 
+/* ========================================================================== */
+/* DROPDOWN ELEVATION (Completed Order & Recent Order Dropdown Layering)      */
+/* ========================================================================== */
+#dailyCompletedOrdersCard:has(#dailyT2PersonalDisplayMenu:not(.hidden)),
+#dailyCompletedOrdersCard:has(#dailyT2HighlightMenu:not(.hidden)),
+#dailyCompletedOrdersCard.dropdown-active {
+    z-index: 60 !important;
+}
+
+#dailyRecentOrdersCard:has(#dailyT1PersonalDisplayMenu:not(.hidden)),
+#dailyRecentOrdersCard:has(#dailyT1HighlightMenu:not(.hidden)),
+#dailyRecentOrdersCard.dropdown-active {
+    z-index: 60 !important;
+}
+
+#dailyT2PersonalDisplayMenu,
+#dailyT2HighlightMenu,
+#dailyT1PersonalDisplayMenu,
+#dailyT1HighlightMenu,
+#personalDisplayMenu,
+#highlightColorMenu {
+    z-index: 9999 !important;
+}
+
+
 
 
 
