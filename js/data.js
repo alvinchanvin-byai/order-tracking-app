@@ -361,7 +361,7 @@ const DEFAULT_SETUP_USERS = [
         password: "123",
         displayName: "System Administrator",
         role: "Admin",
-        permissions: ["daily-delivery", "register", "picking", "checking", "delivery", "incompleted-delivery", "dashboard", "report", "setup"],
+        permissions: ["daily-delivery", "register", "picking", "checking", "delivery", "incompleted-delivery", "dashboard", "report", "setup", "setup-customer", "setup-bu", "setup-package", "setup-doc", "setup-user"],
         lastUpdated: "08/10/26 15:00"
     },
     {
@@ -370,7 +370,7 @@ const DEFAULT_SETUP_USERS = [
         password: "123",
         displayName: "Sophal Chan",
         role: "Admin",
-        permissions: ["daily-delivery", "register", "picking", "checking", "delivery", "incompleted-delivery", "dashboard", "report", "setup"],
+        permissions: ["daily-delivery", "register", "picking", "checking", "delivery", "incompleted-delivery", "dashboard", "report", "setup", "setup-customer", "setup-bu", "setup-package", "setup-doc", "setup-user"],
         lastUpdated: "08/10/26 15:39"
     },
     {
