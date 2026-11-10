@@ -265,8 +265,8 @@ function setupAllSheets() {
   formatSheetHeader(userSheet, HEADERS_USER.length);
   if (userSheet.getLastRow() <= 1) {
     var seedUsers = [
-      ["USR-001", "System Administrator", "admin", "123", "Admin", "dashboard, register, picking, checking, delivery, setup", getNowString()],
-      ["USR-002", "Sophal Chan", "whm", "123", "Admin", "dashboard, register, picking, checking, delivery, setup", getNowString()],
+      ["USR-001", "System Administrator", "admin", "123", "Admin", "dashboard, register, picking, checking, delivery, incompleted-delivery, daily-delivery, report, setup, setup-customer, setup-bu, setup-package, setup-doc, setup-user", getNowString()],
+      ["USR-002", "Sophal Chan", "whm", "123", "Admin", "dashboard, register, picking, checking, delivery, incompleted-delivery, daily-delivery, report, setup, setup-customer, setup-bu, setup-package, setup-doc, setup-user", getNowString()],
       ["USR-003", "Lor Bunthavry", "thv", "123", "User", "dashboard, register, picking, checking, delivery", getNowString()],
       ["USR-004", "Kimheang", "heang", "123", "User", "register, picking, checking", getNowString()],
       ["USR-005", "Hem Sopheaktra", "tra", "123", "User", "register, picking, checking", getNowString()],
@@ -2049,7 +2049,7 @@ function doPost(e) {
       
       var perms = Array.isArray(user.permissions) ? user.permissions.join(", ") : String(user.permissions || "");
       if (role === "Admin" && !perms) {
-        perms = "dashboard, register, picking, checking, delivery, incompleted-delivery, report, setup";
+        perms = "dashboard, register, picking, checking, delivery, incompleted-delivery, daily-delivery, report, setup, setup-customer, setup-bu, setup-package, setup-doc, setup-user";
       }
       
       if (!username) throw new Error("Username is required!");
@@ -2149,7 +2149,7 @@ function doPost(e) {
           var uRows = setup.users.map(function(u) {
             var perms = Array.isArray(u.permissions) ? u.permissions.join(", ") : String(u.permissions || "");
             if (u.role === "Admin" && !perms) {
-              perms = "dashboard, register, picking, checking, delivery, incompleted-delivery, report, setup";
+              perms = "dashboard, register, picking, checking, delivery, incompleted-delivery, daily-delivery, report, setup, setup-customer, setup-bu, setup-package, setup-doc, setup-user";
             }
             return [
               u.id || "",
