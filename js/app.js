@@ -7066,11 +7066,63 @@ function renderDailyT1PersonalDisplayCheckboxes() {
 }
 
 /**
+ * Ensures whichever card currently has an open dropdown has the highest z-index
+ * so it is NEVER covered or clipped by adjacent cards (e.g. Completed Order popover over Recent Order)
+ */
+function updateActiveDropdownCardZIndex() {
+    const t1Menu = document.getElementById("dailyT1PersonalDisplayMenu");
+    const t1Hl = document.getElementById("dailyT1HighlightMenu");
+    const t2Menu = document.getElementById("dailyT2PersonalDisplayMenu");
+    const t2Hl = document.getElementById("dailyT2HighlightMenu");
+    const mainPd = document.getElementById("personalDisplayMenu");
+    const mainHl = document.getElementById("highlightColorMenu");
+
+    const t1Open = (t1Menu && !t1Menu.classList.contains("hidden")) || (t1Hl && !t1Hl.classList.contains("hidden"));
+    const t2Open = (t2Menu && !t2Menu.classList.contains("hidden")) || (t2Hl && !t2Hl.classList.contains("hidden"));
+    const mainOpen = (mainPd && !mainPd.classList.contains("hidden")) || (mainHl && !mainHl.classList.contains("hidden"));
+
+    const cardT1 = document.getElementById("dailyRecentOrdersCard");
+    const cardT2 = document.getElementById("dailyCompletedOrdersCard");
+    const mainToolbar = document.getElementById("personalDisplayDropdownContainer")?.closest(".glass-panel-elevated");
+
+    if (cardT1) {
+        if (t1Open) {
+            cardT1.style.setProperty("z-index", "60", "important");
+            cardT1.classList.add("dropdown-active");
+        } else {
+            cardT1.style.removeProperty("z-index");
+            cardT1.classList.remove("dropdown-active");
+        }
+    }
+    if (cardT2) {
+        if (t2Open) {
+            cardT2.style.setProperty("z-index", "60", "important");
+            cardT2.classList.add("dropdown-active");
+        } else {
+            cardT2.style.removeProperty("z-index");
+            cardT2.classList.remove("dropdown-active");
+        }
+    }
+    if (mainToolbar) {
+        if (mainOpen) {
+            mainToolbar.style.setProperty("z-index", "60", "important");
+            mainToolbar.classList.add("dropdown-active");
+        } else {
+            mainToolbar.style.removeProperty("z-index");
+            mainToolbar.classList.remove("dropdown-active");
+        }
+    }
+}
+window.updateActiveDropdownCardZIndex = updateActiveDropdownCardZIndex;
+
+/**
  * Automatically adjusts dropdown menu position so it NEVER overflows the viewport edges (Mobile & Desktop)
  */
 function positionDropdownWithinViewport(menuEl, buttonEl) {
     if (!menuEl || !buttonEl) return;
     if (menuEl.classList.contains("hidden")) return;
+
+    updateActiveDropdownCardZIndex();
 
     const parentEl = menuEl.parentElement;
     if (!parentEl) return;
@@ -7186,19 +7238,27 @@ function toggleDailyT1PersonalDisplayMenu(e) {
     const isHidden = menu.classList.contains("hidden");
     if (isHidden) {
         closeDailyT2PersonalDisplayMenu();
+        const otherHl = document.getElementById("dailyT2HighlightMenu");
+        if (otherHl) otherHl.classList.add("hidden");
+        const myHl = document.getElementById("dailyT1HighlightMenu");
+        if (myHl) myHl.classList.add("hidden");
+
         renderDailyT1PersonalDisplayCheckboxes();
         menu.classList.remove("hidden");
+        updateActiveDropdownCardZIndex();
         const btn = document.getElementById("btnDailyT1PersonalDisplay");
         if (btn) positionDropdownWithinViewport(menu, btn);
         if (typeof lucide !== "undefined") lucide.createIcons();
     } else {
         menu.classList.add("hidden");
+        updateActiveDropdownCardZIndex();
     }
 }
 
 function closeDailyT1PersonalDisplayMenu() {
     const menu = document.getElementById("dailyT1PersonalDisplayMenu");
     if (menu) menu.classList.add("hidden");
+    updateActiveDropdownCardZIndex();
 }
 
 function setDailyT1PersonalDisplayAll(enabled = true) {
@@ -7327,19 +7387,27 @@ function toggleDailyT2PersonalDisplayMenu(e) {
     const isHidden = menu.classList.contains("hidden");
     if (isHidden) {
         closeDailyT1PersonalDisplayMenu();
+        const otherHl = document.getElementById("dailyT1HighlightMenu");
+        if (otherHl) otherHl.classList.add("hidden");
+        const myHl = document.getElementById("dailyT2HighlightMenu");
+        if (myHl) myHl.classList.add("hidden");
+
         renderDailyT2PersonalDisplayCheckboxes();
         menu.classList.remove("hidden");
+        updateActiveDropdownCardZIndex();
         const btn = document.getElementById("btnDailyT2PersonalDisplay");
         if (btn) positionDropdownWithinViewport(menu, btn);
         if (typeof lucide !== "undefined") lucide.createIcons();
     } else {
         menu.classList.add("hidden");
+        updateActiveDropdownCardZIndex();
     }
 }
 
 function closeDailyT2PersonalDisplayMenu() {
     const menu = document.getElementById("dailyT2PersonalDisplayMenu");
     if (menu) menu.classList.add("hidden");
+    updateActiveDropdownCardZIndex();
 }
 
 function setDailyT2PersonalDisplayAll(enabled = true) {
@@ -7866,14 +7934,18 @@ function toggleDailyT1HighlightMenu(event) {
     if (otherMenu) otherMenu.classList.add("hidden");
     const mainHlMenu = document.getElementById("highlightColorMenu");
     if (mainHlMenu) mainHlMenu.classList.add("hidden");
+    closeDailyT1PersonalDisplayMenu();
+    closeDailyT2PersonalDisplayMenu();
 
     if (isHidden) {
         menu.classList.remove("hidden");
+        updateActiveDropdownCardZIndex();
         const btn = document.getElementById("btnDailyT1HighlightColor") || document.getElementById("btnDailyT1Highlight");
         if (btn) positionDropdownWithinViewport(menu, btn);
         if (typeof lucide !== "undefined") lucide.createIcons();
     } else {
         menu.classList.add("hidden");
+        updateActiveDropdownCardZIndex();
     }
 }
 
@@ -7886,14 +7958,18 @@ function toggleDailyT2HighlightMenu(event) {
     if (otherMenu) otherMenu.classList.add("hidden");
     const mainHlMenu = document.getElementById("highlightColorMenu");
     if (mainHlMenu) mainHlMenu.classList.add("hidden");
+    closeDailyT1PersonalDisplayMenu();
+    closeDailyT2PersonalDisplayMenu();
 
     if (isHidden) {
         menu.classList.remove("hidden");
+        updateActiveDropdownCardZIndex();
         const btn = document.getElementById("btnDailyT2HighlightColor") || document.getElementById("btnDailyT2Highlight");
         if (btn) positionDropdownWithinViewport(menu, btn);
         if (typeof lucide !== "undefined") lucide.createIcons();
     } else {
         menu.classList.add("hidden");
+        updateActiveDropdownCardZIndex();
     }
 }
 
@@ -9835,6 +9911,7 @@ function initPersonalDisplay() {
     btnToggle.addEventListener("click", (e) => {
         e.stopPropagation();
         menu.classList.toggle("hidden");
+        updateActiveDropdownCardZIndex();
         if (!menu.classList.contains("hidden")) {
             refreshPersonalDisplayMenu();
             positionDropdownWithinViewport(menu, btnToggle);
@@ -9857,6 +9934,7 @@ function initPersonalDisplay() {
         if (dailyT2Container && dailyT2Menu && !dailyT2Container.contains(e.target)) {
             dailyT2Menu.classList.add("hidden");
         }
+        updateActiveDropdownCardZIndex();
     });
 
     if (btnSelectAll) {
@@ -10171,6 +10249,7 @@ function setupHighlightColorMenu() {
         btnToggle.addEventListener("click", (e) => {
             e.stopPropagation();
             menu.classList.toggle("hidden");
+            updateActiveDropdownCardZIndex();
             const m1 = document.getElementById("dailyT1HighlightMenu");
             if (m1) m1.classList.add("hidden");
             const m2 = document.getElementById("dailyT2HighlightMenu");
@@ -10207,6 +10286,7 @@ function setupHighlightColorMenu() {
         if (dailyT2Container && dailyT2Menu && !dailyT2Container.contains(e.target)) {
             dailyT2Menu.classList.add("hidden");
         }
+        updateActiveDropdownCardZIndex();
     });
 }
 
