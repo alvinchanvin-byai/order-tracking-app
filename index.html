@@ -46,7 +46,7 @@
     <link rel="dns-prefetch" href="https://script.google.com">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css?v=live-v5.3.1">
+    <link rel="stylesheet" href="css/style.css?v=live-v5.3.2">
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -3755,13 +3755,58 @@
                             </div>
                         </label>
 
-                        <label class="flex items-center gap-2.5 p-2.5 rounded-xl bg-white border border-slate-200 hover:border-indigo-300 cursor-pointer transition select-none">
-                            <input type="checkbox" name="userPermCheckbox" value="setup" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500">
-                            <div class="flex items-center gap-2">
-                                <i data-lucide="sliders" class="w-4 h-4 text-emerald-600"></i>
-                                <span class="text-xs font-bold text-slate-800">៨. Setup (ទិន្នន័យមេ)</span>
+                        <!-- Setup Module Permissions (Group with 5 Sub-modules) -->
+                        <div class="col-span-1 sm:col-span-2 rounded-xl bg-white border border-slate-200 p-3 hover:border-emerald-300 transition">
+                            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                                <label class="flex items-center gap-2.5 cursor-pointer select-none">
+                                    <input type="checkbox" id="userPermSetupAll" onchange="toggleSetupAllSubPermissions(this.checked)" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500">
+                                    <div class="flex items-center gap-2">
+                                        <i data-lucide="sliders" class="w-4 h-4 text-emerald-600"></i>
+                                        <span class="text-xs font-bold text-slate-800">៨. Setup (ទិន្នន័យមេ) - ជ្រើសរើសទាំងអស់</span>
+                                    </div>
+                                </label>
+                                <span class="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                    5 Sub-modules
+                                </span>
                             </div>
-                        </label>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 pt-2.5">
+                                <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50/80 hover:bg-emerald-50/50 border border-slate-200/80 hover:border-emerald-300 cursor-pointer transition select-none">
+                                    <input type="checkbox" name="userPermCheckbox" value="setup-customer" onchange="syncSetupParentCheckbox()" class="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500">
+                                    <div class="flex items-center gap-1.5 min-w-0">
+                                        <i data-lucide="users" class="w-3.5 h-3.5 text-blue-600 shrink-0"></i>
+                                        <span class="text-[11px] font-medium text-slate-700 truncate">Customer Information</span>
+                                    </div>
+                                </label>
+                                <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50/80 hover:bg-emerald-50/50 border border-slate-200/80 hover:border-emerald-300 cursor-pointer transition select-none">
+                                    <input type="checkbox" name="userPermCheckbox" value="setup-bu" onchange="syncSetupParentCheckbox()" class="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500">
+                                    <div class="flex items-center gap-1.5 min-w-0">
+                                        <i data-lucide="briefcase" class="w-3.5 h-3.5 text-indigo-600 shrink-0"></i>
+                                        <span class="text-[11px] font-medium text-slate-700 truncate">Business Unit (BU)</span>
+                                    </div>
+                                </label>
+                                <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50/80 hover:bg-emerald-50/50 border border-slate-200/80 hover:border-emerald-300 cursor-pointer transition select-none">
+                                    <input type="checkbox" name="userPermCheckbox" value="setup-package" onchange="syncSetupParentCheckbox()" class="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500">
+                                    <div class="flex items-center gap-1.5 min-w-0">
+                                        <i data-lucide="package" class="w-3.5 h-3.5 text-amber-600 shrink-0"></i>
+                                        <span class="text-[11px] font-medium text-slate-700 truncate">Package Type</span>
+                                    </div>
+                                </label>
+                                <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50/80 hover:bg-emerald-50/50 border border-slate-200/80 hover:border-emerald-300 cursor-pointer transition select-none">
+                                    <input type="checkbox" name="userPermCheckbox" value="setup-doc" onchange="syncSetupParentCheckbox()" class="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500">
+                                    <div class="flex items-center gap-1.5 min-w-0">
+                                        <i data-lucide="file-text" class="w-3.5 h-3.5 text-emerald-600 shrink-0"></i>
+                                        <span class="text-[11px] font-medium text-slate-700 truncate">Document Type</span>
+                                    </div>
+                                </label>
+                                <label class="flex items-center gap-2 p-2 rounded-lg bg-slate-50/80 hover:bg-emerald-50/50 border border-slate-200/80 hover:border-emerald-300 cursor-pointer transition select-none">
+                                    <input type="checkbox" name="userPermCheckbox" value="setup-user" onchange="syncSetupParentCheckbox()" class="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500">
+                                    <div class="flex items-center gap-1.5 min-w-0">
+                                        <i data-lucide="shield-check" class="w-3.5 h-3.5 text-purple-600 shrink-0"></i>
+                                        <span class="text-[11px] font-medium text-slate-700 truncate">User Management</span>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -4133,9 +4178,9 @@
 
     <!-- App Core Scripts -->
     <script src="js/paho-mqtt.min.js"></script>
-    <script src="js/data.js?v=live-v5.3.1"></script>
-    <script src="js/sheets-sync.js?v=live-v5.3.1"></script>
-    <script src="js/telegram-notify.js?v=live-v5.3.1"></script>
-    <script src="js/app.js?v=live-v5.3.1"></script>
+    <script src="js/data.js?v=live-v5.3.2"></script>
+    <script src="js/sheets-sync.js?v=live-v5.3.2"></script>
+    <script src="js/telegram-notify.js?v=live-v5.3.2"></script>
+    <script src="js/app.js?v=live-v5.3.2"></script>
 </body>
 </html>
