@@ -46,7 +46,7 @@
     <link rel="dns-prefetch" href="https://script.google.com">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css?v=live-v5.3.0">
+    <link rel="stylesheet" href="css/style.css?v=live-v5.3.1">
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -663,7 +663,7 @@
                                         <span class="text-slate-300">|</span>
                                         <button type="button" id="btnResetCols" class="text-[11px] font-bold text-slate-500 hover:text-slate-700 cursor-pointer">Reset</button>
                                     </div>
-                                    <button type="button" onclick="document.getElementById('personalDisplayMenu').classList.add('hidden')" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer" title="បិទ (Close)">
+                                    <button type="button" onclick="document.getElementById('personalDisplayMenu').classList.add('hidden'); updateActiveDropdownCardZIndex();" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer" title="បិទ (Close)">
                                         <i data-lucide="x" class="w-3.5 h-3.5"></i>
                                     </button>
                                 </div>
@@ -678,7 +678,7 @@
                                     <span>បានជ្រើសរើស:</span>
                                     <span id="personalDisplayFooterCountBadge" class="text-[11px] font-bold font-mono text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">19/19</span>
                                 </div>
-                                <button type="button" onclick="document.getElementById('personalDisplayMenu').classList.add('hidden')" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition">
+                                <button type="button" onclick="document.getElementById('personalDisplayMenu').classList.add('hidden'); updateActiveDropdownCardZIndex();" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold transition cursor-pointer">
                                     រួចរាល់ (Done)
                                 </button>
                             </div>
@@ -710,7 +710,7 @@
                                     <button type="button" id="btnClearHighlights" class="text-[11px] font-bold text-slate-400 hover:text-red-600 transition cursor-pointer" title="ដក Highlight ទាំងអស់">
                                         Clear
                                     </button>
-                                    <button type="button" onclick="document.getElementById('highlightColorMenu').classList.add('hidden')" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer" title="បិទ (Close)">
+                                    <button type="button" onclick="document.getElementById('highlightColorMenu').classList.add('hidden'); updateActiveDropdownCardZIndex();" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer" title="បិទ (Close)">
                                         <i data-lucide="x" class="w-3.5 h-3.5"></i>
                                     </button>
                                 </div>
@@ -1525,7 +1525,7 @@
                                         <button type="button" onclick="clearAllHighlights()" class="text-[11px] font-bold text-slate-400 hover:text-red-600 transition cursor-pointer" title="ដក Highlight ទាំងអស់">
                                             Clear
                                         </button>
-                                        <button type="button" onclick="document.getElementById('dailyT1HighlightMenu').classList.add('hidden')" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer" title="បិទ (Close)">
+                                        <button type="button" onclick="document.getElementById('dailyT1HighlightMenu').classList.add('hidden'); updateActiveDropdownCardZIndex();" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer" title="បិទ (Close)">
                                             <i data-lucide="x" class="w-3.5 h-3.5"></i>
                                         </button>
                                     </div>
@@ -1690,7 +1690,7 @@
                                         <button type="button" onclick="clearAllHighlights()" class="text-[11px] font-bold text-slate-400 hover:text-red-600 transition cursor-pointer" title="ដក Highlight ទាំងអស់">
                                             Clear
                                         </button>
-                                        <button type="button" onclick="document.getElementById('dailyT2HighlightMenu').classList.add('hidden')" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer" title="បិទ (Close)">
+                                        <button type="button" onclick="document.getElementById('dailyT2HighlightMenu').classList.add('hidden'); updateActiveDropdownCardZIndex();" class="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition cursor-pointer" title="បិទ (Close)">
                                             <i data-lucide="x" class="w-3.5 h-3.5"></i>
                                         </button>
                                     </div>
@@ -4133,9 +4133,9 @@
 
     <!-- App Core Scripts -->
     <script src="js/paho-mqtt.min.js"></script>
-    <script src="js/data.js?v=live-v5.3.0"></script>
-    <script src="js/sheets-sync.js?v=live-v5.3.0"></script>
-    <script src="js/telegram-notify.js?v=live-v5.3.0"></script>
-    <script src="js/app.js?v=live-v5.3.0"></script>
+    <script src="js/data.js?v=live-v5.3.1"></script>
+    <script src="js/sheets-sync.js?v=live-v5.3.1"></script>
+    <script src="js/telegram-notify.js?v=live-v5.3.1"></script>
+    <script src="js/app.js?v=live-v5.3.1"></script>
 </body>
 </html>
