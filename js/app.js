@@ -1554,6 +1554,10 @@ function escapeHtml(str) {
 }
 
 function navigateToCustomerSetup(name = "") {
+    if (typeof hasUserSetupPermission === "function" && !hasUserSetupPermission("customer")) {
+        showToast("លោកអ្នកគ្មានសិទ្ធិចូល Customer Information ឡើយ! ⛔", "warning");
+        return;
+    }
     switchTab("setup");
     switchSetupSubTab("customer");
     openAddCustomerModal();
@@ -10339,12 +10343,17 @@ function ensureSetupIds() {
 
 // Switch Setup Sub-Tab (customer, bu, package, doc, user)
 function switchSetupSubTab(subTabName) {
-    const user = getCurrentUser();
-    if (subTabName === "user" && (!user || user.role !== "Admin")) {
-        subTabName = "customer";
-    }
-    AppState.currentSetupSubTab = subTabName;
     const subTabs = ["customer", "bu", "package", "doc", "user"];
+
+    // Find allowed subTabs for current user
+    const allowedSubTabs = subTabs.filter(tab => hasUserSetupPermission(tab));
+
+    // If requested subTab is not allowed, switch to first allowed subTab
+    if (!hasUserSetupPermission(subTabName)) {
+        subTabName = allowedSubTabs[0] || "customer";
+    }
+
+    AppState.currentSetupSubTab = subTabName;
 
     subTabs.forEach(tab => {
         const btn = document.getElementById(`setupTabBtn-${tab}`);
@@ -10356,7 +10365,20 @@ function switchSetupSubTab(subTabName) {
             tab === "doc" ? "badgeCountDoc" : "badgeCountUser"
         );
 
-        if (tab === subTabName) {
+        const isAllowed = hasUserSetupPermission(tab);
+
+        // Control button visibility strictly based on permission
+        if (btn) {
+            if (isAllowed) {
+                btn.classList.remove("hidden");
+                btn.style.display = "";
+            } else {
+                btn.classList.add("hidden");
+                btn.style.display = "none";
+            }
+        }
+
+        if (tab === subTabName && isAllowed) {
             if (btn) {
                 btn.className = "setup-subtab-btn flex-1 min-w-[140px] py-2 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition bg-blue-600 text-white shadow-xs";
                 const icon = btn.querySelector("i");
@@ -10367,7 +10389,7 @@ function switchSetupSubTab(subTabName) {
             }
             if (panel) panel.classList.remove("hidden");
         } else {
-            if (btn) {
+            if (btn && isAllowed) {
                 btn.className = "setup-subtab-btn flex-1 min-w-[140px] py-2 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition text-slate-600 hover:bg-slate-100";
                 const icon = btn.querySelector("i");
                 if (icon) icon.className = "w-4 h-4 text-slate-500";
@@ -10379,11 +10401,11 @@ function switchSetupSubTab(subTabName) {
         }
     });
 
-    if (subTabName === "customer") renderCustomerSetupTable();
-    if (subTabName === "bu") renderBUSetupTable();
-    if (subTabName === "package") renderPackageTypeSetupTable();
-    if (subTabName === "doc") renderDocTypeSetupTable();
-    if (subTabName === "user") renderUserSetupTable();
+    if (subTabName === "customer" && hasUserSetupPermission("customer")) renderCustomerSetupTable();
+    if (subTabName === "bu" && hasUserSetupPermission("bu")) renderBUSetupTable();
+    if (subTabName === "package" && hasUserSetupPermission("package")) renderPackageTypeSetupTable();
+    if (subTabName === "doc" && hasUserSetupPermission("doc")) renderDocTypeSetupTable();
+    if (subTabName === "user" && hasUserSetupPermission("user")) renderUserSetupTable();
 
     lucide.createIcons();
 }
@@ -11711,11 +11733,13 @@ function renderSetupView() {
     if (badgeDoc) badgeDoc.textContent = AppState.setup.documentTypes.length;
     if (badgeUser) badgeUser.textContent = (AppState.setup.users || []).length;
 
-    renderCustomerSetupTable();
-    renderBUSetupTable();
-    renderPackageTypeSetupTable();
-    renderDocTypeSetupTable();
-    renderUserSetupTable();
+    const subTabs = ["customer", "bu", "package", "doc", "user"];
+    const allowedSubTabs = subTabs.filter(tab => hasUserSetupPermission(tab));
+    if (!hasUserSetupPermission(AppState.currentSetupSubTab)) {
+        AppState.currentSetupSubTab = allowedSubTabs[0] || "customer";
+    }
+
+    switchSetupSubTab(AppState.currentSetupSubTab);
     lucide.createIcons();
 }
 
@@ -11776,6 +11800,10 @@ function renderCustomerSetupTable() {
 }
 
 function openAddCustomerModal() {
+    if (!hasUserSetupPermission("customer")) {
+        showToast("លោកអ្នកគ្មានសិទ្ធិបន្ថែមអតិថិជនឡើយ! ⛔", "warning");
+        return;
+    }
     const modal = document.getElementById("customerModal");
     const title = document.getElementById("customerModalTitle");
     const idInput = document.getElementById("customerModalId");
@@ -11795,6 +11823,10 @@ function openAddCustomerModal() {
 }
 
 function openEditCustomerModal(id) {
+    if (!hasUserSetupPermission("customer")) {
+        showToast("លោកអ្នកគ្មានសិទ្ធិកែប្រែអតិថិជនឡើយ! ⛔", "warning");
+        return;
+    }
     const cust = AppState.setup.customers.find(c => String(c.id) === String(id) || c.name === id);
     if (!cust) return;
 
@@ -11887,6 +11919,10 @@ async function handleCustomerFormSubmit(e) {
 }
 
 async function deleteCustomerItem(id) {
+    if (!hasUserSetupPermission("customer")) {
+        showToast("លោកអ្នកគ្មានសិទ្ធិលុបអតិថិជនឡើយ! ⛔", "warning");
+        return;
+    }
     const cust = AppState.setup.customers.find(c => String(c.id) === String(id) || c.name === id);
     if (!cust) return;
 
@@ -11962,6 +11998,10 @@ function renderBUSetupTable() {
 }
 
 function openAddBUModal() {
+    if (!hasUserSetupPermission("bu")) {
+        showToast("លោកអ្នកគ្មានសិទ្ធិបន្ថែម BU ឡើយ! ⛔", "warning");
+        return;
+    }
     const modal = document.getElementById("buModal");
     const title = document.getElementById("buModalTitle");
     const idInput = document.getElementById("buModalId");
@@ -11976,6 +12016,10 @@ function openAddBUModal() {
 }
 
 function openEditBUModal(id) {
+    if (!hasUserSetupPermission("bu")) {
+        showToast("លោកអ្នកគ្មានសិទ្ធិកែប្រែ BU ឡើយ! ⛔", "warning");
+        return;
+    }
     const bu = AppState.setup.bus.find(b => String(b.id) === String(id) || b.name === id);
     if (!bu) return;
 
@@ -12044,6 +12088,10 @@ async function handleBUFormSubmit(e) {
 }
 
 async function deleteBUItem(id) {
+    if (!hasUserSetupPermission("bu")) {
+        showToast("លោកអ្នកគ្មានសិទ្ធិលុប BU ឡើយ! ⛔", "warning");
+        return;
+    }
     const bu = AppState.setup.bus.find(b => String(b.id) === String(id) || b.name === id);
     if (!bu) return;
 
@@ -12124,6 +12172,10 @@ function renderPackageTypeSetupTable() {
 }
 
 function openAddPackageTypeModal() {
+    if (!hasUserSetupPermission("package")) {
+        showToast("លោកអ្នកគ្មានសិទ្ធិបន្ថែម Package Type ឡើយ! ⛔", "warning");
+        return;
+    }
     const modal = document.getElementById("packageModal");
     const title = document.getElementById("packageModalTitle");
     const idInput = document.getElementById("packageModalId");
@@ -12140,6 +12192,10 @@ function openAddPackageTypeModal() {
 }
 
 function openEditPackageTypeModal(id) {
+    if (!hasUserSetupPermission("package")) {
+        showToast("លោកអ្នកគ្មានសិទ្ធិកែប្រែ Package Type ឡើយ! ⛔", "warning");
+        return;
+    }
     const pkg = AppState.setup.packageTypes.find(p => String(p.id) === String(id) || p.name === id);
     if (!pkg) return;
 
@@ -12214,6 +12270,10 @@ async function handlePackageFormSubmit(e) {
 }
 
 async function deletePackageTypeItem(id) {
+    if (!hasUserSetupPermission("package")) {
+        showToast("លោកអ្នកគ្មានសិទ្ធិលុប Package Type ឡើយ! ⛔", "warning");
+        return;
+    }
     const pkg = AppState.setup.packageTypes.find(p => String(p.id) === String(id) || p.name === id);
     if (!pkg) return;
 
@@ -12288,6 +12348,10 @@ function renderDocTypeSetupTable() {
 }
 
 function openAddDocTypeModal() {
+    if (!hasUserSetupPermission("doc")) {
+        showToast("លោកអ្នកគ្មានសិទ្ធិបន្ថែម Document Type ឡើយ! ⛔", "warning");
+        return;
+    }
     const modal = document.getElementById("docModal");
     const title = document.getElementById("docModalTitle");
     const idInput = document.getElementById("docModalId");
@@ -12302,6 +12366,10 @@ function openAddDocTypeModal() {
 }
 
 function openEditDocTypeModal(id) {
+    if (!hasUserSetupPermission("doc")) {
+        showToast("លោកអ្នកគ្មានសិទ្ធិកែប្រែ Document Type ឡើយ! ⛔", "warning");
+        return;
+    }
     const doc = AppState.setup.documentTypes.find(d => String(d.id) === String(id) || d.name === id);
     if (!doc) return;
 
@@ -12370,6 +12438,10 @@ async function handleDocFormSubmit(e) {
 }
 
 async function deleteDocTypeItem(id) {
+    if (!hasUserSetupPermission("doc")) {
+        showToast("លោកអ្នកគ្មានសិទ្ធិលុប Document Type ឡើយ! ⛔", "warning");
+        return;
+    }
     const doc = AppState.setup.documentTypes.find(d => String(d.id) === String(id) || d.name === id);
     if (!doc) return;
 
@@ -12661,7 +12733,27 @@ function hasUserPermission(moduleName) {
     // Users with delivery permission automatically have access to In Completed Delivery & Daily Delivery
     if (moduleName === "incompleted-delivery" && user.permissions.includes("delivery")) return true;
     if (moduleName === "daily-delivery" && user.permissions.includes("delivery")) return true;
+
+    // Setup module permission: true if user has "setup" OR any specific "setup-*" sub-permission
+    if (moduleName === "setup") {
+        return user.permissions.includes("setup") || user.permissions.some(p => typeof p === "string" && p.startsWith("setup-"));
+    }
+
     return user.permissions.includes(moduleName);
+}
+
+// Check if user has permission to access a specific Setup sub-tab (customer, bu, package, doc, user)
+function hasUserSetupPermission(subTab) {
+    const user = getCurrentUser();
+    if (!user) return false;
+    if (user.role === "Admin") return true;
+    if (!Array.isArray(user.permissions)) return false;
+
+    // Full setup access grants access to all setup submodules
+    if (user.permissions.includes("setup")) return true;
+
+    // Granular submodule permission: "setup-customer", "setup-bu", "setup-package", "setup-doc", "setup-user"
+    return user.permissions.includes("setup-" + subTab);
 }
 
 // Module Display Name (Clean names matching Sidebar)
@@ -12822,9 +12914,11 @@ function renderCurrentUserProfile() {
         }
     }
 
+    const canAccessUserMgmt = isAdmin || hasUserSetupPermission("user");
+
     const userMgmtItem = document.getElementById("dropdownItemUserManagement");
     if (userMgmtItem) {
-        if (isAdmin) {
+        if (canAccessUserMgmt) {
             userMgmtItem.classList.remove("hidden");
         } else {
             userMgmtItem.classList.add("hidden");
@@ -12833,7 +12927,7 @@ function renderCurrentUserProfile() {
 
     const setupUserTabBtn = document.getElementById("setupTabBtn-user");
     if (setupUserTabBtn) {
-        if (isAdmin) {
+        if (canAccessUserMgmt) {
             setupUserTabBtn.classList.remove("hidden");
         } else {
             setupUserTabBtn.classList.add("hidden");
@@ -13143,6 +13237,13 @@ function renderNavbarPermissions() {
         if (firstAllowed) {
             switchNavbarModule(firstAllowed);
         }
+    } else if (AppState.currentTab === "setup") {
+        const subTabs = ["customer", "bu", "package", "doc", "user"];
+        const allowedSubTabs = subTabs.filter(tab => hasUserSetupPermission(tab));
+        if (!hasUserSetupPermission(AppState.currentSetupSubTab)) {
+            AppState.currentSetupSubTab = allowedSubTabs[0] || "customer";
+        }
+        switchSetupSubTab(AppState.currentSetupSubTab);
     }
 }
 
@@ -13665,11 +13766,11 @@ function navigateToUserManagement() {
     if (dd) dd.classList.add("hidden");
 
     const user = getCurrentUser();
-    if (!user || user.role !== "Admin") {
+    if (!user || (!hasUserSetupPermission("user") && user.role !== "Admin")) {
         Swal.fire({
             icon: "warning",
             title: "គ្មានសិទ្ធិចូលប្រើប្រាស់!",
-            text: "មានតែ Admin ប៉ុណ្ណោះដែលអាចចូលប្រើប្រាស់ និងគ្រប់គ្រង User Management បាន។",
+            text: "មានតែ Admin ឬ User ដែលមានសិទ្ធិ User Management ប៉ុណ្ណោះដែលអាចចូលប្រើប្រាស់បាន។",
             confirmButtonColor: "#2563eb"
         });
         return;
@@ -13745,8 +13846,9 @@ function renderUserSetupTable() {
                </span>`;
 
         // Permission Badges
+        const allSetupSubs = ["setup-customer", "setup-bu", "setup-package", "setup-doc", "setup-user"];
         const perms = u.role === "Admin" 
-            ? ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "daily-delivery", "report", "setup"] 
+            ? ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "daily-delivery", "report", "setup", ...allSetupSubs] 
             : (u.permissions || []);
         
         const permLabels = {
@@ -13758,7 +13860,12 @@ function renderUserSetupTable() {
             "incompleted-delivery": "5.Incomplete",
             "daily-delivery": "6.Daily",
             "report": "7.Report",
-            "setup": "8.Setup"
+            "setup": "8.Setup (All)",
+            "setup-customer": "8.Setup: Customer",
+            "setup-bu": "8.Setup: BU",
+            "setup-package": "8.Setup: Package",
+            "setup-doc": "8.Setup: Doc",
+            "setup-user": "8.Setup: User"
         };
         const permColors = {
             "dashboard": "bg-blue-50 text-blue-700 border-blue-200",
@@ -13769,10 +13876,29 @@ function renderUserSetupTable() {
             "incompleted-delivery": "bg-amber-50 text-amber-750 border-amber-300",
             "daily-delivery": "bg-emerald-50 text-emerald-700 border-emerald-200",
             "report": "bg-indigo-50 text-indigo-700 border-indigo-200",
-            "setup": "bg-emerald-50 text-emerald-700 border-emerald-200"
+            "setup": "bg-emerald-50 text-emerald-700 border-emerald-200",
+            "setup-customer": "bg-emerald-50 text-emerald-700 border-emerald-200",
+            "setup-bu": "bg-emerald-50 text-emerald-700 border-emerald-200",
+            "setup-package": "bg-emerald-50 text-emerald-700 border-emerald-200",
+            "setup-doc": "bg-emerald-50 text-emerald-700 border-emerald-200",
+            "setup-user": "bg-emerald-50 text-emerald-700 border-emerald-200"
         };
 
-        const permsHtml = perms.map(p => `
+        // If user has full setup or all 5 setup submodules, show clean "8.Setup (All)" badge.
+        // Otherwise show individual submodule badges (e.g. "8.Setup: Customer")
+        const hasFullSetup = perms.includes("setup") || allSetupSubs.every(s => perms.includes(s));
+        const displayPerms = perms.filter(p => {
+            if (hasFullSetup) {
+                return !p.startsWith("setup-");
+            } else {
+                return p !== "setup";
+            }
+        });
+        if (hasFullSetup && !displayPerms.includes("setup")) {
+            displayPerms.push("setup");
+        }
+
+        const permsHtml = displayPerms.map(p => `
             <span class="inline-block px-2 py-0.5 rounded text-[10px] font-semibold border ${permColors[p] || 'bg-slate-50 text-slate-600 border-slate-200'}">
                 ${permLabels[p] || p}
             </span>
@@ -13845,6 +13971,10 @@ function toggleTablePasswordVisibility(id, actualPw) {
 }
 
 function openAddUserModal() {
+    if (!hasUserSetupPermission("user")) {
+        showToast("លោកអ្នកគ្មានសិទ្ធិបន្ថែមអ្នកប្រើប្រាស់ឡើយ! ⛔", "warning");
+        return;
+    }
     const form = document.getElementById("userForm");
     if (form) form.reset();
     document.getElementById("userModalId").value = "";
@@ -13855,12 +13985,17 @@ function openAddUserModal() {
     setUserPermissionAll(false);
     const regCb = document.querySelector('input[name="userPermCheckbox"][value="register"]');
     if (regCb) regCb.checked = true;
+    syncSetupParentCheckbox();
 
     document.getElementById("userModal").classList.remove("hidden");
     lucide.createIcons();
 }
 
 function openEditUserModal(userId) {
+    if (!hasUserSetupPermission("user")) {
+        showToast("លោកអ្នកគ្មានសិទ្ធិកែប្រែអ្នកប្រើប្រាស់ឡើយ! ⛔", "warning");
+        return;
+    }
     const user = (AppState.setup.users || []).find(u => u.id === userId);
     if (!user) {
         showToast("រកមិនឃើញអ្នកប្រើប្រាស់នេះឡើយ!", "error");
@@ -13874,13 +14009,17 @@ function openEditUserModal(userId) {
     document.getElementById("userModalPassword").value = user.password || "";
     document.getElementById("userModalRole").value = user.role || "User";
 
-    const perms = user.role === "Admin" 
-        ? ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "daily-delivery", "report", "setup"] 
-        : (user.permissions || []);
+    const allSetupSubs = ["setup-customer", "setup-bu", "setup-package", "setup-doc", "setup-user"];
+    let perms = user.permissions || [];
+    if (user.role === "Admin" || perms.includes("setup")) {
+        perms = Array.from(new Set([...perms, ...allSetupSubs]));
+    }
     
     document.querySelectorAll('input[name="userPermCheckbox"]').forEach(cb => {
         cb.checked = perms.includes(cb.value);
     });
+
+    syncSetupParentCheckbox();
 
     document.getElementById("userModal").classList.remove("hidden");
     lucide.createIcons();
@@ -13896,8 +14035,10 @@ function handleUserRoleChange(role) {
         setUserPermissionAll(true);
     } else if (role === "Manager") {
         document.querySelectorAll('input[name="userPermCheckbox"]').forEach(cb => {
-            cb.checked = (cb.value !== "setup");
+            // Manager gets all permissions except setup-user
+            cb.checked = (cb.value !== "setup-user");
         });
+        syncSetupParentCheckbox();
     }
 }
 
@@ -13905,6 +14046,48 @@ function setUserPermissionAll(checked) {
     document.querySelectorAll('input[name="userPermCheckbox"]').forEach(cb => {
         cb.checked = checked;
     });
+    const parentSetup = document.getElementById("userPermSetupAll");
+    if (parentSetup) {
+        parentSetup.checked = checked;
+        parentSetup.indeterminate = false;
+    }
+}
+
+function toggleSetupAllSubPermissions(checked) {
+    const setupSubs = ["setup-customer", "setup-bu", "setup-package", "setup-doc", "setup-user"];
+    document.querySelectorAll('input[name="userPermCheckbox"]').forEach(cb => {
+        if (setupSubs.includes(cb.value)) {
+            cb.checked = checked;
+        }
+    });
+    const parentSetup = document.getElementById("userPermSetupAll");
+    if (parentSetup) {
+        parentSetup.checked = checked;
+        parentSetup.indeterminate = false;
+    }
+}
+
+function syncSetupParentCheckbox() {
+    const setupSubs = ["setup-customer", "setup-bu", "setup-package", "setup-doc", "setup-user"];
+    let checkedCount = 0;
+    document.querySelectorAll('input[name="userPermCheckbox"]').forEach(cb => {
+        if (setupSubs.includes(cb.value) && cb.checked) {
+            checkedCount++;
+        }
+    });
+    const parentSetup = document.getElementById("userPermSetupAll");
+    if (parentSetup) {
+        if (checkedCount === setupSubs.length) {
+            parentSetup.checked = true;
+            parentSetup.indeterminate = false;
+        } else if (checkedCount > 0) {
+            parentSetup.checked = false;
+            parentSetup.indeterminate = true;
+        } else {
+            parentSetup.checked = false;
+            parentSetup.indeterminate = false;
+        }
+    }
 }
 
 function togglePasswordVisibility(inputId) {
@@ -13925,6 +14108,18 @@ function handleUserFormSubmit(e) {
     document.querySelectorAll('input[name="userPermCheckbox"]:checked').forEach(cb => {
         checkedPerms.push(cb.value);
     });
+
+    const allSetupSubs = ["setup-customer", "setup-bu", "setup-package", "setup-doc", "setup-user"];
+    const allSetupSubsChecked = allSetupSubs.every(s => checkedPerms.includes(s));
+    if (allSetupSubsChecked && !checkedPerms.includes("setup")) {
+        checkedPerms.push("setup");
+    }
+
+    const adminPerms = [
+        "dashboard", "register", "picking", "checking", "delivery", 
+        "incompleted-delivery", "daily-delivery", "report", "setup",
+        ...allSetupSubs
+    ];
 
     if (!displayName || !username || !password) {
         showToast("សូមបំពេញ Display Name, Username, និង Password!", "error");
@@ -13952,7 +14147,7 @@ function handleUserFormSubmit(e) {
                 username,
                 password,
                 role,
-                permissions: role === "Admin" ? ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "daily-delivery", "report", "setup"] : checkedPerms,
+                permissions: role === "Admin" ? adminPerms : checkedPerms,
                 lastUpdated: now
             };
             AppState.setup.users[idx] = targetUser;
@@ -13973,7 +14168,7 @@ function handleUserFormSubmit(e) {
             username,
             password,
             role,
-            permissions: role === "Admin" ? ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "daily-delivery", "report", "setup"] : checkedPerms,
+            permissions: role === "Admin" ? adminPerms : checkedPerms,
             lastUpdated: now
         };
         AppState.setup.users.push(targetUser);
@@ -13993,6 +14188,10 @@ function handleUserFormSubmit(e) {
 }
 
 function deleteUserItem(userId) {
+    if (!hasUserSetupPermission("user")) {
+        showToast("លោកអ្នកគ្មានសិទ្ធិលុបអ្នកប្រើប្រាស់ឡើយ! ⛔", "warning");
+        return;
+    }
     const currentU = getCurrentUser();
     if (currentU && currentU.id === userId) {
         Swal.fire({
@@ -14170,6 +14369,9 @@ window.exportCurrentReportToExcel = exportCurrentReportToExcel;
 // User Management & Login System Bindings
 window.getCurrentUser = getCurrentUser;
 window.hasUserPermission = hasUserPermission;
+window.hasUserSetupPermission = hasUserSetupPermission;
+window.toggleSetupAllSubPermissions = toggleSetupAllSubPermissions;
+window.syncSetupParentCheckbox = syncSetupParentCheckbox;
 window.renderCurrentUserProfile = renderCurrentUserProfile;
 window.renderNavbarPermissions = renderNavbarPermissions;
 window.toggleUserMenuDropdown = toggleUserMenuDropdown;
