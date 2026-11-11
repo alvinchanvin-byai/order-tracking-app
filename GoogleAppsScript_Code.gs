@@ -1921,6 +1921,7 @@ function doPost(e) {
       } else {
         sheet.appendRow(values);
       }
+      SpreadsheetApp.flush();
       return createJsonResponse({ status: "success", action: "CUSTOMER_SAVED", id: id, name: name });
     }
     else if (action === "DELETE_CUSTOMER") {
