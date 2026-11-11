@@ -11774,17 +11774,17 @@ function renderCustomerSetupTable() {
 
     tbody.innerHTML = list.map(c => `
         <tr class="hover:bg-slate-50/80 transition-colors">
-            <td class="py-3 px-4 font-mono font-medium text-slate-600 text-xs">${c.id || "-"}</td>
-            <td class="py-3 px-4 font-semibold text-slate-900">${c.name}</td>
-            <td class="py-3 px-4">
-                <span class="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-xs font-medium">
+            <td class="py-3 px-4 font-mono font-medium text-slate-600 text-xs whitespace-nowrap">${c.id || "-"}</td>
+            <td class="py-3 px-4 font-semibold text-slate-900 whitespace-nowrap">${c.name}</td>
+            <td class="py-3 px-4 whitespace-nowrap">
+                <span class="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 text-xs font-medium whitespace-nowrap">
                     ${getCleanEnglishLocation(c.cityProvince) || "-"}
                 </span>
             </td>
-            <td class="py-3 px-4 text-slate-700 text-xs">${getCleanEnglishLocation(c.khan) || "-"}</td>
-            <td class="py-3 px-4 font-mono text-slate-500 text-xs">${formatDateTimeDisplay(c.updatedAt || c.lastUpdated || '')}</td>
-            <td class="py-3 px-4 text-right">
-                <div class="inline-flex items-center gap-1.5">
+            <td class="py-3 px-4 text-slate-700 text-xs whitespace-nowrap">${getCleanEnglishLocation(c.khan) || "-"}</td>
+            <td class="py-3 px-4 font-mono text-slate-500 text-xs whitespace-nowrap">${formatDateTimeDisplay(c.updatedAt || c.lastUpdated || '')}</td>
+            <td class="py-3 px-4 text-right whitespace-nowrap">
+                <div class="inline-flex items-center gap-1.5 whitespace-nowrap">
                     <button onclick="openEditCustomerModal('${c.id}')" class="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition" title="កែប្រែ (Edit)">
                         <i data-lucide="edit-2" class="w-4 h-4"></i>
                     </button>
@@ -11978,11 +11978,11 @@ function renderBUSetupTable() {
 
     tbody.innerHTML = list.map(b => `
         <tr class="hover:bg-slate-50/80 transition-colors">
-            <td class="py-3 px-4 font-mono font-medium text-slate-600 text-xs">${b.id || "-"}</td>
-            <td class="py-3 px-4 font-semibold text-slate-900">${b.name}</td>
-            <td class="py-3 px-4 font-mono text-slate-500 text-xs">${formatDateTimeDisplay(b.updatedAt || b.lastUpdated || '')}</td>
-            <td class="py-3 px-4 text-right">
-                <div class="inline-flex items-center gap-1.5">
+            <td class="py-3 px-4 font-mono font-medium text-slate-600 text-xs whitespace-nowrap">${b.id || "-"}</td>
+            <td class="py-3 px-4 font-semibold text-slate-900 whitespace-nowrap">${b.name}</td>
+            <td class="py-3 px-4 font-mono text-slate-500 text-xs whitespace-nowrap">${formatDateTimeDisplay(b.updatedAt || b.lastUpdated || '')}</td>
+            <td class="py-3 px-4 text-right whitespace-nowrap">
+                <div class="inline-flex items-center gap-1.5 whitespace-nowrap">
                     <button onclick="openEditBUModal('${b.id}')" class="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition" title="កែប្រែ (Edit)">
                         <i data-lucide="edit-2" class="w-4 h-4"></i>
                     </button>
@@ -12147,16 +12147,16 @@ function renderPackageTypeSetupTable() {
 
     tbody.innerHTML = list.map(p => `
         <tr class="hover:bg-slate-50/80 transition-colors">
-            <td class="py-3 px-4 font-mono font-medium text-slate-600 text-xs">${p.id || "-"}</td>
-            <td class="py-3 px-4 font-semibold text-slate-900">${p.name}</td>
-            <td class="py-3 px-4">
-                <span class="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 text-xs font-mono font-medium">
+            <td class="py-3 px-4 font-mono font-medium text-slate-600 text-xs whitespace-nowrap">${p.id || "-"}</td>
+            <td class="py-3 px-4 font-semibold text-slate-900 whitespace-nowrap">${p.name}</td>
+            <td class="py-3 px-4 whitespace-nowrap">
+                <span class="px-2 py-0.5 rounded-md bg-purple-50 text-purple-700 text-xs font-mono font-medium whitespace-nowrap">
                     ${p.short || "-"}
                 </span>
             </td>
-            <td class="py-3 px-4 font-mono text-slate-500 text-xs">${formatDateTimeDisplay(p.updatedAt || p.lastUpdated || '')}</td>
-            <td class="py-3 px-4 text-right">
-                <div class="inline-flex items-center gap-1.5">
+            <td class="py-3 px-4 font-mono text-slate-500 text-xs whitespace-nowrap">${formatDateTimeDisplay(p.updatedAt || p.lastUpdated || '')}</td>
+            <td class="py-3 px-4 text-right whitespace-nowrap">
+                <div class="inline-flex items-center gap-1.5 whitespace-nowrap">
                     <button onclick="openEditPackageTypeModal('${p.id}')" class="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition" title="កែប្រែ (Edit)">
                         <i data-lucide="edit-2" class="w-4 h-4"></i>
                     </button>
@@ -12328,11 +12328,11 @@ function renderDocTypeSetupTable() {
 
     tbody.innerHTML = list.map(d => `
         <tr class="hover:bg-slate-50/80 transition-colors">
-            <td class="py-3 px-4 font-mono font-medium text-slate-600 text-xs">${d.id || "-"}</td>
-            <td class="py-3 px-4">${renderDocumentTypeBadge(d.name)}</td>
-            <td class="py-3 px-4 font-mono text-slate-500 text-xs">${formatDateTimeDisplay(d.updatedAt || d.lastUpdated || '')}</td>
-            <td class="py-3 px-4 text-right">
-                <div class="inline-flex items-center gap-1.5">
+            <td class="py-3 px-4 font-mono font-medium text-slate-600 text-xs whitespace-nowrap">${d.id || "-"}</td>
+            <td class="py-3 px-4 whitespace-nowrap">${renderDocumentTypeBadge(d.name)}</td>
+            <td class="py-3 px-4 font-mono text-slate-500 text-xs whitespace-nowrap">${formatDateTimeDisplay(d.updatedAt || d.lastUpdated || '')}</td>
+            <td class="py-3 px-4 text-right whitespace-nowrap">
+                <div class="inline-flex items-center gap-1.5 whitespace-nowrap">
                     <button onclick="openEditDocTypeModal('${d.id}')" class="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition" title="កែប្រែ (Edit)">
                         <i data-lucide="edit-2" class="w-4 h-4"></i>
                     </button>
