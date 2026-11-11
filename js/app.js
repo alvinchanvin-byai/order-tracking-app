@@ -2576,6 +2576,11 @@ function setupEventListeners() {
     const customerForm = document.getElementById("customerForm");
     if (customerForm) customerForm.addEventListener("submit", handleCustomerFormSubmit);
 
+    const custModalName = document.getElementById("customerModalName");
+    if (custModalName) {
+        custModalName.addEventListener("input", validateCustomerModalName);
+    }
+
     const buForm = document.getElementById("buForm");
     if (buForm) buForm.addEventListener("submit", handleBUFormSubmit);
 
@@ -3229,22 +3234,51 @@ function applyLiveServerUpdate(fullData) {
     if (fullData.setup) {
         let setupChanged = false;
         if (Array.isArray(fullData.setup.customers) && fullData.setup.customers.length > 0) { 
-            AppState.setup.customers = fullData.setup.customers; 
+            const incoming = fullData.setup.customers;
+            const incNames = new Set(incoming.map(c => (c.name || '').trim().toLowerCase()));
+            const incIds = new Set(incoming.map(c => String(c.id || '').trim().toLowerCase()));
+            
+            // Keep local customers not yet returned in sheet response
+            const pendingLocal = (AppState.setup.customers || []).filter(c => {
+                const n = (c.name || '').trim().toLowerCase();
+                const id = String(c.id || '').trim().toLowerCase();
+                return n && !incNames.has(n) && (!id || !incIds.has(id));
+            });
+
+            AppState.setup.customers = [...pendingLocal, ...incoming]; 
             saveSetupState("customers"); 
             setupChanged = true; 
         }
         if (Array.isArray(fullData.setup.bus) && fullData.setup.bus.length > 0) { 
-            AppState.setup.bus = fullData.setup.bus; 
+            const incoming = fullData.setup.bus;
+            const incNames = new Set(incoming.map(b => (b.name || '').trim().toLowerCase()));
+            const pendingLocal = (AppState.setup.bus || []).filter(b => {
+                const n = (b.name || '').trim().toLowerCase();
+                return n && !incNames.has(n);
+            });
+            AppState.setup.bus = [...pendingLocal, ...incoming]; 
             saveSetupState("bus"); 
             setupChanged = true; 
         }
         if (Array.isArray(fullData.setup.packageTypes) && fullData.setup.packageTypes.length > 0) { 
-            AppState.setup.packageTypes = fullData.setup.packageTypes; 
+            const incoming = fullData.setup.packageTypes;
+            const incNames = new Set(incoming.map(p => (p.name || '').trim().toLowerCase()));
+            const pendingLocal = (AppState.setup.packageTypes || []).filter(p => {
+                const n = (p.name || '').trim().toLowerCase();
+                return n && !incNames.has(n);
+            });
+            AppState.setup.packageTypes = [...pendingLocal, ...incoming]; 
             saveSetupState("packageTypes"); 
             setupChanged = true; 
         }
         if (Array.isArray(fullData.setup.documentTypes) && fullData.setup.documentTypes.length > 0) { 
-            AppState.setup.documentTypes = fullData.setup.documentTypes; 
+            const incoming = fullData.setup.documentTypes;
+            const incNames = new Set(incoming.map(d => (d.name || '').trim().toLowerCase()));
+            const pendingLocal = (AppState.setup.documentTypes || []).filter(d => {
+                const n = (d.name || '').trim().toLowerCase();
+                return n && !incNames.has(n);
+            });
+            AppState.setup.documentTypes = [...pendingLocal, ...incoming]; 
             saveSetupState("documentTypes"); 
             setupChanged = true; 
         }
@@ -3254,7 +3288,12 @@ function applyLiveServerUpdate(fullData) {
             renderCurrentUserProfile();
             setupChanged = true; 
         }
-        if (setupChanged) setupDropdownOptions();
+        if (setupChanged) {
+            setupDropdownOptions();
+            if (AppState.currentTab === "setup") {
+                renderSetupView();
+            }
+        }
     }
 
     if (fullData.onlineUsers && Array.isArray(fullData.onlineUsers)) {
@@ -3428,42 +3467,107 @@ function applyIncomingRealtimeAction(action, payload) {
             hasChanged = true;
         }
     }
-    // 4. SETUP MASTER DATA CRUD
+    // 4. SETUP MASTER DATA CRUD (REAL-TIME BROADCAST ACROSS CLIENTS)
     else if (action === "SAVE_CUSTOMER" && payload.customer) {
         if (Array.isArray(AppState.setup.customers)) {
             const cid = payload.customer.id;
-            const idx = AppState.setup.customers.findIndex(c => c.id === cid || c.name === payload.customer.name);
+            const cname = (payload.customer.name || '').trim().toLowerCase();
+            const idx = AppState.setup.customers.findIndex(c => (cid && c.id === cid) || (c.name && c.name.trim().toLowerCase() === cname));
             if (idx > -1) AppState.setup.customers[idx] = payload.customer;
-            else AppState.setup.customers.push(payload.customer);
+            else AppState.setup.customers.unshift(payload.customer);
             saveSetupState("customers");
             setupDropdownOptions();
-            if (AppState.currentTab === "setup") renderSetupCustomers();
+            if (AppState.currentTab === "setup") {
+                renderSetupView();
+                renderCustomerSetupTable();
+            }
         }
     }
-    else if (action === "DELETE_CUSTOMER" && payload.id) {
+    else if (action === "DELETE_CUSTOMER" && (payload.id || payload.name)) {
         if (Array.isArray(AppState.setup.customers)) {
-            AppState.setup.customers = AppState.setup.customers.filter(c => c.id !== payload.id);
+            AppState.setup.customers = AppState.setup.customers.filter(c => c.id !== payload.id && c.name !== payload.name);
             saveSetupState("customers");
             setupDropdownOptions();
-            if (AppState.currentTab === "setup") renderSetupCustomers();
+            if (AppState.currentTab === "setup") {
+                renderSetupView();
+                renderCustomerSetupTable();
+            }
         }
     }
     else if (action === "SAVE_BU" && payload.bu) {
         if (Array.isArray(AppState.setup.bus)) {
-            const idx = AppState.setup.bus.findIndex(b => b.id === payload.bu.id || b.name === payload.bu.name);
+            const bname = (payload.bu.name || '').trim().toLowerCase();
+            const idx = AppState.setup.bus.findIndex(b => (payload.bu.id && b.id === payload.bu.id) || (b.name && b.name.trim().toLowerCase() === bname));
             if (idx > -1) AppState.setup.bus[idx] = payload.bu;
             else AppState.setup.bus.push(payload.bu);
             saveSetupState("bus");
             setupDropdownOptions();
-            if (AppState.currentTab === "setup") renderSetupBU();
+            if (AppState.currentTab === "setup") {
+                renderSetupView();
+                renderBUSetupTable();
+            }
         }
     }
-    else if (action === "DELETE_BU" && payload.id) {
+    else if (action === "DELETE_BU" && (payload.id || payload.name)) {
         if (Array.isArray(AppState.setup.bus)) {
-            AppState.setup.bus = AppState.setup.bus.filter(b => b.id !== payload.id);
+            AppState.setup.bus = AppState.setup.bus.filter(b => b.id !== payload.id && b.name !== payload.name);
             saveSetupState("bus");
             setupDropdownOptions();
-            if (AppState.currentTab === "setup") renderSetupBU();
+            if (AppState.currentTab === "setup") {
+                renderSetupView();
+                renderBUSetupTable();
+            }
+        }
+    }
+    else if (action === "SAVE_PACKAGE_TYPE" && payload.packageType) {
+        if (Array.isArray(AppState.setup.packageTypes)) {
+            const pname = (payload.packageType.name || '').trim().toLowerCase();
+            const idx = AppState.setup.packageTypes.findIndex(p => (payload.packageType.id && p.id === payload.packageType.id) || (p.name && p.name.trim().toLowerCase() === pname));
+            if (idx > -1) AppState.setup.packageTypes[idx] = payload.packageType;
+            else AppState.setup.packageTypes.push(payload.packageType);
+            saveSetupState("packageTypes");
+            setupDropdownOptions();
+            if (AppState.currentTab === "setup") {
+                renderSetupView();
+                renderPackageTypeSetupTable();
+            }
+        }
+    }
+    else if (action === "DELETE_PACKAGE_TYPE" && (payload.id || payload.name)) {
+        if (Array.isArray(AppState.setup.packageTypes)) {
+            AppState.setup.packageTypes = AppState.setup.packageTypes.filter(p => p.id !== payload.id && p.name !== payload.name);
+            saveSetupState("packageTypes");
+            setupDropdownOptions();
+            if (AppState.currentTab === "setup") {
+                renderSetupView();
+                renderPackageTypeSetupTable();
+            }
+        }
+    }
+    else if ((action === "SAVE_DOC_TYPE" || action === "SAVE_DOCUMENT_TYPE") && (payload.docType || payload.documentType)) {
+        const item = payload.docType || payload.documentType;
+        if (Array.isArray(AppState.setup.documentTypes)) {
+            const dname = (item.name || '').trim().toLowerCase();
+            const idx = AppState.setup.documentTypes.findIndex(d => (item.id && d.id === item.id) || (d.name && d.name.trim().toLowerCase() === dname));
+            if (idx > -1) AppState.setup.documentTypes[idx] = item;
+            else AppState.setup.documentTypes.push(item);
+            saveSetupState("documentTypes");
+            setupDropdownOptions();
+            if (AppState.currentTab === "setup") {
+                renderSetupView();
+                renderDocTypeSetupTable();
+            }
+        }
+    }
+    else if ((action === "DELETE_DOC_TYPE" || action === "DELETE_DOCUMENT_TYPE") && (payload.id || payload.name)) {
+        if (Array.isArray(AppState.setup.documentTypes)) {
+            AppState.setup.documentTypes = AppState.setup.documentTypes.filter(d => d.id !== payload.id && d.name !== payload.name);
+            saveSetupState("documentTypes");
+            setupDropdownOptions();
+            if (AppState.currentTab === "setup") {
+                renderSetupView();
+                renderDocTypeSetupTable();
+            }
         }
     }
     // 5. TELEGRAM CONFIGURATION CLOUD & REAL-TIME SYNC (ADMIN -> ALL ROLES)
@@ -11799,6 +11903,51 @@ function renderCustomerSetupTable() {
     lucide.createIcons();
 }
 
+function validateCustomerModalName() {
+    const nameInput = document.getElementById("customerModalName");
+    const idInput = document.getElementById("customerModalId");
+    const feedback = document.getElementById("customerModalNameFeedback");
+    const saveBtn = document.getElementById("btnCustomerSave");
+    if (!nameInput) return true;
+
+    const val = nameInput.value.trim();
+    const currentId = idInput ? idInput.value.trim() : "";
+
+    if (!val) {
+        if (feedback) {
+            feedback.textContent = "";
+            feedback.classList.add("hidden");
+        }
+        nameInput.classList.remove("ring-2", "ring-rose-500", "border-rose-500");
+        if (saveBtn) saveBtn.disabled = false;
+        return true;
+    }
+
+    const isDuplicate = (AppState.setup.customers || []).some(c => 
+        c.name && c.name.trim().toLowerCase() === val.toLowerCase() && String(c.id) !== String(currentId)
+    );
+
+    if (isDuplicate) {
+        if (feedback) {
+            feedback.innerHTML = `<i data-lucide="alert-circle" class="w-3.5 h-3.5 inline-block shrink-0"></i> <span>ឈ្មោះអតិថិជន "${escapeHtml(val)}" មានរួចហើយក្នុងប្រព័ន្ធ! (មិនអនុញ្ញាតស្ទួន)</span>`;
+            feedback.classList.remove("hidden");
+            if (window.lucide) lucide.createIcons();
+        }
+        nameInput.classList.add("ring-2", "ring-rose-500", "border-rose-500");
+        if (saveBtn) saveBtn.disabled = true;
+        return false;
+    } else {
+        if (feedback) {
+            feedback.textContent = "";
+            feedback.classList.add("hidden");
+        }
+        nameInput.classList.remove("ring-2", "ring-rose-500", "border-rose-500");
+        if (saveBtn) saveBtn.disabled = false;
+        return true;
+    }
+}
+window.validateCustomerModalName = validateCustomerModalName;
+
 function openAddCustomerModal() {
     if (!hasUserSetupPermission("customer")) {
         showToast("លោកអ្នកគ្មានសិទ្ធិបន្ថែមអតិថិជនឡើយ! ⛔", "warning");
@@ -11812,7 +11961,18 @@ function openAddCustomerModal() {
 
     if (title) title.textContent = "បន្ថែមអតិថិជនថ្មី (Add Customer)";
     if (idInput) idInput.value = "";
-    if (nameInput) nameInput.value = "";
+    if (nameInput) {
+        nameInput.value = "";
+        nameInput.classList.remove("ring-2", "ring-rose-500", "border-rose-500");
+    }
+    const feedback = document.getElementById("customerModalNameFeedback");
+    if (feedback) {
+        feedback.textContent = "";
+        feedback.classList.add("hidden");
+    }
+    const saveBtn = document.getElementById("btnCustomerSave");
+    if (saveBtn) saveBtn.disabled = false;
+
     if (provSelect) {
         provSelect.value = "Phnom Penh";
         updateCustomerModalKhan("Phnom Penh");
@@ -11839,7 +11999,17 @@ function openEditCustomerModal(id) {
 
     if (title) title.textContent = "កែប្រែព័ត៌មានអតិថិជន (Edit Customer)";
     if (idInput) idInput.value = cust.id || "";
-    if (nameInput) nameInput.value = cust.name || "";
+    if (nameInput) {
+        nameInput.value = cust.name || "";
+        nameInput.classList.remove("ring-2", "ring-rose-500", "border-rose-500");
+    }
+    const feedback = document.getElementById("customerModalNameFeedback");
+    if (feedback) {
+        feedback.textContent = "";
+        feedback.classList.add("hidden");
+    }
+    const saveBtn = document.getElementById("btnCustomerSave");
+    if (saveBtn) saveBtn.disabled = false;
     
     const cleanProv = getCleanEnglishLocation(cust.cityProvince) || "Phnom Penh";
     const cleanKhan = getCleanEnglishLocation(cust.khan);
@@ -11875,6 +12045,19 @@ async function handleCustomerFormSubmit(e) {
 
     if (!name) {
         showToast("សូមបញ្ចូលឈ្មោះអតិថិជន!", "error");
+        if (nameInput) nameInput.focus();
+        return;
+    }
+
+    // STRICT CHECK: PREVENT DUPLICATE CUSTOMER NAME (CASE-INSENSITIVE)
+    const isDuplicate = (AppState.setup.customers || []).some(c => 
+        c.name && c.name.trim().toLowerCase() === name.toLowerCase() && String(c.id) !== String(id)
+    );
+
+    if (isDuplicate) {
+        showToast(`ឈ្មោះអតិថិជន "${name}" មានរួចហើយក្នុងប្រព័ន្ធ! មិនអាចបង្កើតស្ទួនបានឡើយ ⚠️`, "warning");
+        validateCustomerModalName();
+        if (nameInput) nameInput.focus();
         return;
     }
 
@@ -11893,26 +12076,48 @@ async function handleCustomerFormSubmit(e) {
         }
         showToast(`បានកែប្រែព័ត៌មានអតិថិជន ${name} ជោគជ័យ!`, "success");
     } else {
-        // Create new
-        const newId = `CUST-${String(AppState.setup.customers.length + 1).padStart(3, '0')}`;
+        // Create new with robust unique ID
+        let maxNum = 0;
+        (AppState.setup.customers || []).forEach(c => {
+            const m = String(c.id || "").match(/CUST-(\d+)/i);
+            if (m) {
+                const num = parseInt(m[1], 10);
+                if (num > maxNum) maxNum = num;
+            }
+        });
+        const newId = `CUST-${String(Math.max(maxNum + 1, (AppState.setup.customers || []).length + 1)).padStart(3, '0')}`;
         targetCust = {
             id: newId,
             name: name,
             cityProvince: cityProvince,
             khan: khan,
+            createdAt: now,
             updatedAt: now,
             lastUpdated: now
         };
+        // Unshift so new customer immediately shows at the top of the table
         AppState.setup.customers.unshift(targetCust);
         showToast(`បានបន្ថែមអតិថិជន ${name} ជោគជ័យ!`, "success");
     }
 
+    // 1. Immediately persist to localStorage
     saveSetupState("customers");
+
+    // 2. Clear search filter in Customer setup table so new customer is immediately visible
+    const searchInput = document.getElementById("searchCustomerSetupInput");
+    if (searchInput) searchInput.value = "";
+
+    // 3. Immediately refresh dropdowns and autocomplete options across the app
     setupDropdownOptions();
+
+    // 4. Immediately update UI counters and re-render Customer table
     renderSetupView();
+    renderCustomerSetupTable();
+
+    // 5. Close modal
     closeCustomerModal();
 
-    // Auto sync to Google Sheets
+    // 6. Auto sync to Google Sheets & broadcast to other devices
     if (targetCust) {
         SheetsSync.syncCustomer(targetCust);
     }
@@ -12051,6 +12256,15 @@ async function handleBUFormSubmit(e) {
 
     if (!name) {
         showToast("សូមបញ្ចូលឈ្មោះ Business Unit!", "error");
+        return;
+    }
+
+    const isDuplicate = AppState.setup.bus.some(b => 
+        b.name && b.name.trim().toLowerCase() === name.toLowerCase() && String(b.id) !== String(id)
+    );
+    if (isDuplicate) {
+        showToast(`ឈ្មោះ Business Unit "${name}" មានរួចហើយ! មិនអាចបង្កើតស្ទួនបានឡើយ ⚠️`, "warning");
+        if (nameInput) nameInput.focus();
         return;
     }
 
@@ -12234,6 +12448,15 @@ async function handlePackageFormSubmit(e) {
         return;
     }
 
+    const isDuplicate = AppState.setup.packageTypes.some(p => 
+        p.name && p.name.trim().toLowerCase() === name.toLowerCase() && String(p.id) !== String(id)
+    );
+    if (isDuplicate) {
+        showToast(`ឈ្មោះ Package Type "${name}" មានរួចហើយ! មិនអាចបង្កើតស្ទួនបានឡើយ ⚠️`, "warning");
+        if (nameInput) nameInput.focus();
+        return;
+    }
+
     const now = formatAppDateTime();
     let targetPkg = null;
 
@@ -12401,6 +12624,15 @@ async function handleDocFormSubmit(e) {
 
     if (!name) {
         showToast("សូមបញ្ចូលឈ្មោះ Document Type!", "error");
+        return;
+    }
+
+    const isDuplicate = AppState.setup.documentTypes.some(d => 
+        d.name && d.name.trim().toLowerCase() === name.toLowerCase() && String(d.id) !== String(id)
+    );
+    if (isDuplicate) {
+        showToast(`ឈ្មោះ Document Type "${name}" មានរួចហើយ! មិនអាចបង្កើតស្ទួនបានឡើយ ⚠️`, "warning");
+        if (nameInput) nameInput.focus();
         return;
     }
 
@@ -12577,28 +12809,65 @@ async function syncFromGoogleSheet() {
         }
 
         if (data.setup) {
+            let setupChanged = false;
             if (Array.isArray(data.setup.customers) && data.setup.customers.length > 0) {
-                AppState.setup.customers = data.setup.customers;
+                const incoming = data.setup.customers;
+                const incNames = new Set(incoming.map(c => (c.name || '').trim().toLowerCase()));
+                const incIds = new Set(incoming.map(c => String(c.id || '').trim().toLowerCase()));
+                const pendingLocal = (AppState.setup.customers || []).filter(c => {
+                    const n = (c.name || '').trim().toLowerCase();
+                    const id = String(c.id || '').trim().toLowerCase();
+                    return n && !incNames.has(n) && (!id || !incIds.has(id));
+                });
+                AppState.setup.customers = [...pendingLocal, ...incoming];
                 saveSetupState("customers");
+                setupChanged = true;
             }
             if (Array.isArray(data.setup.bus) && data.setup.bus.length > 0) {
-                AppState.setup.bus = data.setup.bus;
+                const incoming = data.setup.bus;
+                const incNames = new Set(incoming.map(b => (b.name || '').trim().toLowerCase()));
+                const pendingLocal = (AppState.setup.bus || []).filter(b => {
+                    const n = (b.name || '').trim().toLowerCase();
+                    return n && !incNames.has(n);
+                });
+                AppState.setup.bus = [...pendingLocal, ...incoming];
                 saveSetupState("bus");
+                setupChanged = true;
             }
             if (Array.isArray(data.setup.packageTypes) && data.setup.packageTypes.length > 0) {
-                AppState.setup.packageTypes = data.setup.packageTypes;
+                const incoming = data.setup.packageTypes;
+                const incNames = new Set(incoming.map(p => (p.name || '').trim().toLowerCase()));
+                const pendingLocal = (AppState.setup.packageTypes || []).filter(p => {
+                    const n = (p.name || '').trim().toLowerCase();
+                    return n && !incNames.has(n);
+                });
+                AppState.setup.packageTypes = [...pendingLocal, ...incoming];
                 saveSetupState("packageTypes");
+                setupChanged = true;
             }
             if (Array.isArray(data.setup.documentTypes) && data.setup.documentTypes.length > 0) {
-                AppState.setup.documentTypes = data.setup.documentTypes;
+                const incoming = data.setup.documentTypes;
+                const incNames = new Set(incoming.map(d => (d.name || '').trim().toLowerCase()));
+                const pendingLocal = (AppState.setup.documentTypes || []).filter(d => {
+                    const n = (d.name || '').trim().toLowerCase();
+                    return n && !incNames.has(n);
+                });
+                AppState.setup.documentTypes = [...pendingLocal, ...incoming];
                 saveSetupState("documentTypes");
+                setupChanged = true;
             }
             if (Array.isArray(data.setup.users) && data.setup.users.length > 0) {
                 AppState.setup.users = data.setup.users;
                 saveSetupState("users");
                 renderCurrentUserProfile();
+                setupChanged = true;
             }
-            setupDropdownOptions();
+            if (setupChanged) {
+                setupDropdownOptions();
+                if (AppState.currentTab === "setup") {
+                    renderSetupView();
+                }
+            }
             updatedMsg.push("Setup Master Data");
         }
 
