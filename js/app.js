@@ -13803,7 +13803,7 @@ function renderUserSetupTable() {
     if (filtered.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="9" class="text-center py-8 text-slate-400">
+                <td colspan="8" class="text-center py-8 text-slate-400">
                     <div class="flex flex-col items-center gap-2">
                         <i data-lucide="shield-alert" class="w-8 h-8 text-slate-300"></i>
                         <span class="text-xs">មិនមានអ្នកប្រើប្រាស់ដែលត្រូវនឹងការស្វែងរកឡើយ</span>
@@ -13835,22 +13835,34 @@ function renderUserSetupTable() {
         const tabTitle = getTabFriendlyName(activeTab);
 
         const liveStatusBadge = isOnline
-            ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/90 shadow-2xs">
+            ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200/90 shadow-2xs whitespace-nowrap">
                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 <span>Online</span>
                 <span class="text-[10px] text-slate-400 font-medium">(${deviceType === 'Mobile' ? '📱 Mobile' : '💻 PC'}${tabTitle ? ' • ' + tabTitle : ''})</span>
                </span>`
-            : `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-50 text-slate-400 border border-slate-200/70">
+            : `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-50 text-slate-400 border border-slate-200/70 whitespace-nowrap">
                 <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
                 <span>Offline</span>
                </span>`;
 
-        // Permission Badges
-        const allSetupSubs = ["setup-customer", "setup-bu", "setup-package", "setup-doc", "setup-user"];
-        const perms = u.role === "Admin" 
-            ? ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "daily-delivery", "report", "setup", ...allSetupSubs] 
+        // Permission Badges with Compact "+N more" (Matching User Request)
+        const orderList = [
+            "dashboard", "register", "picking", "checking", "delivery", 
+            "incompleted-delivery", "daily-delivery", "report", "setup", 
+            "setup-customer", "setup-bu", "setup-package", "setup-doc", "setup-user"
+        ];
+
+        const rawPerms = u.role === "Admin" 
+            ? ["dashboard", "register", "picking", "checking", "delivery", "incompleted-delivery", "daily-delivery", "report", "setup-customer", "setup-bu", "setup-package"] 
             : (u.permissions || []);
         
+        // Sort according to standard workflow order
+        const sortedPerms = [...new Set(rawPerms)].sort((a, b) => {
+            const idxA = orderList.indexOf(a);
+            const idxB = orderList.indexOf(b);
+            return (idxA === -1 ? 99 : idxA) - (idxB === -1 ? 99 : idxB);
+        });
+
         const permLabels = {
             "dashboard": "Dashboard",
             "register": "1.Register",
@@ -13860,12 +13872,12 @@ function renderUserSetupTable() {
             "incompleted-delivery": "5.Incomplete",
             "daily-delivery": "6.Daily",
             "report": "7.Report",
-            "setup": "8.Setup (All)",
-            "setup-customer": "8.Setup: Customer",
-            "setup-bu": "8.Setup: BU",
-            "setup-package": "8.Setup: Package",
-            "setup-doc": "8.Setup: Doc",
-            "setup-user": "8.Setup: User"
+            "setup": "8.Setup",
+            "setup-customer": "Setup: Customer",
+            "setup-bu": "Setup: BU",
+            "setup-package": "Setup: Package",
+            "setup-doc": "Setup: Doc",
+            "setup-user": "Setup: User"
         };
         const permColors = {
             "dashboard": "bg-blue-50 text-blue-700 border-blue-200",
@@ -13873,7 +13885,7 @@ function renderUserSetupTable() {
             "picking": "bg-amber-50 text-amber-700 border-amber-200",
             "checking": "bg-purple-50 text-purple-700 border-purple-200",
             "delivery": "bg-sky-50 text-sky-700 border-sky-200",
-            "incompleted-delivery": "bg-amber-50 text-amber-750 border-amber-300",
+            "incompleted-delivery": "bg-amber-50 text-amber-700 border-amber-300",
             "daily-delivery": "bg-emerald-50 text-emerald-700 border-emerald-200",
             "report": "bg-indigo-50 text-indigo-700 border-indigo-200",
             "setup": "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -13884,25 +13896,45 @@ function renderUserSetupTable() {
             "setup-user": "bg-emerald-50 text-emerald-700 border-emerald-200"
         };
 
-        // If user has full setup or all 5 setup submodules, show clean "8.Setup (All)" badge.
-        // Otherwise show individual submodule badges (e.g. "8.Setup: Customer")
-        const hasFullSetup = perms.includes("setup") || allSetupSubs.every(s => perms.includes(s));
-        const displayPerms = perms.filter(p => {
-            if (hasFullSetup) {
-                return !p.startsWith("setup-");
-            } else {
-                return p !== "setup";
-            }
-        });
-        if (hasFullSetup && !displayPerms.includes("setup")) {
-            displayPerms.push("setup");
-        }
+        const isExpanded = Boolean(AppState.expandedUserPerms && AppState.expandedUserPerms[u.id]);
+        const maxShown = (u.id === 'USR-001') ? 3 : 4;
 
-        const permsHtml = displayPerms.map(p => `
-            <span class="inline-block px-2 py-0.5 rounded text-[10px] font-semibold border ${permColors[p] || 'bg-slate-50 text-slate-600 border-slate-200'}">
-                ${permLabels[p] || p}
-            </span>
-        `).join(" ");
+        let permsHtml = '';
+        if (sortedPerms.length === 0) {
+            permsHtml = '<span class="text-xs text-slate-400 italic">គ្មានសិទ្ធិ</span>';
+        } else if (isExpanded || sortedPerms.length <= maxShown) {
+            permsHtml = sortedPerms.map(p => `
+                <span class="inline-block px-2 py-0.5 rounded text-[10px] font-semibold border ${permColors[p] || 'bg-slate-50 text-slate-600 border-slate-200'} whitespace-nowrap">
+                    ${permLabels[p] || p}
+                </span>
+            `).join(" ");
+
+            if (isExpanded && sortedPerms.length > maxShown) {
+                permsHtml += `
+                    <button type="button" onclick="toggleUserPermExpand('${u.id}')" class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-200 hover:bg-slate-300 text-slate-700 transition cursor-pointer select-none whitespace-nowrap" title="បង្រួម (Collapse)">
+                        <i data-lucide="chevron-up" class="w-3 h-3"></i> Less
+                    </button>
+                `;
+            }
+        } else {
+            const shownPerms = sortedPerms.slice(0, maxShown);
+            const remainingPerms = sortedPerms.slice(maxShown);
+            const remainingCount = remainingPerms.length;
+            const remainingTitles = remainingPerms.map(p => permLabels[p] || p).join(', ');
+
+            const shownHtml = shownPerms.map(p => `
+                <span class="inline-block px-2 py-0.5 rounded text-[10px] font-semibold border ${permColors[p] || 'bg-slate-50 text-slate-600 border-slate-200'} whitespace-nowrap">
+                    ${permLabels[p] || p}
+                </span>
+            `).join(" ");
+
+            permsHtml = `
+                ${shownHtml}
+                <button type="button" onclick="toggleUserPermExpand('${u.id}')" class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 transition cursor-pointer select-none whitespace-nowrap shadow-2xs" title="សិទ្ធិបន្ថែម: ${escapeHtml(remainingTitles)} (ចុចដើម្បីពន្លាត)">
+                    +${remainingCount} more
+                </button>
+            `;
+        }
 
         const userInitial = (u.displayName || u.username || 'U').charAt(0).toUpperCase();
         const avatarThumbnail = u.photoUrl
@@ -13911,43 +13943,39 @@ function renderUserSetupTable() {
 
         return `
             <tr class="hover:bg-slate-50/80 transition ${isCurrent ? 'bg-indigo-50/40' : ''}">
-                <td class="py-3 px-4 font-mono font-medium text-slate-500 text-xs">${escapeHtml(u.id || '')}</td>
-                <td class="py-3 px-4 font-bold text-slate-900">
-                    <div class="flex items-center gap-2">
+                <td class="py-3 px-4 font-mono font-medium text-slate-500 text-xs whitespace-nowrap">${escapeHtml(u.id || '')}</td>
+                <td class="py-3 px-4 font-bold text-slate-900 whitespace-nowrap">
+                    <div class="flex items-center gap-2 whitespace-nowrap">
                         ${avatarThumbnail}
-                        <span>${escapeHtml(u.displayName)}</span>
-                        ${isCurrent ? '<span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-indigo-100 text-indigo-700 border border-indigo-200">You</span>' : ''}
+                        <span class="whitespace-nowrap">${escapeHtml(u.displayName)}</span>
+                        ${isCurrent ? '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-100 text-indigo-700 border border-indigo-200 whitespace-nowrap">You</span>' : ''}
                     </div>
                 </td>
-                <td class="py-3 px-4 font-mono font-semibold text-slate-700 text-xs">
+                <td class="py-3 px-4 font-mono font-semibold text-slate-700 text-xs whitespace-nowrap">
                     <span class="text-slate-400">@</span>${escapeHtml(u.username)}
                 </td>
                 <td class="py-3 px-4 whitespace-nowrap">${liveStatusBadge}</td>
-                <td class="py-3 px-4 text-xs font-mono">
-                    <div class="flex items-center gap-1.5">
-                        <span id="pw-mask-${u.id}" class="text-slate-600 font-bold">••••••</span>
-                        <button type="button" onclick="toggleTablePasswordVisibility('${u.id}', '${escapeHtml(u.password || '')}')" class="text-slate-400 hover:text-slate-600 p-0.5 rounded" title="មើល / លាក់ Password">
-                            <i data-lucide="eye" class="w-3.5 h-3.5" id="pw-eye-${u.id}"></i>
-                        </button>
-                    </div>
-                </td>
                 <td class="py-3 px-4 whitespace-nowrap">${roleBadge}</td>
                 <td class="py-3 px-4">
-                    <div class="flex flex-wrap gap-1 max-w-[340px]">
-                        ${permsHtml || '<span class="text-xs text-slate-400 italic">គ្មានសិទ្ធិ</span>'}
+                    <div class="flex flex-wrap gap-1 max-w-[260px] min-w-[190px] items-center">
+                        ${permsHtml}
                     </div>
                 </td>
-                <td class="py-3 px-4 text-slate-400 text-xs">${escapeHtml(u.lastUpdated || formatAppDateTime())}</td>
+                <td class="py-3 px-4 text-slate-400 text-xs whitespace-nowrap">${escapeHtml(u.lastUpdated || formatAppDateTime())}</td>
                 <td class="py-3 px-4 text-right whitespace-nowrap">
-                    <div class="flex items-center justify-end gap-1.5">
-                        <button onclick="quickSwitchUser('${escapeHtml(u.username)}')" class="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition" title="Login ជា User នេះភ្លាមៗ (Quick Switch)">
-                            <i data-lucide="log-in" class="w-4 h-4"></i>
+                    <div class="flex items-center justify-end gap-1.5 whitespace-nowrap">
+                        <button onclick="quickSwitchUser('${escapeHtml(u.username)}')" class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 transition inline-flex items-center gap-1 shadow-2xs" title="Login ជា User នេះភ្លាមៗ (Quick Switch)">
+                            <i data-lucide="log-in" class="w-3.5 h-3.5"></i>
+                            <span>Sign-In</span>
                         </button>
-                        <button onclick="openEditUserModal('${escapeHtml(u.id)}')" class="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition" title="កែប្រែ (Edit)">
-                            <i data-lucide="edit-3" class="w-4 h-4"></i>
+                        <button onclick="openEditUserModal('${escapeHtml(u.id)}')" class="p-1.5 rounded-lg text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition shadow-2xs" title="កែប្រែ (Edit)">
+                            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
                         </button>
-                        <button onclick="deleteUserItem('${escapeHtml(u.id)}')" class="p-1.5 rounded-lg text-red-500 hover:bg-red-50 transition ${isCurrent ? 'opacity-30 cursor-not-allowed' : ''}" title="${isCurrent ? 'មិនអាចលុបគណនីកំពុង Login បានទេ' : 'លុប (Delete)'}">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        <button onclick="deleteUserItem('${escapeHtml(u.id)}')" class="p-1.5 rounded-lg text-red-500 bg-red-50 hover:bg-red-100 border border-red-200 transition shadow-2xs ${isCurrent ? 'opacity-30 cursor-not-allowed' : ''}" title="${isCurrent ? 'មិនអាចលុបគណនីកំពុង Login បានទេ' : 'លុប (Delete)'}">
+                            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        </button>
+                        <button onclick="openEditUserModal('${escapeHtml(u.id)}')" class="p-1.5 rounded-lg text-slate-500 bg-slate-50 hover:bg-slate-100 border border-slate-200 transition shadow-2xs" title="ជម្រើសបន្ថែម (More)">
+                            <i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i>
                         </button>
                     </div>
                 </td>
@@ -14390,6 +14418,13 @@ window.handleUserRoleChange = handleUserRoleChange;
 window.setUserPermissionAll = setUserPermissionAll;
 window.togglePasswordVisibility = togglePasswordVisibility;
 window.deleteUserItem = deleteUserItem;
+
+function toggleUserPermExpand(userId) {
+    if (!AppState.expandedUserPerms) AppState.expandedUserPerms = {};
+    AppState.expandedUserPerms[userId] = !AppState.expandedUserPerms[userId];
+    renderUserSetupTable();
+}
+window.toggleUserPermExpand = toggleUserPermExpand;
 
 // ========================================================
 // MOBILE QR & BARCODE CAMERA SCANNER CONTROLLER
