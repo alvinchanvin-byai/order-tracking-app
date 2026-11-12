@@ -462,16 +462,17 @@ function normalizeDateParts(p1, p2, rawYy) {
 
     const pad = (n) => String(n).padStart(2, '0');
 
-    // 1. If month > 12 and day <= 12, month is definitely the day and day is the month!
+    // 1. If month > 12 and day <= 12, definitely swapped (US locale MM/DD where DD > 12)
     if (month > 12 && day <= 12) {
         const tmp = day; day = month; month = tmp;
     }
-    // 2. In 2026/2027, if day is 10, 11, or 12 and month < day:
-    // This happens when Google Sheets US-locale parsed e.g. 02/11/26 (Nov 2) as Month 2, Day 11 (11/02/26),
-    // or 03/11/26 (Nov 3) as Month 3, Day 11 (11/03/26),
-    // or 04/10/26 (Oct 4) as Month 4, Day 10 (10/04/26), etc.
-    else if ((day === 10 || day === 11 || day === 12) && month < day && (year === 2026 || year === 2027)) {
-        const tmp = day; day = month; month = tmp;
+    // 2. Auto-repair corrupted Nov 12 / Dec 11 records:
+    // In Nov 2026, any record with month=12 and day<=12 was mistakenly swapped by the prior bug.
+    else if (year === 2026 && month === 12 && day <= 12) {
+        const now = new Date();
+        if (now.getFullYear() === 2026 && (now.getMonth() + 1) <= 11) {
+            const tmp = day; day = month; month = tmp;
+        }
     }
 
     const yy = String(year).slice(-2);
@@ -495,13 +496,12 @@ function formatDateTimeDisplay(dateVal) {
 
     if (dateVal instanceof Date) {
         if (isNaN(dateVal.getTime())) return "-";
-        const d = dateVal.getDate();
-        const mo = dateVal.getMonth() + 1;
-        const yr = dateVal.getFullYear();
-        const norm = normalizeDateParts(d, mo, yr);
+        const d = pad(dateVal.getDate());
+        const mo = pad(dateVal.getMonth() + 1);
+        const yr = String(dateVal.getFullYear()).slice(-2);
         const hh = pad(dateVal.getHours());
         const mm = pad(dateVal.getMinutes());
-        return `${norm.dayPad}/${norm.monthPad}/${norm.yy} ${hh}:${mm}`;
+        return `${d}/${mo}/${yr} ${hh}:${mm}`;
     }
 
     let str = String(dateVal).trim();
@@ -569,11 +569,7 @@ function parseAppDateTime(dateStr) {
     if (!dateStr || dateStr === "-") return null;
     if (dateStr instanceof Date) {
         if (isNaN(dateStr.getTime())) return null;
-        const d = dateStr.getDate();
-        const mo = dateStr.getMonth() + 1;
-        const yr = dateStr.getFullYear();
-        const norm = normalizeDateParts(d, mo, yr);
-        return new Date(norm.year, norm.month - 1, norm.day, dateStr.getHours(), dateStr.getMinutes(), dateStr.getSeconds());
+        return dateStr;
     }
 
     let s = String(dateStr).trim();
