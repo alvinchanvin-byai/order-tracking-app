@@ -670,8 +670,11 @@ function normalizeDatePartsGAS(p1, p2, yr) {
   
   if (mo > 12 && d <= 12) {
     var tmp = d; d = mo; mo = tmp;
-  } else if ((d === 10 || d === 11 || d === 12) && mo < d && (y === 2026 || y === 2027)) {
-    var tmp = d; d = mo; mo = tmp;
+  } else if (y === 2026 && mo === 12 && d <= 12) {
+    var now = new Date();
+    if (now.getFullYear() === 2026 && (now.getMonth() + 1) <= 11) {
+      var tmp = d; d = mo; mo = tmp;
+    }
   }
   return {
     day: d < 10 ? "0" + d : "" + d,
@@ -687,14 +690,7 @@ function parseDateTimeGAS(dateStr) {
   if (!dateStr || dateStr === "-") return null;
   if (dateStr instanceof Date) {
     if (isNaN(dateStr.getTime())) return null;
-    var d = dateStr.getDate();
-    var mo = dateStr.getMonth() + 1;
-    var yr = dateStr.getFullYear();
-    var norm = normalizeDatePartsGAS(d, mo, yr);
-    var year = parseInt(norm.year, 10) + 2000;
-    var month = parseInt(norm.month, 10) - 1;
-    var day = parseInt(norm.day, 10);
-    return new Date(year, month, day, dateStr.getHours(), dateStr.getMinutes(), dateStr.getSeconds());
+    return dateStr;
   }
   var s = String(dateStr).trim();
   if (s.charAt(0) === "'") s = s.substring(1).trim();
@@ -797,10 +793,11 @@ function formatDateTimeGAS(val) {
     var yr = String(val.getFullYear()).slice(-2);
     var hh = val.getHours();
     var mm = val.getMinutes();
-    var norm = normalizeDatePartsGAS(d, mo, yr);
+    var dStr = d < 10 ? "0" + d : "" + d;
+    var moStr = mo < 10 ? "0" + mo : "" + mo;
     var hhStr = hh < 10 ? "0" + hh : "" + hh;
     var mmStr = mm < 10 ? "0" + mm : "" + mm;
-    return norm.day + "/" + norm.month + "/" + norm.year + " " + hhStr + ":" + mmStr;
+    return dStr + "/" + moStr + "/" + yr + " " + hhStr + ":" + mmStr;
   }
   
   var str = String(val).trim();
