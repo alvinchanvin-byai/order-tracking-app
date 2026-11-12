@@ -6651,7 +6651,8 @@ function endDelivery(soNumber) {
 async function confirmEndDelivery() {
     const soInput = document.getElementById("endDeliverySONumber");
     const soNumber = soInput ? soInput.value : "";
-    const order = AppState.orders.find(o => o.soNumber === soNumber);
+    const cleanSo = String(soNumber || "").trim().toUpperCase();
+    const order = AppState.orders.find(o => String(o.soNumber || "").trim().toUpperCase() === cleanSo);
     if (!order) return;
 
     const selectedRadio = document.querySelector("input[name='deliveryFinalStatus']:checked");
@@ -7559,6 +7560,10 @@ function getDailyDeliveryOrderDate(order) {
     const s = String(raw).trim();
     const m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
     if (m) {
+        if (typeof normalizeDateParts === "function") {
+            const norm = normalizeDateParts(m[1], m[2], m[3]);
+            return new Date(norm.year, norm.month - 1, norm.day);
+        }
         let day = parseInt(m[1], 10);
         let month = parseInt(m[2], 10) - 1;
         let year = parseInt(m[3], 10);
@@ -7634,6 +7639,23 @@ function matchesDailyDeliveryFilter(order) {
     }
     const preset = dd.datePreset || "TODAY";
     const customDate = dd.filterDate || "";
+
+    // If order was explicitly completed from Daily Delivery, ensure it stays visible under TODAY / ALL / THIS_MONTH
+    if (order.completedFromDailyDelivery === true && !customDate) {
+        if (preset === "TODAY" || preset === "ALL") {
+            const d = getDailyDeliveryOrderDate(order);
+            const now = new Date();
+            if (!d || (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate())) {
+                return true;
+            }
+        } else if (preset === "THIS_MONTH") {
+            const d = getDailyDeliveryOrderDate(order);
+            const now = new Date();
+            if (!d || (d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth())) {
+                return true;
+            }
+        }
+    }
 
     if (customDate) {
         // Custom Date matching (YYYY-MM-DD)
