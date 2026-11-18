@@ -1274,6 +1274,7 @@ document.addEventListener("DOMContentLoaded", () => {
     showOnlyView(AppState.currentTab || "daily-delivery");
     updateNavbarActiveBtn(AppState.currentTab || "daily-delivery");
     updateKpiCardsVisibility();
+    initDailyStickyKpiState();
     renderAll(true);
     startLiveTimers();
 
@@ -8198,6 +8199,21 @@ function renderDailyDeliveryView() {
     if (elSuccessCount) elSuccessCount.textContent = successOrders.length;
     if (elIncompleteCount) elIncompleteCount.textContent = (strictlyIncompleteOrders.length + returnOrders.length);
 
+    // Update Compact Sticky Mini Bar (for collapsed state)
+    const elRecentCompact = document.getElementById("dailyKpiRecentCompact");
+    const elRecentAmtCompact = document.getElementById("dailyKpiRecentAmtCompact");
+    const elCompletedCompact = document.getElementById("dailyKpiCompletedCompact");
+    const elCompletedAmtCompact = document.getElementById("dailyKpiCompletedAmtCompact");
+    const elSuccessCompact = document.getElementById("dailyKpiSuccessCompact");
+    const elIncompleteCompact = document.getElementById("dailyKpiIncompleteCompact");
+
+    if (elRecentCompact) elRecentCompact.textContent = filteredRecent.length;
+    if (elRecentAmtCompact) elRecentAmtCompact.textContent = `($${recentTotalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
+    if (elCompletedCompact) elCompletedCompact.textContent = filteredCompleted.length;
+    if (elCompletedAmtCompact) elCompletedAmtCompact.textContent = `($${completedTotalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
+    if (elSuccessCompact) elSuccessCompact.textContent = successOrders.length;
+    if (elIncompleteCompact) elIncompleteCompact.textContent = (strictlyIncompleteOrders.length + returnOrders.length);
+
     // 4. Update the New Modern Analytics Chart Card (Donut Chart & Percentages)
     if (typeof renderDailyDeliveryAnalyticsChart === "function") {
         renderDailyDeliveryAnalyticsChart({
@@ -8957,6 +8973,78 @@ window.renderDailyT2PersonalDisplayCheckboxes = renderDailyT2PersonalDisplayChec
 window.applyDailyT2ColumnVisibility = applyDailyT2ColumnVisibility;
 window.getDailyT2ColumnPrefs = getDailyT2ColumnPrefs;
 window.saveDailyT2ColumnPrefs = saveDailyT2ColumnPrefs;
+
+// Daily Delivery Sticky Header & KPI Summary Panel Helpers
+function updateStickyHeaderHeight() {
+    const header = document.querySelector("header.glass-header");
+    if (header) {
+        const h = header.offsetHeight || 58;
+        document.documentElement.style.setProperty("--app-header-height", `${h}px`);
+    }
+}
+window.updateStickyHeaderHeight = updateStickyHeaderHeight;
+
+function toggleDailyStickyKpi() {
+    const fullView = document.getElementById("dailyStickyKpiFullView");
+    const compactView = document.getElementById("dailyStickyKpiCompactView");
+    const icon = document.getElementById("iconToggleDailyStickyKpi");
+    const text = document.getElementById("textToggleDailyStickyKpi");
+    if (!fullView || !compactView) return;
+
+    const isCompact = !compactView.classList.contains("hidden");
+    if (isCompact) {
+        compactView.classList.add("hidden");
+        compactView.classList.remove("flex");
+        fullView.classList.remove("hidden");
+        if (icon) icon.setAttribute("data-lucide", "chevron-up");
+        if (text) text.textContent = "បង្រួម";
+        try { localStorage.setItem("daily_sticky_kpi_collapsed", "false"); } catch (e) {}
+    } else {
+        fullView.classList.add("hidden");
+        compactView.classList.remove("hidden");
+        compactView.classList.add("flex");
+        if (icon) icon.setAttribute("data-lucide", "chevron-down");
+        if (text) text.textContent = "ពង្រីក";
+        try { localStorage.setItem("daily_sticky_kpi_collapsed", "true"); } catch (e) {}
+    }
+    if (window.lucide && typeof lucide.createIcons === "function") {
+        lucide.createIcons();
+    }
+}
+window.toggleDailyStickyKpi = toggleDailyStickyKpi;
+
+function initDailyStickyKpiState() {
+    try {
+        const isCollapsed = localStorage.getItem("daily_sticky_kpi_collapsed") === "true";
+        if (isCollapsed) {
+            const fullView = document.getElementById("dailyStickyKpiFullView");
+            const compactView = document.getElementById("dailyStickyKpiCompactView");
+            const icon = document.getElementById("iconToggleDailyStickyKpi");
+            const text = document.getElementById("textToggleDailyStickyKpi");
+            if (fullView && compactView) {
+                fullView.classList.add("hidden");
+                compactView.classList.remove("hidden");
+                compactView.classList.add("flex");
+                if (icon) icon.setAttribute("data-lucide", "chevron-down");
+                if (text) text.textContent = "ពង្រីក";
+            }
+        }
+    } catch (e) {}
+    updateStickyHeaderHeight();
+}
+window.initDailyStickyKpiState = initDailyStickyKpiState;
+
+window.addEventListener("resize", updateStickyHeaderHeight);
+window.addEventListener("scroll", () => {
+    const panel = document.getElementById("dailyDeliveryStickyKpiContainer");
+    if (panel) {
+        if (window.scrollY > 20) {
+            panel.classList.add("daily-sticky-scrolled");
+        } else {
+            panel.classList.remove("daily-sticky-scrolled");
+        }
+    }
+}, { passive: true });
 
 // View Full Order Details Modal
 function viewOrderDetails(soNumber) {
