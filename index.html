@@ -46,7 +46,7 @@
     <link rel="dns-prefetch" href="https://script.google.com">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="css/style.css?v=live-v5.3.6">
+    <link rel="stylesheet" href="css/style.css?v=live-v5.3.7">
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -70,7 +70,7 @@
     <!-- HTML5 QR Code & Barcode Scanner for Mobile & Desktop -->
     <script src="js/html5-qrcode.min.js"></script>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen flex antialiased overflow-x-hidden">
+<body class="bg-slate-50 text-slate-800 min-h-screen flex antialiased overflow-x-clip">
 
     <!-- Mobile Overlay Backdrop -->
     <div id="mobileSidebarBackdrop" class="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-xs hidden lg:hidden transition-opacity"></div>
@@ -386,7 +386,7 @@
     </aside>
 
     <!-- RIGHT MAIN CONTENT WORKSPACE -->
-    <div class="flex-1 flex flex-col min-w-0 min-h-screen overflow-x-hidden">
+    <div class="flex-1 flex flex-col min-w-0 min-h-screen overflow-x-clip">
         
         <!-- Top Compact App Header -->
         <header class="glass-header sticky top-0 z-30 px-4 sm:px-6 lg:px-8 py-3 transition-all flex items-center justify-between gap-4">
@@ -1139,63 +1139,113 @@
         <!-- ======================================================== -->
         <section id="view-daily-delivery" class="space-y-6">
             
-            <!-- Daily Delivery KPI Cards Summary -->
-            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                <!-- Card 1: Recent Orders (In Delivery) -->
-                <div class="metric-card-modern p-4 rounded-2xl border border-sky-200/90 bg-gradient-to-br from-sky-50/50 to-white shadow-2xs">
-                    <div class="flex items-center justify-between text-slate-400 mb-1">
-                        <span class="text-xs font-bold text-sky-800">Recent Order (កំពុងដឹក)</span>
-                        <div class="w-7 h-7 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center">
-                            <i data-lucide="truck" class="w-4 h-4"></i>
+            <!-- Daily Delivery Sticky Frozen KPI Summary Panel (Freeze Header & Cards as shown in Image 2) -->
+            <div id="dailyDeliveryStickyKpiContainer" class="daily-delivery-sticky-panel">
+                <div class="flex items-center justify-between mb-2 px-0.5">
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-extrabold px-2.5 py-0.5 rounded-full bg-white text-slate-700 border border-slate-200/90 shadow-2xs">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                            <span>របាយការណ៍សង្ខេប (Summary Cards)</span>
+                        </span>
+                        <span class="text-[10px] text-slate-400 font-medium hidden sm:inline">📌 Freeze ជាប់លើផ្ទាំងពេល Scroll (Always on Screen)</span>
+                    </div>
+                    <!-- Quick Toggle to Collapse/Expand Sticky Cards (Save vertical space when needed) -->
+                    <button type="button" 
+                        id="btnToggleDailyStickyKpi" 
+                        onclick="toggleDailyStickyKpi()" 
+                        class="py-1 px-2.5 rounded-xl border border-slate-200/90 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-semibold flex items-center gap-1 transition cursor-pointer shadow-2xs active:scale-95" 
+                        title="បង្រួម/ពង្រីកផ្ទាំងសង្ខេបខាងលើ">
+                        <i id="iconToggleDailyStickyKpi" data-lucide="chevron-up" class="w-3.5 h-3.5 transition-transform duration-200"></i>
+                        <span id="textToggleDailyStickyKpi" class="text-[11px]">បង្រួម</span>
+                    </button>
+                </div>
+
+                <!-- Full 4 KPI Cards View (Default - Exact match to Image 2) -->
+                <div id="dailyStickyKpiFullView" class="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 transition-all duration-300">
+                    <!-- Card 1: Recent Orders (In Delivery) -->
+                    <div class="metric-card-modern p-3 sm:p-4 rounded-2xl border border-sky-200/90 bg-gradient-to-br from-sky-50/50 to-white shadow-2xs">
+                        <div class="flex items-center justify-between text-slate-400 mb-1">
+                            <span class="text-xs font-bold text-sky-800">Recent Order (កំពុងដឹក)</span>
+                            <div class="w-7 h-7 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center shrink-0">
+                                <i data-lucide="truck" class="w-4 h-4"></i>
+                            </div>
+                        </div>
+                        <div id="dailyKpiRecentCount" class="text-2xl font-black text-sky-600 font-mono">0</div>
+                        <div class="flex items-center justify-between text-[11px] text-slate-500 mt-1">
+                            <span>In Delivery Orders</span>
+                            <span id="dailyKpiRecentAmount" class="font-bold text-sky-700 font-mono">$0.00</span>
                         </div>
                     </div>
-                    <div id="dailyKpiRecentCount" class="text-2xl font-black text-sky-600 font-mono">0</div>
-                    <div class="flex items-center justify-between text-[11px] text-slate-500 mt-1">
-                        <span>In Delivery Orders</span>
-                        <span id="dailyKpiRecentAmount" class="font-bold text-sky-700 font-mono">$0.00</span>
+
+                    <!-- Card 2: Completed Orders -->
+                    <div class="metric-card-modern p-3 sm:p-4 rounded-2xl border border-emerald-200/90 bg-gradient-to-br from-emerald-50/50 to-white shadow-2xs">
+                        <div class="flex items-center justify-between text-slate-400 mb-1">
+                            <span class="text-xs font-bold text-emerald-800">Completed Order (បានបញ្ចប់)</span>
+                            <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                                <i data-lucide="check-circle" class="w-4 h-4"></i>
+                            </div>
+                        </div>
+                        <div id="dailyKpiCompletedCount" class="text-2xl font-black text-emerald-600 font-mono">0</div>
+                        <div class="flex items-center justify-between text-[11px] text-slate-500 mt-1">
+                            <span>Delivered / Finished</span>
+                            <span id="dailyKpiCompletedAmount" class="font-bold text-emerald-700 font-mono">$0.00</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Success Orders -->
+                    <div class="metric-card-modern p-3 sm:p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs">
+                        <div class="flex items-center justify-between text-slate-400 mb-1">
+                            <span class="text-xs font-bold text-slate-700">ជោគជ័យ (Success)</span>
+                            <div class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                                <i data-lucide="award" class="w-4 h-4"></i>
+                            </div>
+                        </div>
+                        <div id="dailyKpiSuccessCount" class="text-2xl font-black text-emerald-600 font-mono">0</div>
+                        <div class="text-[11px] text-slate-400 mt-1">
+                            <span>Delivered Successfully</span>
+                        </div>
+                    </div>
+
+                    <!-- Card 4: Incomplete / Return -->
+                    <div class="metric-card-modern p-3 sm:p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs">
+                        <div class="flex items-center justify-between text-slate-400 mb-1">
+                            <span class="text-xs font-bold text-slate-700">មិនជោគជ័យ / ត្រឡប់</span>
+                            <div class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                                <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                            </div>
+                        </div>
+                        <div id="dailyKpiIncompleteCount" class="text-2xl font-black text-amber-600 font-mono">0</div>
+                        <div class="text-[11px] text-slate-400 mt-1">
+                            <span>Incomplete & Return</span>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Card 2: Completed Orders -->
-                <div class="metric-card-modern p-4 rounded-2xl border border-emerald-200/90 bg-gradient-to-br from-emerald-50/50 to-white shadow-2xs">
-                    <div class="flex items-center justify-between text-slate-400 mb-1">
-                        <span class="text-xs font-bold text-emerald-800">Completed Order (បានបញ្ចប់)</span>
-                        <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                            <i data-lucide="check-circle" class="w-4 h-4"></i>
+                <!-- Compact Mini Strip View (When user clicks Collapse to save vertical space) -->
+                <div id="dailyStickyKpiCompactView" class="hidden items-center justify-between gap-2 p-2 rounded-xl bg-white border border-slate-200/90 shadow-2xs">
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full text-xs font-semibold">
+                        <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-sky-50 text-sky-800">
+                            <i data-lucide="truck" class="w-3.5 h-3.5 text-sky-600"></i>
+                            <span class="truncate">Recent:</span>
+                            <span id="dailyKpiRecentCompact" class="font-black font-mono text-sky-700">0</span>
+                            <span id="dailyKpiRecentAmtCompact" class="text-[11px] font-mono text-sky-600 hidden md:inline">($0.00)</span>
                         </div>
-                    </div>
-                    <div id="dailyKpiCompletedCount" class="text-2xl font-black text-emerald-600 font-mono">0</div>
-                    <div class="flex items-center justify-between text-[11px] text-slate-500 mt-1">
-                        <span>Delivered / Finished</span>
-                        <span id="dailyKpiCompletedAmount" class="font-bold text-emerald-700 font-mono">$0.00</span>
-                    </div>
-                </div>
-
-                <!-- Card 3: Success Orders -->
-                <div class="metric-card-modern p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs">
-                    <div class="flex items-center justify-between text-slate-400 mb-1">
-                        <span class="text-xs font-bold text-slate-700">ជោគជ័យ (Success)</span>
-                        <div class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                            <i data-lucide="award" class="w-4 h-4"></i>
+                        <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-50 text-emerald-800">
+                            <i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-600"></i>
+                            <span class="truncate">Completed:</span>
+                            <span id="dailyKpiCompletedCompact" class="font-black font-mono text-emerald-700">0</span>
+                            <span id="dailyKpiCompletedAmtCompact" class="text-[11px] font-mono text-emerald-600 hidden md:inline">($0.00)</span>
                         </div>
-                    </div>
-                    <div id="dailyKpiSuccessCount" class="text-2xl font-black text-emerald-600 font-mono">0</div>
-                    <div class="text-[11px] text-slate-400 mt-1">
-                        <span>Delivered Successfully</span>
-                    </div>
-                </div>
-
-                <!-- Card 4: Incomplete / Return -->
-                <div class="metric-card-modern p-4 rounded-2xl border border-slate-200/90 bg-white shadow-2xs">
-                    <div class="flex items-center justify-between text-slate-400 mb-1">
-                        <span class="text-xs font-bold text-slate-700">មិនជោគជ័យ / ត្រឡប់</span>
-                        <div class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center">
-                            <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+                        <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 text-slate-700">
+                            <i data-lucide="award" class="w-3.5 h-3.5 text-emerald-600"></i>
+                            <span class="truncate">ជោគជ័យ:</span>
+                            <span id="dailyKpiSuccessCompact" class="font-black font-mono text-emerald-700">0</span>
                         </div>
-                    </div>
-                    <div id="dailyKpiIncompleteCount" class="text-2xl font-black text-amber-600 font-mono">0</div>
-                    <div class="text-[11px] text-slate-400 mt-1">
-                        <span>Incomplete & Return</span>
+                        <div class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-50 text-slate-700">
+                            <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-600"></i>
+                            <span class="truncate">មិនជោគជ័យ:</span>
+                            <span id="dailyKpiIncompleteCompact" class="font-black font-mono text-amber-700">0</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -4178,9 +4228,9 @@
 
     <!-- App Core Scripts -->
     <script src="js/paho-mqtt.min.js"></script>
-    <script src="js/data.js?v=live-v5.3.6"></script>
-    <script src="js/sheets-sync.js?v=live-v5.3.6"></script>
-    <script src="js/telegram-notify.js?v=live-v5.3.6"></script>
-    <script src="js/app.js?v=live-v5.3.6"></script>
+    <script src="js/data.js?v=live-v5.3.7"></script>
+    <script src="js/sheets-sync.js?v=live-v5.3.7"></script>
+    <script src="js/telegram-notify.js?v=live-v5.3.7"></script>
+    <script src="js/app.js?v=live-v5.3.7"></script>
 </body>
 </html>
