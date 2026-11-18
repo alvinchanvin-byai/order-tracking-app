@@ -41,12 +41,68 @@ body {
     box-shadow: 0 10px 30px -4px rgba(15, 23, 42, 0.07), 0 4px 12px -2px rgba(15, 23, 42, 0.03);
 }
 
+/* Safe Viewport Horizontal Clipping (Does NOT break position: sticky unlike overflow-x: hidden) */
+html, body {
+    overflow-x: clip !important;
+}
+
+.overflow-x-clip {
+    overflow-x: clip !important;
+}
+
 .glass-header {
-    background: rgba(255, 255, 255, 0.88);
+    position: -webkit-sticky !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 40 !important;
+    background: rgba(255, 255, 255, 0.94) !important;
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(226, 232, 240, 0.75);
-    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.03);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.85);
+    box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.04);
+}
+
+/* Daily Delivery Sticky Frozen Header & KPI Summary Panel (Freeze Header & Cards as shown in Image 2) */
+.daily-delivery-sticky-panel {
+    position: -webkit-sticky !important;
+    position: sticky !important;
+    top: var(--app-header-height, 58px) !important;
+    z-index: 35 !important;
+    background: rgba(248, 250, 252, 0.96) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
+    padding-top: 0.35rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(226, 232, 240, 0.85);
+    box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.03);
+    transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.daily-delivery-sticky-panel.daily-sticky-scrolled {
+    box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.09), 0 4px 8px -2px rgba(15, 23, 42, 0.05) !important;
+    border-bottom-color: rgba(203, 213, 225, 0.95) !important;
+}
+
+@media (min-width: 640px) {
+    .daily-delivery-sticky-panel {
+        margin-left: -1.5rem;
+        margin-right: -1.5rem;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .daily-delivery-sticky-panel {
+        margin-left: -2rem;
+        margin-right: -2rem;
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
 }
 
 /* Modern Metric Cards */
